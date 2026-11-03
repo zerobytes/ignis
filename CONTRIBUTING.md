@@ -29,6 +29,9 @@ There is no separate private development tree or snapshot-export step. See the
 4. Review allocations, copies, repeated work, GPU/I/O, locks and cache
    invalidation. Report measured performance with hardware and workload.
 5. Keep a pull request focused and describe behavior, validation and limits.
+6. When a public capability or its integration scope changes, update the
+   [feature guide](docs/features.md), [status](docs/status.md) and the relevant
+   README overview. Keep research and future work explicitly labeled.
 
 Run `cargo fmt --all -- --check` and
 `cargo clippy --locked --release --all-targets -- -D warnings` for Rust changes.
