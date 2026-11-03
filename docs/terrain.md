@@ -1,5 +1,10 @@
 # Topografia nativa — EAF-164
 
+Atualização199: [Surface1](surface-program.md) acrescenta o programa de relevo
+compartilhado por plano/esfera em Terrain3/Planet2, com composição, máscaras,
+remapeamento, curvas e entrada da altura anterior. Terrain1/2 continuam legíveis.
+As limitações históricas do catálogo164 abaixo não descrevem esse programa novo.
+
 Atualização179: as ferramentas164/166 e o renderer otimizado165..178 já estão
 na main e foram verificados juntos. A publicação nativa usa o mesmo caminho de
 meshes/otimizações. [Integração e paisagem de referência](terrain-render-integration.md).

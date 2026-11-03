@@ -109,26 +109,23 @@ impl Settings {
 }
 struct Source {
     grid: u32,
-    operations: [super::Prepared; super::MAX_OPERATIONS],
+    sampler: Sampler,
     lower: f64,
     upper: f64,
 }
 impl Source {
-    fn new(doc: &Document, grid: u32) -> Result<Self> {
-        let sampler = Sampler::new(doc)?;
+    fn new(doc: &Document, grid: u32, sampler: Sampler) -> Result<Self> {
+        doc.validate()?;
         let (lower, upper) = height_bounds(doc, DVec3::Y, std::f64::consts::PI);
         Ok(Self {
             grid,
-            operations: sampler.operations,
+            sampler,
             lower,
             upper,
         })
     }
-    fn sampler<'a>(&self, doc: &'a Document) -> Sampler<'a> {
-        Sampler {
-            document: doc,
-            operations: self.operations,
-        }
+    fn sampler(&self, _doc: &Document) -> &Sampler {
+        &self.sampler
     }
 }
 #[derive(Clone)]
@@ -243,6 +240,10 @@ pub(crate) fn height_bounds(doc: &Document, unit: DVec3, angle: f64) -> (f64, f6
     let mut hi = lo;
     for op in &doc.operations {
         match *op {
+            Relief::Surface { ref program } => {
+                lo = program.range_meters[0];
+                hi = program.range_meters[1];
+            }
             Relief::Noise {
                 amplitude_meters, ..
             } => {
@@ -286,6 +287,13 @@ fn error(doc: &Document, tile: Tile, max_level: u8, n: u32) -> f64 {
     let mut amplitude = doc.base_height_meters.abs();
     for op in &doc.operations {
         match *op {
+            Relief::Surface { ref program } => {
+                // Arbitrary nonlinear fields may hide peaks between samples. Never infer a smoothness bound.
+                residual = program.range_meters[1] - program.range_meters[0];
+                amplitude = program.range_meters[0]
+                    .abs()
+                    .max(program.range_meters[1].abs());
+            }
             Relief::Noise {
                 amplitude_meters,
                 wavelength_meters,
@@ -517,6 +525,7 @@ impl Atlas {
         actor: ActorView,
         light: &crate::model::Light,
         fraction: f64,
+        sampler: Sampler,
     ) -> Result<Self> {
         let ActorView { size, color, eye } = actor;
         let scene_air = light.atmosphere.unwrap_or(crate::atmosphere::Atmosphere {
@@ -534,7 +543,7 @@ impl Atlas {
         let grid = u32::from(settings.tile_subdivisions).min(1 << effective.min(6));
         let mut settings = settings;
         settings.tile_subdivisions = grid as u16;
-        let source = Source::new(doc, grid)?;
+        let source = Source::new(doc, grid, sampler)?;
         let half = f64::from(size[1]) * 0.5;
         let h = source.upper;
         let outer = (doc.radius() + h)
@@ -703,7 +712,7 @@ impl Atlas {
                 r.clone()
             } else {
                 born += 1;
-                let resource = topology::resource_reusing(
+                let resource = topology::resource_prepared(
                     doc,
                     config,
                     &key,
@@ -713,6 +722,7 @@ impl Atlas {
                         .reuse_vertex_samples
                         .then(|| previous.get(&tile).map(|r| r.as_ref()))
                         .flatten(),
+                    self.source.sampler(doc),
                 )?;
                 reused_samples += resource.sample_hits as u64;
                 Arc::new(resource)
@@ -961,3 +971,6 @@ mod tests;
 
 #[cfg(test)]
 mod precision_tests;
+
+#[cfg(test)]
+mod surface_tests;

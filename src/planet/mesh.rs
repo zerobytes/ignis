@@ -70,6 +70,16 @@ impl Projection {
     }
 }
 pub fn compile(document: &Document, area: &Area, projection: &Projection) -> Result<Compiled> {
+    let sampler = Sampler::new(document)?;
+    compile_prepared(document, area, projection, &sampler)
+}
+/// Caller pairs this sampler with the same immutable source; no graph recompilation per resident tile.
+pub(super) fn compile_prepared(
+    document: &Document,
+    area: &Area,
+    projection: &Projection,
+    sampler: &Sampler,
+) -> Result<Compiled> {
     let (n, faces, level, tile) = match *area {
         Area::Globe { subdivisions } => (subdivisions, 6, 0, [0; 2]),
         Area::Tile {
@@ -95,7 +105,6 @@ pub fn compile(document: &Document, area: &Area, projection: &Projection) -> Res
         (usize::from(n) + 1).pow(2)
     };
     document.budget(count)?;
-    let sampler = Sampler::new(document)?;
     let basis = match projection {
         Projection::Centered => None,
         Projection::Surface { pose } => {

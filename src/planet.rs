@@ -13,7 +13,7 @@ pub mod orbit;
 pub mod residency;
 pub mod runtime;
 pub mod view;
-pub const VERSION: u16 = 1;
+pub const VERSION: u16 = 2;
 pub const MAX_OPERATIONS: usize = 32;
 pub const MAX_WORK: usize = 16_000_000;
 
@@ -42,6 +42,9 @@ fn operations<'de, D: serde::Deserializer<'de>>(
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Relief {
+    Surface {
+        program: Box<crate::terrain::surface::Program>,
+    },
     Noise {
         seed: u32,
         wavelength_meters: f64,
@@ -102,7 +105,7 @@ impl Document {
         self.diameter_meters * 0.5
     }
     pub fn validate(&self) -> Result<()> {
-        if self.version != VERSION
+        if !(1..=VERSION).contains(&self.version)
             || self.space_version != crate::world_space::VERSION
             || self.id.is_empty()
             || self.id.len() > 120
@@ -115,12 +118,26 @@ impl Document {
             || self.operations.len() > MAX_OPERATIONS
         {
             return Err(invalid(
-                "Planet1 needs id1..120bytes/revision>0, diameter10..1e12m, gravity0..1000m/s² and <=32operations",
+                "Planet1/2 needs id1..120bytes/revision>0, diameter10..1e12m, gravity0..1000m/s² and <=32operations",
             ));
         }
         let mut bound = self.base_height_meters.abs();
+        let mut incoming = [self.base_height_meters; 2];
         for op in &self.operations {
             match *op {
+                Relief::Surface { ref program } => {
+                    if self.version < 2 {
+                        return Err(invalid("Surface programs require Planet2"));
+                    }
+                    program.validate_domain(crate::terrain::surface::Domain::Sphere {
+                        center: self.center,
+                        radius_meters: self.radius(),
+                    })?;
+                    program.validate_input(incoming)?;
+                    bound = program.range_meters[0]
+                        .abs()
+                        .max(program.range_meters[1].abs());
+                }
                 Relief::Noise {
                     wavelength_meters,
                     amplitude_meters,
@@ -159,6 +176,24 @@ impl Document {
                     bound += height_meters.abs();
                 }
             }
+            if self.version >= 2 {
+                incoming = match op {
+                    Relief::Surface { program } => program.range_meters,
+                    Relief::Noise {
+                        amplitude_meters: a,
+                        ..
+                    } => crate::terrain::surface::outward([
+                        incoming[0] - a.abs(),
+                        incoming[1] + a.abs(),
+                    ]),
+                    Relief::Raise {
+                        height_meters: h, ..
+                    } => crate::terrain::surface::outward([
+                        incoming[0] + h.min(0.),
+                        incoming[1] + h.max(0.),
+                    ]),
+                };
+            }
         }
         if bound > self.radius() * 0.25 {
             return Err(invalid(
@@ -186,6 +221,7 @@ impl Document {
             .map(|o| match o {
                 Relief::Noise { octaves, .. } => usize::from(*octaves) * 8,
                 Relief::Raise { .. } => 1,
+                Relief::Surface { program } => program.work_per_point(),
             })
             .sum::<usize>();
         if count.saturating_mul(work) > MAX_WORK {
@@ -228,6 +264,9 @@ pub struct Sample {
 /// Validated source view with bounded inline coefficients; no per-sample allocation or I/O.
 #[derive(Clone, Copy)]
 enum Prepared {
+    Surface {
+        index: u8,
+    },
     Empty,
     Noise {
         seed: u32,
@@ -243,16 +282,32 @@ enum Prepared {
         height: f64,
     },
 }
-pub struct Sampler<'a> {
-    document: &'a Document,
+/// Owned prepared source: shared by physics/Atlas without borrowing the authoring document.
+#[derive(Clone)]
+pub struct Sampler {
+    center: Position,
+    radius: f64,
+    gravity: f64,
+    base_height: f64,
+    count: usize,
     operations: [Prepared; MAX_OPERATIONS],
+    programs: Option<std::sync::Arc<[crate::terrain::surface::Compiled]>>,
 }
-impl<'a> Sampler<'a> {
-    pub fn new(document: &'a Document) -> Result<Self> {
+impl Sampler {
+    pub fn new(document: &Document) -> Result<Self> {
         document.validate()?;
+        let mut programs = Vec::new();
         let mut operations = [Prepared::Empty; MAX_OPERATIONS];
         for (target, op) in operations.iter_mut().zip(&document.operations) {
             *target = match *op {
+                Relief::Surface { ref program } => {
+                    let index = programs.len() as u8;
+                    programs.push(program.compile(crate::terrain::surface::Domain::Sphere {
+                        center: document.center,
+                        radius_meters: document.radius(),
+                    })?);
+                    Prepared::Surface { index }
+                }
                 Relief::Noise {
                     seed,
                     wavelength_meters,
@@ -286,13 +341,18 @@ impl<'a> Sampler<'a> {
             };
         }
         Ok(Self {
-            document,
+            center: document.center,
+            radius: document.radius(),
+            gravity: document.surface_gravity_mps2,
+            base_height: document.base_height_meters,
+            count: document.operations.len(),
             operations,
+            programs: (!programs.is_empty()).then(|| programs.into()),
         })
     }
     pub(crate) fn height(&self, unit: DVec3) -> f64 {
-        let mut h = self.document.base_height_meters;
-        for op in &self.operations[..self.document.operations.len()] {
+        let mut h = self.base_height;
+        for op in &self.operations[..self.count] {
             match *op {
                 Prepared::Noise {
                     seed,
@@ -322,6 +382,11 @@ impl<'a> Sampler<'a> {
                         h += height * (1. - t * t).powi(2);
                     }
                 }
+                Prepared::Surface { index } => {
+                    h = self.programs.as_ref().expect("prepared surface program")
+                        [usize::from(index)]
+                    .sample_unit_with_input(unit, h)
+                }
                 Prepared::Empty => {}
             }
         }
@@ -330,14 +395,12 @@ impl<'a> Sampler<'a> {
     pub fn sample(&self, d: [f64; 3]) -> Result<Sample> {
         let up = direction(d)?;
         let height = self.height(up);
-        let radius = self.document.radius() + height;
+        let radius = self.radius + height;
         let position = self
-            .document
             .center
             .translated((up * radius).to_array())
             .map_err(|e| invalid(e.to_string()))?;
-        let g =
-            -up * self.document.surface_gravity_mps2 * (self.document.radius() / radius).powi(2);
+        let g = -up * self.gravity * (self.radius / radius).powi(2);
         Ok(Sample {
             direction: up.to_array(),
             height_meters: height,
@@ -379,6 +442,9 @@ fn noise(p: DVec3, seed: u32) -> f64 {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Query {
+    PrepareSurface {
+        draft: crate::terrain::surface::Draft,
+    },
     Inspect {
         document: Document,
     },
@@ -413,6 +479,7 @@ fn sample_directions<'de, D: serde::Deserializer<'de>>(
 }
 pub fn query(q: Query) -> Result<Value> {
     match q {
+        Query::PrepareSurface { draft } => Ok(json!({"program":draft.prepare()?})),
         Query::Inspect { document } => {
             document.validate()?;
             Ok(
@@ -472,10 +539,20 @@ pub fn query(q: Query) -> Result<Value> {
 }
 pub fn encode(d: &Document) -> Result<Vec<u8>> {
     d.validate()?;
-    crate::terrain::encode_asset(b"IGNISPLN", VERSION, d)
+    crate::terrain::encode_asset(b"IGNISPLN", d.version, d)
 }
 pub fn decode(bytes: &[u8]) -> Result<Document> {
-    let d: Document = crate::terrain::decode_asset(bytes, b"IGNISPLN", VERSION)?;
+    let version = bytes
+        .get(8..10)
+        .map(|b| u16::from_le_bytes(b.try_into().unwrap()))
+        .ok_or_else(|| invalid("Invalid planet header"))?;
+    if !(1..=VERSION).contains(&version) {
+        return Err(invalid("Unsupported planet source format"));
+    }
+    let d: Document = crate::terrain::decode_asset(bytes, b"IGNISPLN", version)?;
+    if d.version != version {
+        return Err(invalid("Planet envelope/document version mismatch"));
+    }
     d.validate()?;
     Ok(d)
 }

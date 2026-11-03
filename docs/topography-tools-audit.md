@@ -1,5 +1,11 @@
 # Ferramentas de relevo: inventário e próximos contratos
 
+Continuação: [Surface1](surface-program.md) implementa o programa comum em
+Terrain3/Planet2. O inventário Terrain2/Planet1 abaixo registra o diagnóstico
+anterior; os leitores legados permanecem, e a fonte nova compartilha o catálogo
+completo de campos/perfis. Hidrologia, erosão e composição volumétrica continuam
+contratos próprios.
+
 Revisão de03/11/2026, após o teste humano de `fff9c97`/build8195d0e3b6ac04bf.
 Guilherme reprovou a aparência das montanhas e reportou FPS entre2 e50. Pedido:
 analisar as ferramentas necessárias, preservando esta cena, e coordenar a

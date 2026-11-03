@@ -86,6 +86,7 @@ fn atlas(c: &super::super::runtime::Config, s: Settings) -> Atlas {
         },
         &RoomRecipe::default().generate().unwrap().light,
         1.,
+        Sampler::new(&c.document).unwrap(),
     )
     .unwrap()
 }
@@ -247,7 +248,7 @@ fn planet_orbit_clip_and_basis_are_finite_at_surface_globe_and_astronomical_zoom
                 1.62,
                 c.document.radius() + 10.,
                 1.,
-                &Source::new(&c.document, N).unwrap(),
+                &Source::new(&c.document, N, Sampler::new(&c.document).unwrap()).unwrap(),
             )
             .unwrap();
             assert!((v.basis.determinant() - 1.).abs() < 1e-12);
@@ -498,6 +499,7 @@ fn planet_orbit_inherits_density_and_finite_material_choice_keeps_geometry() {
         },
         &light,
         1.,
+        Sampler::new(&c.document).unwrap(),
     )
     .unwrap();
     assert_eq!(a.optical_depth(), f64::from(0.02f32) * 8000.);

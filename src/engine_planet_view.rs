@@ -116,6 +116,7 @@ impl Engine {
                 },
                 &self.scene.light,
                 fraction,
+                world.sampler.clone(),
             )?);
         }
         self.view_revision += 1;

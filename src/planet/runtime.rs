@@ -49,6 +49,7 @@ struct Resource {
 pub(crate) struct World {
     last_prepare_ms: f64,
     pub config: Config,
+    pub(crate) sampler: Sampler,
     pub anchor: Anchor,
     pub actor_pose: Pose,
     pub meshes: crate::meshes::Document,
@@ -153,7 +154,8 @@ impl World {
             ..config.spawn
         };
         let spawn_unit = DVec3::from(spawn_frame.up);
-        let surface_height = Sampler::new(&config.document)?.height(spawn_unit);
+        let sampler = Sampler::new(&config.document)?;
+        let surface_height = sampler.height(spawn_unit);
         if actor_pose.altitude_meters < surface_height + f64::from(half_height) {
             return Err(invalid(
                 "Planet actor center must start above its source surface",
@@ -179,6 +181,7 @@ impl World {
         let mut out = Self {
             last_prepare_ms: 0.,
             config,
+            sampler,
             anchor,
             actor_pose,
             meshes: Default::default(),
@@ -207,7 +210,7 @@ impl World {
     }
     fn resource(&self, tile: Tile) -> Result<Resource> {
         let unit = tile.direction([0.5, 0.5]);
-        let sampler = Sampler::new(&self.config.document)?;
+        let sampler = &self.sampler;
         let h = sampler.height(unit);
         let heading = if unit.dot(DVec3::Z).abs() < 0.9 {
             DVec3::Z
@@ -220,10 +223,11 @@ impl World {
             altitude_meters: h,
         };
         let anchor = Anchor::new(&self.config.document, pose)?;
-        let compiled = mesh::compile(
+        let compiled = mesh::compile_prepared(
             &self.config.document,
             &tile.area(self.config.subdivisions),
             &mesh::Projection::Surface { pose },
+            sampler,
         )?;
         let mut geometry = Arc::try_unwrap(compiled.geometry).expect("unpublished planet geometry");
         // Canonical material domain is tied to the sphere, not the observing frame.
@@ -235,7 +239,7 @@ impl World {
             for x in 0..=n {
                 let unit = tile.direction([x as f64 / n as f64, y as f64 / n as f64]);
                 coordinates.push((unit * 4096.).as_vec3().to_array());
-                let normal = continuous_normal(&sampler, self.config.document.radius(), unit);
+                let normal = continuous_normal(sampler, self.config.document.radius(), unit);
                 normals.push((anchor.basis.transpose() * normal).as_vec3().to_array());
             }
         }
@@ -495,8 +499,8 @@ impl World {
     }
 }
 
-fn continuous_normal(sampler: &Sampler<'_>, radius: f64, unit: DVec3) -> DVec3 {
-    if sampler.document.operations.is_empty() {
+fn continuous_normal(sampler: &Sampler, radius: f64, unit: DVec3) -> DVec3 {
+    if sampler.count == 0 {
         return unit;
     }
     let reference = if unit.z.abs() < 0.9 {

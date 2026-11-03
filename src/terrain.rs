@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 pub mod coverage;
 pub(crate) mod position_codec;
 pub mod region;
-pub const VERSION: u16 = 2;
+pub mod surface;
+pub const VERSION: u16 = 3;
 pub const MAX_SAMPLES: usize = 66_049;
 pub const MAX_OPERATIONS: usize = 64;
 pub const MAX_WORK: usize = 16_000_000;
@@ -168,6 +169,8 @@ pub enum Operation {
         bed_end_meters: f64,
         blend: f64,
     },
+    /// Common native field program, identical for planar and spherical surfaces.
+    Surface { program: Box<surface::Program> },
     Clamp {
         minimum_meters: f64,
         maximum_meters: f64,
@@ -256,6 +259,20 @@ impl Document {
             }
             _ => (),
         }
+        let mut height_bounds = if self.version < 3 {
+            [0.; 2]
+        } else {
+            match &self.base {
+                Base::Constant { height_meters } => [*height_meters; 2],
+                Base::Samples { heights, .. } => {
+                    let b = [
+                        heights.iter().copied().fold(f32::INFINITY, f32::min) as f64,
+                        heights.iter().copied().fold(f32::NEG_INFINITY, f32::max) as f64,
+                    ];
+                    if b[0] == b[1] { b } else { surface::outward(b) }
+                }
+            }
+        };
         for op in &self.operations {
             let valid = match op {
                 Operation::Ridge {
@@ -341,6 +358,15 @@ impl Document {
                         })
                     }
                 }
+                Operation::Surface { program } => {
+                    if self.version < 3 {
+                        false
+                    } else {
+                        program.validate_domain(surface::Domain::Plane { datum: self.datum })?;
+                        program.validate_input(height_bounds)?;
+                        true
+                    }
+                }
                 Operation::Clamp {
                     minimum_meters,
                     maximum_meters,
@@ -353,6 +379,9 @@ impl Document {
             if !valid {
                 return Err(invalid("Invalid terrain operation parameters"));
             }
+            if self.version >= 3 {
+                height_bounds = operation_bounds(op, height_bounds);
+            }
         }
         Ok(())
     }
@@ -363,6 +392,7 @@ impl Document {
             .map(|op| match op {
                 Operation::Noise { octaves, .. } => 4 * usize::from(*octaves),
                 Operation::Ridge { .. } => 16,
+                Operation::Surface { program } => program.work_per_point(),
                 Operation::Channel { points, .. } => points.len() * 2,
                 _ => 1,
             })
@@ -375,11 +405,73 @@ impl Document {
         Ok(())
     }
 }
+fn operation_bounds(op: &Operation, h: [f64; 2]) -> [f64; 2] {
+    let bounds = match op {
+        Operation::Surface { program } => return program.range_meters,
+        Operation::Raise {
+            amount_meters: a, ..
+        } => [h[0] + a.min(0.), h[1] + a.max(0.)],
+        Operation::Noise {
+            amplitude_meters: a,
+            ..
+        } => [h[0] - a.abs(), h[1] + a.abs()],
+        Operation::Ridge {
+            height_meters,
+            folds_meters,
+            ..
+        } => [h[0], h[1] + height_meters * 1.09 + folds_meters],
+        Operation::Level {
+            radius_meters,
+            height_meters,
+            slope,
+            ..
+        } => {
+            let d = radius_meters * slope[0].hypot(slope[1]);
+            [h[0].min(height_meters - d), h[1].max(height_meters + d)]
+        }
+        Operation::Channel { bed_end_meters, .. } => [h[0].min(*bed_end_meters), h[1]],
+        Operation::Clamp {
+            minimum_meters,
+            maximum_meters,
+        } => return h.map(|v| v.clamp(*minimum_meters, *maximum_meters)),
+    };
+    surface::outward(bounds)
+}
 fn smooth(t: f64) -> f64 {
     t * t * t * (t * (t * 6. - 15.) + 10.)
 }
 fn weight(d: [f64; 2], r: f64) -> f64 {
     1. - smooth((d[0].hypot(d[1]) / r).min(1.))
+}
+#[allow(clippy::too_many_arguments)]
+fn ridge_profile(
+    u: f64,
+    v: f64,
+    height_meters: f64,
+    phase: f64,
+    crest_wander: f64,
+    slope_exponent: f64,
+    folds_meters: f64,
+    end_fade: f64,
+) -> Option<f64> {
+    if u.abs() < 1. {
+        let crest = crest_wander * (u * 6. + phase).sin();
+        let t = (1. - (v - crest).abs()).max(0.);
+        if t > 0. {
+            let profile = 0.76
+                + 0.18 * (u * 5. + phase).sin()
+                + 0.10 * (u * 13. - phase).sin()
+                + 0.05 * (u * 31. + phase).sin();
+            let folds =
+                folds_meters * (u * 47. + v * 19. + phase).sin() * (v * 17. - u * 11.).sin();
+            return Some(
+                (height_meters * profile + folds).max(0.)
+                    * t.powf(slope_exponent)
+                    * smooth(((1. - u.abs()) / end_fade).min(1.)),
+            );
+        }
+    }
+    None
 }
 fn mix(a: f64, b: f64, t: f64) -> f64 {
     a + (b - a) * t
@@ -457,6 +549,8 @@ pub struct Sampler<'a> {
     doc: &'a Document,
     channels: Vec<Vec<Segment>>,
     orientations: Vec<(f64, f64)>,
+    programs: Vec<surface::Compiled>,
+    program_slots: [u8; MAX_OPERATIONS],
 }
 impl<'a> Sampler<'a> {
     pub fn new(doc: &'a Document) -> Result<Self> {
@@ -493,10 +587,20 @@ impl<'a> Sampler<'a> {
                 _ => (0., 1.),
             })
             .collect();
+        let mut programs = Vec::new();
+        let mut program_slots = [u8::MAX; MAX_OPERATIONS];
+        for (i, op) in doc.operations.iter().enumerate() {
+            if let Operation::Surface { program } = op {
+                program_slots[i] = programs.len() as u8;
+                programs.push(program.compile(surface::Domain::Plane { datum: doc.datum })?);
+            }
+        }
         Ok(Self {
             doc,
             channels,
             orientations,
+            programs,
+            program_slots,
         })
     }
     pub fn sample(&self, p: Position) -> Result<Option<f64>> {
@@ -527,21 +631,17 @@ impl<'a> Sampler<'a> {
                         let (sin, cos) = self.orientations[i];
                         let u = 2. * (cos * d[0] + sin * d[1]) / width_meters;
                         let v = 2. * (-sin * d[0] + cos * d[1]) / depth_meters;
-                        if u.abs() < 1. {
-                            let crest = crest_wander * (u * 6. + phase).sin();
-                            let t = (1. - (v - crest).abs()).max(0.);
-                            if t > 0. {
-                                let profile = 0.76
-                                    + 0.18 * (u * 5. + phase).sin()
-                                    + 0.10 * (u * 13. - phase).sin()
-                                    + 0.05 * (u * 31. + phase).sin();
-                                let folds = folds_meters
-                                    * (u * 47. + v * 19. + phase).sin()
-                                    * (v * 17. - u * 11.).sin();
-                                h += (height_meters * profile + folds).max(0.)
-                                    * t.powf(*slope_exponent)
-                                    * smooth(((1. - u.abs()) / end_fade).min(1.));
-                            }
+                        if let Some(delta) = ridge_profile(
+                            u,
+                            v,
+                            *height_meters,
+                            *phase,
+                            *crest_wander,
+                            *slope_exponent,
+                            *folds_meters,
+                            *end_fade,
+                        ) {
+                            h += delta;
                         }
                     }
                 }
@@ -629,6 +729,9 @@ impl<'a> Sampler<'a> {
                             blend * (1. - smooth(distance / width_meters)),
                         );
                     }
+                }
+                Operation::Surface { .. } => {
+                    h = self.programs[usize::from(self.program_slots[i])].sample_with_input(p, h)?
                 }
                 Operation::Clamp {
                     minimum_meters,
@@ -858,6 +961,9 @@ pub fn compile(document: &Document, patch: Patch, stride: u16) -> Result<Compile
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Query {
+    PrepareSurface {
+        draft: surface::Draft,
+    },
     InspectRegion {
         document: Document,
         region: region::Region,
@@ -896,6 +1002,7 @@ fn edit_list<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<
 }
 pub fn query(query: Query) -> Result<serde_json::Value> {
     match query {
+        Query::PrepareSurface { draft } => Ok(serde_json::json!({"program":draft.prepare()?})),
         Query::InspectRegion { document, region } => {
             Ok(region::compile(&document, region)?.report())
         }

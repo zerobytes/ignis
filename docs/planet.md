@@ -1,5 +1,10 @@
 # Mundo planetário — EAF-199
 
+Atualização da fonte: Planet2 aceita [Surface1](surface-program.md), o mesmo
+programa de relevo de Terrain3. Curvas, máscaras, patamares, canais e composição
+não têm um catálogo separado para planetas. Planet1 e seus resultados são
+preservados; os números e descrições da primeira entrega abaixo são históricos.
+
 Continuação: [integração do runtime e residência](planet-runtime.md), em andamento.
 
 Atualização03/11: [horizonte terrestre e coordenadas globais](planet-earth-horizon.md)

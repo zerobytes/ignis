@@ -1,5 +1,10 @@
 # Reuso de geradores e receitas de geografia
 
+Continuação de implementação: [Surface1](surface-program.md) usa um catálogo e
+executor comuns em Terrain3/Planet2. Esta pesquisa permanece como registro de
+proveniência e próximos importadores; nenhuma dependência externa foi incorporada
+pela implementação nativa inicial.
+
 Pesquisa de03/11/2026. Pedido de Guilherme: mesmas ferramentas e geração para
 plano/esfera, com diferença somente no domínio geométrico; avaliar criatividade
 reutilizável de Tectonic e geradores gratuitos. Esta unidade entrega decisões e

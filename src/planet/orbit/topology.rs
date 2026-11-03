@@ -99,7 +99,7 @@ impl Registry {
 }
 struct Builder<'a> {
     doc: &'a Document,
-    sampler: Sampler<'a>,
+    sampler: &'a Sampler,
     anchor: Anchor,
     unit: f64,
     max: u8,
@@ -151,7 +151,7 @@ impl Builder<'_> {
         } else {
             finest.max(self.doc.radius() / (f64::from(self.n) * (1u64 << level) as f64))
         };
-        let normal = normal(&self.sampler, self.doc.radius(), d, step);
+        let normal = normal(self.sampler, self.doc.radius(), d, step);
         let index = self.positions.len() as u32;
         self.indices.insert(k, index);
         self.positions.push(p.to_array());
@@ -164,7 +164,7 @@ impl Builder<'_> {
         index
     }
 }
-fn normal(s: &Sampler<'_>, r: f64, d: DVec3, step: f64) -> DVec3 {
+fn normal(s: &Sampler, r: f64, d: DVec3, step: f64) -> DVec3 {
     let reference = if d.z.abs() < 0.9 { DVec3::Z } else { DVec3::X };
     let a = reference.cross(d).normalize();
     let b = d.cross(a);
@@ -184,6 +184,7 @@ pub(super) fn resource(
 ) -> Result<Resource> {
     resource_reusing(doc, config, k, registry, max, None)
 }
+#[cfg(test)]
 pub(super) fn resource_reusing<'a>(
     doc: &'a Document,
     config: &super::super::runtime::Config,
@@ -192,13 +193,24 @@ pub(super) fn resource_reusing<'a>(
     max: u8,
     previous: Option<&'a Resource>,
 ) -> Result<Resource> {
+    let sampler = Sampler::new(doc)?;
+    resource_prepared(doc, config, k, registry, max, previous, &sampler)
+}
+pub(super) fn resource_prepared<'a>(
+    doc: &'a Document,
+    config: &super::super::runtime::Config,
+    k: &ResourceKey,
+    registry: &Registry,
+    max: u8,
+    previous: Option<&'a Resource>,
+    sampler: &'a Sampler,
+) -> Result<Resource> {
     // Bound the seven height evaluations per vertex before allocating/cooking.
     // A fine boundary may add many vertices to an otherwise coarse cell.
     let n = k.grid;
     doc.budget((((n + 1) * (n + 1)) as usize + k.signature.len()) * 7)?;
     let t = k.tile;
     let direction = t.direction([0.5, 0.5]);
-    let sampler = Sampler::new(doc)?;
     let anchor = Anchor::new(
         doc,
         Pose {
