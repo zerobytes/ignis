@@ -14,6 +14,7 @@ summarizes integration and validation scope; it does not replace the feature lis
 | Native editor and modeling | Projects, workspaces, file browsing, component editing, extrusion/inset/bevel, sweeps, organic junctions, sculpt brushes and local refinement | Interface coverage and artistic usability continue to evolve; this is not a complete DCC/CAD toolchain. |
 | Ignis Horizon rendering | Native lighting/shadows, shared geometry, visibility/occlusion, GPU residency and atmosphere-aware distant representations | The integrated stack is distinct from experimental virtualized geometry/LOD, which remains off by default. No universal FPS claim. |
 | Materials | Reusable procedural recipes and fixed baked maps, seeded per-instance runtime variation, layered surface channels, bump/parallax with self shadow, explicit static displacement bake, dielectric/metal response, environment lighting, transparent surfaces and thin glass | Recipe1 uses explicit planar rest coordinates; parallax is opaque and does not change silhouette/collision. Transparent composition and thin-glass optics are approximations; complete refraction, GI and volumetric optics are separate work. See [material recipes](material-recipes.md). |
+| Particles/VFX | Native versioned sources/placements, deterministic analytic emission/motion, instanced sprites using shared materials, MCP/editor preview and source files | Ordinary-scene cosmetic backend. Smoke uses sprites; collisions, GPU simulation, ribbons, fluids and planetary support remain separate. Human artistic/input acceptance pending. See [particles](particles.md). |
 | Terrain and landforms | Native sampled/procedural terrain, ridges, authored profiles/cavities and opt-in terrain collision | Supported source families do not imply general CSG, erosion or unrestricted world streaming. |
 | Botany | Native trees/palms, branching, age/vigor, roots/buttresses/collars, groundcover, tall grass and shrub libraries | Profiles are authored, not biologically universal. XPBD growth/pruning/deformation is a separate session laboratory, not networked gameplay plant physics. |
 | Character authoring | Parametric body/posture, local facial controls and symmetric 3D handles, source-preserving regeneration and rig data | Supplied base derives from MakeHuman CC0 data. Complete facial animation, tissue dynamics and artistic acceptance remain separate. |
@@ -47,7 +48,7 @@ the Rust engine. Engine screenshots are identified in their captions.
 - Focused fixes with a minimal reproduction and compatibility notes.
 
 Research directions include richer continuous-world residency/LOD, planetary
-terrain appearance, [particles/VFX and fluids](particle-vfx-requirements.md),
+terrain appearance, [advanced particles/VFX and fluids](particle-vfx-requirements.md),
 and more mature authoring workflows. These are directions,
 not announced release dates. Discuss a large contribution before implementing it.
 

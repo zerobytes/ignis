@@ -6,7 +6,7 @@ Explore the capabilities available in the public engine source, organized by wha
 
 For exact command arguments, discover `engine_command` through MCP `tools/list`. A feature entry is an editorial grouping, not one command or a promise that every combination is supported. [Validation and platform status](status.md).
 
-[Ignis Horizon rendering](#ignis-horizon-rendering) | [Materials and surface detail](#materials-and-surface-detail) | [Worlds, terrain and planets](#worlds-terrain-and-planets) | [Procedural botany](#procedural-botany) | [Parametric characters](#parametric-characters) | [Modeling and sculpting](#modeling-and-sculpting) | [Physics and player control](#physics-and-player-control) | [NPC perception and personality](#npc-perception-and-personality) | [Navigation, tactics and interaction](#navigation-tactics-and-interaction) | [Abilities and combat](#abilities-and-combat) | [Populations and spawning](#populations-and-spawning) | [Animation and audio](#animation-and-audio) | [Multiplayer and actor runtime](#multiplayer-and-actor-runtime) | [Editor, MCP and persistence](#editor-mcp-and-persistence)
+[Ignis Horizon rendering](#ignis-horizon-rendering) | [Materials and surface detail](#materials-and-surface-detail) | [Particles and VFX](#particles-and-vfx) | [Worlds, terrain and planets](#worlds-terrain-and-planets) | [Procedural botany](#procedural-botany) | [Parametric characters](#parametric-characters) | [Modeling and sculpting](#modeling-and-sculpting) | [Physics and player control](#physics-and-player-control) | [NPC perception and personality](#npc-perception-and-personality) | [Navigation, tactics and interaction](#navigation-tactics-and-interaction) | [Abilities and combat](#abilities-and-combat) | [Populations and spawning](#populations-and-spawning) | [Animation and audio](#animation-and-audio) | [Multiplayer and actor runtime](#multiplayer-and-actor-runtime) | [Editor, MCP and persistence](#editor-mcp-and-persistence)
 
 ## Ignis Horizon rendering
 
@@ -55,6 +55,18 @@ Use one material system across authored meshes, architecture, vegetation and cha
 - **Transparency and thin glass:** Thin glass and overlapping transparency are approximations. Spatial refraction, transmission blur, caustics, colored shadows and volumetric optics are not implemented by this foundation.
 
 </details>
+
+## Particles and VFX
+
+| Capability | What you can do | Technical contracts |
+| --- | --- | --- |
+| Native cosmetic effects | Reuse versioned effect sources across placements; emit by rate/burst with seeded shapes, cones, lifetimes and motion/color/size modules. CPU analytic reconstruction supports seeking; the GPU draws instanced camera-facing sprites through shared translucent/additive materials. | [Particle foundation](particles.md) |
+| Authoring and preview | Use the Partículas editor panel or the same typed MCP operations to edit sources/placements, inspect population/budget diagnostics, freeze/seek preview, and load/save `.ignis-vfx` sources. Scene/replay/portable saves reconstruct from world time; public network visuals use replica time. | [Particle foundation](particles.md) |
+
+Scope: this first backend covers cosmetic sprites in ordinary scenes. Smoke is a
+sprite approximation. GPU simulation, collisions, soft depth intersections,
+ribbons, subemitters, fluid volumes and a Niagara-scale graph remain later work.
+The planetary adapter is explicitly unsupported. Mirrors are deferred.
 
 ## Worlds, terrain and planets
 
@@ -332,7 +344,7 @@ The current engine provides foundations for larger systems. These plans are not 
 
 | Direction | Current boundary |
 | --- | --- |
-| Particles, VFX and fluid simulation | [Requirements and staged plan](particle-vfx-requirements.md). Shared surface/transparency materials exist; a complete emitter/solver authoring system does not. |
+| Advanced VFX and fluid simulation | [Requirements and staged plan](particle-vfx-requirements.md). The first analytic sprite/emitter backend exists; GPU simulation, ribbons, fluid volumes and a complete visual graph remain separate. |
 | General continuous worlds | [World and portable-save direction](continuous-world-and-portable-saves.md). Local/global coordinates, planning and an opt-in planetary session exist; unrestricted asynchronous multi-actor streaming remains work ahead. |
 | Virtualized geometry | [Automatic LOD](automatic-lod.md) and [regional LOD](regional-lod.md) are experimental, off by default; no universal Nanite parity or speedup is established. |
 | Complete character pipeline | Parametric bodies and presentation exist; universal species authoring, complete facial animation, dynamic tissues and a general DCC importer remain separate work. |

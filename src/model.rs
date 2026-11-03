@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 112;
+pub const SCENE_VERSION: u32 = 113;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -472,6 +472,8 @@ pub struct Scene {
     pub plants: crate::plants::Document,
     #[serde(default, skip_serializing_if = "crate::meshes::Document::is_empty")]
     pub meshes: crate::meshes::Document,
+    #[serde(default, skip_serializing_if = "crate::particles::document_empty")]
+    pub particles: std::sync::Arc<crate::particles::Document>,
     #[serde(default, skip_serializing_if = "crate::distant::is_empty")]
     pub distant_meshes: std::sync::Arc<Vec<crate::distant::Pack>>,
     pub version: u32,
@@ -562,6 +564,10 @@ impl Scene {
         crate::npc_presentation::validate(self)?;
         // Visual assets are independent of per-template entity probes: validate once.
         self.meshes.validate()?;
+        self.particles.validate()?;
+        if self.version < crate::particles::SCENE_VERSION && !self.particles.is_empty() {
+            return Err(invalid("Particle effects require scene113"));
+        }
         if self.version < 107 && !self.meshes.objects.is_empty() {
             return Err(invalid("Visual object membership requires scene107"));
         }
@@ -1533,6 +1539,7 @@ impl RoomRecipe {
             avatar_audio: Default::default(),
             interactions: Default::default(),
             meshes: Default::default(),
+            particles: Default::default(),
             characters: Vec::new(),
             botany: Vec::new(),
             distant_meshes: Default::default(),

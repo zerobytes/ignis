@@ -7,6 +7,7 @@ use serde_json::{Value, json};
 mod botany;
 mod characters;
 mod materials;
+mod particles;
 use std::{
     io::{BufReader, BufWriter, Read, Write},
     path::{Component, Path, PathBuf},
@@ -35,6 +36,7 @@ pub struct Reply {
 }
 pub struct Service {
     pub botany: crate::botany::State,
+    pub particle_panel_open: bool,
     pub character_editor: crate::character_editor::State,
     pub engine: Engine,
     pub root: PathBuf,
@@ -258,6 +260,7 @@ impl Service {
         Ok(Self {
             character_editor: Default::default(),
             botany: Default::default(),
+            particle_panel_open: false,
             engine: Engine::new(scene)?,
             root,
             capture_renderer: None,
@@ -473,7 +476,8 @@ impl Service {
             );
         let session_change = matches!(
             &request.command,
-            Command::Botany { .. }
+            Command::Particles { .. }
+                | Command::Botany { .. }
                 | Command::OpenCharacterPanel { .. }
                 | Command::SetCharacterHandleView { .. }
                 | Command::LoadCharacterEditorSource { .. }
@@ -492,9 +496,18 @@ impl Service {
             Command::OpenCharacterPanel { open: true, .. }
         ) {
             self.botany.open = false;
+            self.particle_panel_open = false;
+        }
+        if matches!(&request.command,Command::Botany{operation} if matches!(operation.as_ref(),crate::botany::Operation::Open{open:true,..}))
+        {
+            self.particle_panel_open = false;
+        }
+        if clear_botany {
+            self.particle_panel_open = false;
         }
         let pause_audio = matches!(&request.command, Command::Pause | Command::Exit);
         let data = match &request.command {
+            Command::Particles { operation } => self.particles_command(operation)?,
             Command::Material { operation } => self.material_command(operation)?,
             Command::Botany { operation } => self.botany_command(operation)?,
             Command::InspectCharacterSource { .. }

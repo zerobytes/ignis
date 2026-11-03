@@ -8,6 +8,9 @@ Continuidade autorizada em 03/11: iniciar pelo alicerce geral de materiais e
 transparência, incluindo vidro e usos em outros sistemas, antes de emissores.
 Contrato de implementação separado em [materiais/transparência — EAF-203](material-transparency.md).
 
+Continuidade seguinte: espelhos adiados por decisão do usuário; iniciar agora
+o [núcleo nativo de partículas — EAF-212](particles.md) sobre os materiais comuns.
+
 ## 1. Resultado esperado
 
 Um artista, desenvolvedor ou agente deve conseguir criar, combinar, parametrizar,

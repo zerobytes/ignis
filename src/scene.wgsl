@@ -583,20 +583,20 @@ struct TransparentOut {
     @location(1) transmission: vec4<f32>,
     @location(2) additive: vec4<f32>,
 };
-@fragment fn fs_transparent(in: VertexOut, @builtin(front_facing) front: bool) -> TransparentOut {
+fn transparent_surface(in: VertexOut, front: bool, multiplier:f32, tint:vec3<f32>) -> TransparentOut {
     let shaded = shade_surface(in, front);
     let material = materials.items[in.material];
-    let coverage = surface_opacity(in.rest, material);
+    let coverage = surface_opacity(in.rest, material)*multiplier;
     var out: TransparentOut;
     out.accumulation = vec4<f32>(0.0);
     out.transmission = vec4<f32>(1.0);
     out.additive = vec4<f32>(0.0);
     if material.surface.x == 3.0 {
-        out.additive = vec4<f32>(min(shaded.color * coverage, vec3<f32>(64.0)), 0.0);
+        out.additive = vec4<f32>(min(shaded.color * tint * coverage, vec3<f32>(64.0)), 0.0);
         return out;
     }
     var transmission = vec3<f32>(1.0-coverage);
-    var color = shaded.color * coverage;
+    var color = shaded.color * tint * coverage;
     if material.surface.w > 0.5 {
         transmission = mix(vec3<f32>(1.0), glass_transmission(shaded.base,shaded.normal,in.world,material), coverage);
     }
@@ -607,6 +607,8 @@ struct TransparentOut {
     out.transmission = vec4<f32>(transmission, 1.0-alpha);
     return out;
 }
+
+@fragment fn fs_transparent(in:VertexOut,@builtin(front_facing) front:bool)->TransparentOut {return transparent_surface(in,front,1.,vec3<f32>(1.));}
 
 // Diagnostic guides keep stable colors independent of gameplay lighting.
 @fragment fn fs_guide(in: VertexOut) -> @location(0) vec4<f32> {

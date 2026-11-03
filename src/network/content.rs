@@ -5,7 +5,7 @@ use crate::{
     model::{Camera, Light, Result, invalid},
 };
 use serde::{Deserialize, Serialize};
-pub const VERSION: u16 = 10;
+pub const VERSION: u16 = 11;
 pub const MAX_BYTES: usize = 8 * 1024 * 1024;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -15,6 +15,7 @@ pub struct Content {
     pub camera: Camera,
     pub light: Light,
     pub meshes: Document,
+    pub particles: std::sync::Arc<crate::particles::Document>,
     pub distant_meshes: std::sync::Arc<Vec<crate::distant::Pack>>,
     pub consumed: Vec<String>,
 }
@@ -26,6 +27,7 @@ impl Content {
             camera: engine.scene.camera.clone(),
             light: engine.scene.light.clone(),
             meshes: engine.scene.meshes.clone(),
+            particles: engine.scene.particles.clone(),
             distant_meshes: engine.scene.distant_meshes.clone(),
             consumed: engine
                 .scene
@@ -45,6 +47,7 @@ impl Content {
         self.camera.validate()?;
         self.light.validate()?;
         self.meshes.validate()?;
+        self.particles.validate()?;
         crate::distant::validate(&self.distant_meshes, &self.meshes)?;
         let mut ids = std::collections::BTreeSet::new();
         for id in &self.consumed {

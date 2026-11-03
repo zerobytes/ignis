@@ -174,3 +174,7 @@ pub mod mesh_lods;
 pub mod mesh_objects;
 
 pub mod collective_lod;
+
+pub mod particles;
+
+mod render_particles;

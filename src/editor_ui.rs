@@ -28,6 +28,8 @@ mod lighting_ui;
 mod mesh_ui;
 #[path = "editor_modeling_ui.rs"]
 mod modeling_ui;
+#[path = "editor_particles_ui.rs"]
+mod particles_ui;
 #[path = "editor_project_ui.rs"]
 mod project_ui;
 
@@ -44,6 +46,7 @@ struct DragTab {
 struct UiState {
     character: character_ui::State,
     botany: botany_ui::State,
+    particles: particles_ui::State,
     character_gizmo: character_gizmo::State,
     authoring: authoring_ui::State,
     project: project_ui::State,
@@ -700,6 +703,14 @@ fn draw_editor(
                     commands.push(Command::OpenCharacterPanel {
                         open: !service.character_editor.open,
                         prefix: None,
+                    });
+                }
+                if design_ui::tab(ui, "Partículas", service.particle_panel_open, false).clicked() {
+                    open_panel(service, commands, Panel::Properties);
+                    commands.push(Command::Particles {
+                        operation: Box::new(crate::particles::Operation::Open {
+                            open: !service.particle_panel_open,
+                        }),
                     });
                 }
                 if design_ui::tab(ui, "Vegetação", service.botany.open, false).clicked() {
@@ -1365,6 +1376,10 @@ fn properties(
     commands: &mut Vec<Command>,
 ) {
     ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+    if service.particle_panel_open {
+        particles_ui::properties(ui, service, &mut state.particles, commands);
+        return;
+    }
     if service.botany.open {
         botany_ui::properties(ui, service, &mut state.botany, commands);
         return;

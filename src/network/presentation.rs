@@ -10,6 +10,7 @@ pub fn empty(camera: Camera, light: Light) -> RenderFrame {
         planet_air: None,
         suppress_diagnostic_grid: false,
         meshes: Default::default(),
+        particles: Default::default(),
         distant_meshes: Default::default(),
         mesh_lods: Default::default(),
         mesh_lod_settings: Default::default(),
@@ -36,6 +37,7 @@ pub fn update(state: &State, frame: &mut RenderFrame, camera: Option<&Camera>) -
         .ok_or_else(|| invalid("Remote baseline is not ready"))?;
     frame.camera = camera.unwrap_or(&content.camera).clone();
     frame.light = content.light.clone();
+    frame.particles.update(&content.particles, tick);
     frame.distant_meshes = content.distant_meshes.clone();
     frame.meshes.update_filtered(
         &content.meshes,

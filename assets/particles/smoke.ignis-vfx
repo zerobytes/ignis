@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "id": "smoke",
+  "seed": 7,
+  "duration_ticks": 180,
+  "looping": true,
+  "emitters": [
+    {
+      "id": "plume",
+      "seed": 0,
+      "delay_ticks": 0,
+      "rate_per_second": 30.0,
+      "burst": 0,
+      "max_particles": 4096,
+      "shape": {
+        "kind": "disc",
+        "radius": 0.2
+      },
+      "direction": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "spread_degrees": 15.0,
+      "speed": [
+        0.7,
+        1.2
+      ],
+      "lifetime_ticks": [
+        140,
+        300
+      ],
+      "size": [
+        0.3,
+        0.55
+      ],
+      "rotation_radians": [
+        -3.1415927,
+        3.1415927
+      ],
+      "angular_velocity": [
+        -0.4,
+        0.4
+      ],
+      "color_min": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "color_max": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "aspect": 1.0,
+      "softness": 1.0,
+      "align_velocity": false,
+      "material": {
+        "surface": {
+          "version": 1,
+          "mode": "blend",
+          "opacity": 1.0,
+          "cutoff": 0.5,
+          "emissive": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "transmission": 0.0
+      },
+      "modules": [
+        {
+          "kind": "acceleration",
+          "value": [
+            0.08,
+            0.15,
+            0.0
+          ]
+        },
+        {
+          "kind": "drag",
+          "coefficient": 0.15
+        },
+        {
+          "kind": "wave",
+          "amplitude": [
+            0.18,
+            0.05,
+            0.13
+          ],
+          "frequency_hz": [
+            0.3,
+            0.15,
+            0.23
+          ]
+        },
+        {
+          "kind": "size_over_life",
+          "keys": [
+            {
+              "time": 0.0,
+              "value": 0.5
+            },
+            {
+              "time": 1.0,
+              "value": 3.5
+            }
+          ]
+        },
+        {
+          "kind": "color_over_life",
+          "keys": [
+            {
+              "time": 0.0,
+              "value": [
+                0.18,
+                0.2,
+                0.22,
+                0.0
+              ]
+            },
+            {
+              "time": 0.15,
+              "value": [
+                0.22,
+                0.25,
+                0.28,
+                0.5
+              ]
+            },
+            {
+              "time": 1.0,
+              "value": [
+                0.4,
+                0.43,
+                0.46,
+                0.0
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

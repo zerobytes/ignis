@@ -191,6 +191,7 @@ pub struct RenderFrame {
     /// A transported frame has no stationary diagnostic plane in world XZ.
     pub suppress_diagnostic_grid: bool,
     pub meshes: crate::meshes::Frame,
+    pub particles: crate::particles::Frame,
     pub distant_meshes: std::sync::Arc<Vec<crate::distant::Pack>>,
     pub mesh_lods: std::sync::Arc<crate::mesh_lods::Document>,
     pub mesh_lod_settings: crate::mesh_lods::Settings,
@@ -364,6 +365,7 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     transparent_pipeline: wgpu::RenderPipeline,
     transparency: crate::render_transparency::Transparency,
+    particles: crate::render_particles::Gpu,
     depth_layout: wgpu::BindGroupLayout,
     shadow_pipeline: wgpu::RenderPipeline,
     shadow_bind_group: wgpu::BindGroup,
@@ -446,7 +448,14 @@ impl Renderer {
             .unwrap_or(wgpu::TextureFormat::Rgba8UnormSrgb);
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Ignis lit boxes"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("scene.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                concat!(
+                    include_str!("scene.wgsl"),
+                    "\n",
+                    include_str!("particles.wgsl")
+                )
+                .into(),
+            ),
         });
         let uniform = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("camera and light"),
@@ -917,6 +926,7 @@ impl Renderer {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let particles = crate::render_particles::Gpu::new(&device, &pipeline_layout, &shader);
         let outline = crate::render_outline::Outline::new(&device, format);
         Ok(Self {
             environment,
@@ -927,6 +937,7 @@ impl Renderer {
             material_source: Vec::new(),
             transparent_pipeline,
             transparency: Default::default(),
+            particles,
             depth_layout,
             shadow_pipeline,
             shadow_bind_group,
@@ -969,6 +980,10 @@ impl Renderer {
             vertex_capacity,
             depth: None,
         })
+    }
+    /// Current sprite allocation and upload counters.
+    pub fn particle_diagnostics(&self) -> serde_json::Value {
+        self.particles.inspect()
     }
     /// Experimental sampled-coverage packet. Installing it does not enable it.
     /// No Scene/physics/replay state changes; a failed installation preserves the old packet.
@@ -1089,7 +1104,7 @@ impl Renderer {
     }
     pub fn info(&self) -> serde_json::Value {
         let info = self.adapter.get_info();
-        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info(),"transparency":self.transparency.info(),"procedural_materials":{"storage_bytes":self.procedural_buffer.size(),"uploads":self.procedural_uploads,"materials":self.material_source.iter().filter(|m|m.procedural.is_some()).count()}})
+        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info(),"transparency":self.transparency.info(),"particles":self.particles.inspect(),"procedural_materials":{"storage_bytes":self.procedural_buffer.size(),"uploads":self.procedural_uploads,"materials":self.material_source.iter().filter(|m|m.procedural.is_some()).count()}})
     }
     pub fn draw(
         &mut self,
@@ -1103,6 +1118,10 @@ impl Renderer {
             clip.validate()?;
         }
         let reverse = scene.clip.is_some_and(|c| c.reverse_z);
+        anyhow::ensure!(
+            scene.particles.samples.is_empty() || (!reverse && scene.planet_air.is_none()),
+            "Particle sprites require the ordinary metre-frame adapter"
+        );
         if reverse {
             anyhow::ensure!(
                 scene.boxes.is_empty()
@@ -1242,14 +1261,28 @@ impl Renderer {
         } else {
             &scene.meshes.materials
         };
+        // Slot zero also shades legacy boxes when the mesh frame is empty.
+        // Reserve it before appending emitter materials.
+        let default_material = [crate::materials::Material::default()];
+        let selected_materials = if selected_materials.is_empty() {
+            default_material.as_slice()
+        } else {
+            selected_materials.as_slice()
+        };
+        let particle_base = selected_materials.len() as u32;
+        let all_materials = selected_materials
+            .iter()
+            .chain(scene.particles.materials.iter());
         if self.material_cache.is_none()
-            || self.material_source.len() != selected_materials.len()
+            || self.material_source.len() != all_materials.clone().count()
             || !self
                 .material_source
                 .iter()
-                .zip(selected_materials)
+                .zip(all_materials.clone())
                 .all(|(a, b)| a.resources_match(b) && a == b)
         {
+            let combined: Vec<_> = all_materials.cloned().collect();
+            let selected_materials = &combined;
             let limit = u64::from(self.device.limits().max_storage_buffer_binding_size);
             let table_bytes = selected_materials.len().max(1) as u64
                 * std::mem::size_of::<crate::materials::GpuMaterial>() as u64;
@@ -1613,7 +1646,10 @@ impl Renderer {
             &scene.camera,
             edge_settings,
         );
-        let transparent_draw_units = self.instanced.transparent_draw_units();
+        self.particles
+            .prepare(&self.device, &self.queue, &scene.particles, particle_base);
+        let transparent_draw_units = self.instanced.transparent_draw_units()
+            + usize::from(!scene.particles.samples.is_empty());
         self.transparency.prepare(
             &self.device,
             self.format,
@@ -1770,6 +1806,7 @@ impl Renderer {
                 &self.distant_buffer,
                 &self.distant_index_buffer,
             );
+            self.particles.draw(&mut pass);
         }
         self.transparency.composite(&mut encoder, view);
         if (soft || transparent_draw_units > 0) && guide_count > 0 {

@@ -52,6 +52,9 @@ pub const MAX_SCENE_EDITS: usize = 512;
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum SceneEdit {
+    SetParticles {
+        document: std::sync::Arc<crate::particles::Document>,
+    },
     SetBotany {
         recipes: Vec<crate::botany::Recipe>,
     },
@@ -122,6 +125,9 @@ fn default_session_capacity() -> usize {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Particles {
+        operation: Box<crate::particles::Operation>,
+    },
     Material {
         operation: Box<crate::materials::library::Operation>,
     },
@@ -932,7 +938,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 122;
+pub const REPLAY_VERSION: u32 = 123;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -996,6 +1002,9 @@ struct Selected {
     index: u16,
 }
 
+#[path = "engine_particles.rs"]
+mod particles;
+
 pub struct Engine {
     baseline: Option<std::sync::Arc<[u8]>>,
     baseline_tick: u64,
@@ -1015,6 +1024,7 @@ pub struct Engine {
     player_view: Option<crate::player_view::State>,
     player_view_serial: u64,
     planet_view: Option<crate::planet::orbit::Atlas>,
+    pub particle_preview: Option<u64>,
     pub(crate) mesh_lods: std::sync::Arc<crate::mesh_lods::Document>,
     pub mesh_lod_settings: crate::mesh_lods::Settings,
     selection: Option<Selected>,
@@ -1063,6 +1073,7 @@ impl Engine {
             player_view: None,
             player_view_serial: 0,
             planet_view: None,
+            particle_preview: None,
             mesh_lods: Default::default(),
             mesh_lod_settings: Default::default(),
             selection: None,
@@ -1306,6 +1317,11 @@ impl Engine {
                     scene.distant_meshes = crate::distant::compile(&scene.meshes)?
                 }
                 SceneEdit::ClearDistantMeshes => scene.distant_meshes = Default::default(),
+                SceneEdit::SetParticles { document } => {
+                    document.validate()?;
+                    scene.version = scene.version.max(crate::particles::SCENE_VERSION);
+                    scene.particles = document;
+                }
                 SceneEdit::SetLight { light } => {
                     if light.shadow.as_ref().is_some_and(|s| s.receiver_plane_bias) {
                         scene.version = scene.version.max(111);
@@ -1356,6 +1372,7 @@ impl Engine {
         self.replace(scene)
     }
     pub fn reset(&mut self) {
+        self.particle_preview = None;
         self.planet_view = None;
         let planet = self.simulation.planet.as_ref().map(|w| w.config.clone());
         let planet_view = planet
@@ -1541,6 +1558,7 @@ impl Engine {
             planet_air: None,
             suppress_diagnostic_grid: self.planet_active(),
             meshes: Default::default(),
+            particles: Default::default(),
             distant_meshes: self.scene.distant_meshes.clone(),
             mesh_lods: self.mesh_lods.clone(),
             mesh_lod_settings: self.mesh_lod_settings,
@@ -1566,6 +1584,14 @@ impl Engine {
         frame: &mut crate::render::RenderFrame,
         meshes: &crate::meshes::Document,
     ) {
+        if self.planet_active() {
+            frame.particles.clear();
+        } else {
+            frame.particles.update(
+                &self.scene.particles,
+                self.particle_preview.unwrap_or(self.simulation.tick),
+            );
+        }
         frame.clip = None;
         frame.planet_air = None;
         frame.suppress_diagnostic_grid = self.planet_active();
@@ -2973,6 +2999,9 @@ impl Engine {
     }
     pub fn execute(&mut self, request: Request) -> Result<Value> {
         self.guard(request.expected_revision)?;
+        if let Command::Particles { operation } = &request.command {
+            return self.particles_command(operation);
+        }
         if self.planet_active()
             && matches!(
                 &request.command,
@@ -3054,6 +3083,11 @@ impl Engine {
                     return Err(invalid("Pause before changing planet runtime"));
                 }
                 if let Some(config) = config {
+                    if !self.scene.particles.instances.is_empty() {
+                        return Err(invalid(
+                            "Remove particle placements before enabling the planetary adapter",
+                        ));
+                    }
                     self.enable_planet_runtime(*config)?;
                 } else {
                     self.simulation.planet = None;
@@ -4325,6 +4359,7 @@ impl Engine {
             Command::SetCamera { camera } => {
                 self.apply_edits(std::iter::once(SceneEdit::SetCamera { camera }))?
             }
+            Command::Particles { .. } => unreachable!("particle command handled before dispatch"),
             Command::SetLight { light } => {
                 self.apply_edits(std::iter::once(SceneEdit::SetLight { light }))?
             }
