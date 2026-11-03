@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "source": "cottage-material-baseline.scene.json",
+  "source_sha256": "7286e74c023f7319331589a5828a372a389d44619e203356a3449367802f1e2c",
+  "base_material_recipe": "cottage-materials.recipe.json",
+  "base_recipe_sha256": "cdd4bdb418c85a025785140b7381fd1e40218a4eb867e41560548c7d1cdab77b",
+  "legacy_capture_sha256": {
+    "hero": "d29d1fdd071a4a6e3dc17226decd862b1441326587eedc41ded83f7b171e9dc2",
+    "detail": "e6cf347d07b517cbc30bf7e93a5689a35bd3697ce1585206dd56695484636f5a",
+    "front": "a7e25bb56f10e27e648982dda5d1fd367031a9fbf0305f98a5336fe7c5920572"
+  },
+  "asset": "bronze",
+  "material": {
+    "transmission": 0,
+    "reflectance": {
+      "roughness": 0.4,
+      "f0": 0.12,
+      "metallic": 1
+    }
+  }
+}

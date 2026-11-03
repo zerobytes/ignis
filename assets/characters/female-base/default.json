@@ -1,0 +1,25 @@
+{
+  "parameters": {
+    "adiposity": 0.5,
+    "musculature": 0.5,
+    "stature": 0.5,
+    "breast_volume": 0.5,
+    "breast_shape_firmness": 0.5,
+    "hip_width": 0.0,
+    "shoulder_width": 0.0,
+    "torso_width": 0.0,
+    "torso_depth": 0.0,
+    "buttocks_volume": 0.0,
+    "breast_projection": 0.0,
+    "breast_separation": 0.0,
+    "upperarm_length": 0.0,
+    "lowerarm_length": 0.0,
+    "upperleg_length": 0.0,
+    "lowerleg_length": 0.0,
+    "nose_width": 0.0,
+    "nose_length": 0.0,
+    "jaw_width": 0.0,
+    "chin_projection": 0.0,
+    "mouth_width": 0.0
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "version": 6,
+  "seed": 42517,
+  "main": {"left": -4.6, "right": 3.6, "back": -2.6, "eave": 3.72, "ridge": 5.95, "ridge_z": -0.65},
+  "porch": {"left": -4.6, "right": -0.05, "front": 3.15, "bays": 3, "relief_front_offset": 0.23, "relief_bottom": 3.38, "relief_height": 0.22},
+  "entrance": {"door_x": 1.3, "wall_z": 2.1, "lantern_offset": [-0.27, 0, 0]},
+  "bay": {"center": [3.6, -0.65], "radius": 1.65, "windows": 4},
+  "roof": {"tile_width": 0.40, "tile_overlap": 0.42, "front_eave": [[-0.6,3.72],[0.25,3.72],[1.35,4.85],[3.89,4.85]], "bay_apex": 5.25},
+  "column": {"height": 2.75, "width": 0.35},
+  "garden": {"leaf_clusters": 20, "leaves_per_cluster": 8},
+  "camera": {"position": [11, 8.7, 16], "target": [0, 2.65, 0.5], "fov_degrees": 34},
+  "light": {"direction": [-0.7, -1, -0.65], "ambient": 0.32, "shadow": {"center": [0, 2.5, 0], "extent": 10, "resolution": 2048, "bias": 0.0006}}
+}

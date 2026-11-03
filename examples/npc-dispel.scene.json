@@ -1,0 +1,606 @@
+{
+  "version": 35,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      10.0,
+      12.0,
+      15.0
+    ],
+    "target": [
+      0.0,
+      0.8,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 24.0,
+    "depth": 20.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "cover",
+      "name": "Cover",
+      "transform": {
+        "position": [
+          3.0,
+          1.5,
+          0.0
+        ],
+        "size": [
+          1.6,
+          3.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.6,
+        0.5
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "defender",
+      "name": "defender",
+      "transform": {
+        "position": [
+          0.0,
+          0.8,
+          3.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.15,
+        0.5,
+        1.0
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 2,
+            "when": "always",
+            "action": {
+              "kind": "use_ability",
+              "slot": 1,
+              "retry_ticks": 30,
+              "policy": {
+                "vitality_below": null,
+                "approach": null
+              }
+            }
+          },
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "npc_antidote"
+        ]
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "dummy",
+      "name": "dummy",
+      "transform": {
+        "position": [
+          -4.0,
+          0.8,
+          1.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.75,
+        0.2,
+        0.85
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          24.5,
+          0.5,
+          20.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          0.0,
+          0.8,
+          -4.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player",
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "poison",
+          "self_antidote",
+          "antidote",
+          "regeneration"
+        ]
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      }
+    },
+    {
+      "id": "shooter",
+      "name": "shooter",
+      "transform": {
+        "position": [
+          4.0,
+          0.8,
+          5.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.9,
+        0.18,
+        0.16
+      ],
+      "body": "npc",
+      "npc": {
+        "target": "player",
+        "objectives": [
+          {
+            "priority": 2,
+            "when": "always",
+            "action": {
+              "kind": "use_ability",
+              "slot": 1,
+              "retry_ticks": 30,
+              "policy": {
+                "vitality_below": null,
+                "approach": null
+              }
+            }
+          },
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 18.0,
+          "fov_degrees": 360.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "enemy_venom"
+        ]
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          12.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -10.0
+        ],
+        "size": [
+          24.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          10.0
+        ],
+        "size": [
+          24.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -12.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ],
+  "spatial_network": {
+    "nodes": [],
+    "links": []
+  },
+  "ability_catalog": {
+    "resources": [
+      {
+        "id": "energy",
+        "scale": 1
+      }
+    ],
+    "abilities": [
+      {
+        "periodic_category": "poison",
+        "periodic": {
+          "interval_ticks": 60,
+          "pulses": 6,
+          "reapply": "independent"
+        },
+        "id": "poison",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 30,
+        "cooldown_ticks": 30,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "recipient": "target",
+            "amount": 5
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "self_antidote",
+        "selection": "self_actor",
+        "range": 0.0,
+        "relation": null,
+        "cast_ticks": 30,
+        "cooldown_ticks": 30,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "dispel",
+            "recipient": "target",
+            "category": "poison",
+            "max_instances": 2,
+            "require_match": true
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "antidote",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 30,
+        "cooldown_ticks": 30,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "dispel",
+            "recipient": "target",
+            "category": "poison",
+            "max_instances": 2,
+            "require_match": true
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "periodic_category": "regeneration",
+        "periodic": {
+          "interval_ticks": 60,
+          "pulses": 6,
+          "reapply": "independent"
+        },
+        "id": "regeneration",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 30,
+        "cooldown_ticks": 30,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "heal",
+            "recipient": "target",
+            "amount": 5
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "dispellable": false,
+        "periodic_category": "poison",
+        "periodic": {
+          "interval_ticks": 60,
+          "pulses": 4,
+          "reapply": "refresh"
+        },
+        "delivery": {
+          "kind": "projectile",
+          "speed": 6.0,
+          "half_extent": 0.14,
+          "max_distance": 18.0
+        },
+        "movement": {
+          "mode": "lock"
+        },
+        "id": "enemy_venom",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 60,
+        "cooldown_ticks": 480,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "recipient": "target",
+            "amount": 4
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "movement": {
+          "mode": "lock"
+        },
+        "id": "npc_antidote",
+        "selection": "self_actor",
+        "range": 0.0,
+        "relation": null,
+        "cast_ticks": 90,
+        "cooldown_ticks": 180,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "dispel",
+            "recipient": "target",
+            "category": "poison",
+            "max_instances": 2,
+            "require_match": true
+          }
+        ],
+        "requires_below": null
+      }
+    ]
+  }
+}

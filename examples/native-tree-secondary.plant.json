@@ -1,0 +1,75 @@
+{
+  "id": "secondary-06",
+  "profile": {
+    "id": "secondary06-profile",
+    "width": 0.13213404,
+    "height": 1.5861408
+  },
+  "depth": 0.13213404,
+  "trajectory": {
+    "kind": "cubic_bezier",
+    "id": "secondary06-axis",
+    "control_points_xz": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.018974781,
+        0.103018515
+      ],
+      [
+        0.04825993,
+        0.26579112
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "surface_tolerance": 0.001
+  },
+  "sections": {
+    "id": "secondary06-sections",
+    "cross_section": "ellipse",
+    "interpolation": "pchip",
+    "stations": [
+      {
+        "id": "secondary06-0",
+        "at": 0.0,
+        "width": 1.0,
+        "depth": 1.0
+      },
+      {
+        "id": "secondary06-1",
+        "at": 0.24655467,
+        "width": 0.75125015,
+        "depth": 0.75125015
+      },
+      {
+        "id": "secondary06-2",
+        "at": 0.5597424,
+        "width": 0.5013467,
+        "depth": 0.5013467
+      },
+      {
+        "id": "secondary06-3",
+        "at": 0.8430491,
+        "width": 0.26079065,
+        "depth": 0.26079065
+      },
+      {
+        "id": "secondary06-4",
+        "at": 1.0,
+        "width": 0.046278365,
+        "depth": 0.046278365
+      }
+    ]
+  },
+  "segments": [
+    8,
+    6,
+    8
+  ],
+  "sampling_tolerance": 0.001
+}

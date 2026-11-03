@@ -1,0 +1,300 @@
+{
+  "document": {
+    "version": 2,
+    "space_version": 1,
+    "id": "representative_island",
+    "revision": 1,
+    "datum": {
+      "cell": [
+        "0",
+        "0",
+        "0"
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ]
+    },
+    "base": {
+      "kind": "constant",
+      "height_meters": -30
+    },
+    "operations": [
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "0"
+          ],
+          "offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "radius_meters": 900,
+        "amount_meters": 95
+      },
+      {
+        "kind": "noise",
+        "seed": 183,
+        "period_meters": 512,
+        "octaves": 4,
+        "persistence": 0.48,
+        "amplitude_meters": 18,
+        "style": "smooth"
+      },
+      {
+        "kind": "noise",
+        "seed": 184,
+        "period_meters": 64,
+        "octaves": 3,
+        "persistence": 0.4,
+        "amplitude_meters": 2,
+        "style": "smooth"
+      },
+      {
+        "kind": "ridge",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "-1"
+          ],
+          "offset": [
+            0,
+            0,
+            624
+          ]
+        },
+        "azimuth_degrees": 0,
+        "width_meters": 1800,
+        "depth_meters": 1000,
+        "height_meters": 380,
+        "phase": 0.3,
+        "crest_wander": 0.13,
+        "slope_exponent": 1.15,
+        "folds_meters": 20,
+        "end_fade": 0.2
+      },
+      {
+        "kind": "ridge",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "0"
+          ],
+          "offset": [
+            350,
+            0,
+            50
+          ]
+        },
+        "azimuth_degrees": -75,
+        "width_meters": 1500,
+        "depth_meters": 800,
+        "height_meters": 260,
+        "phase": 1.7,
+        "crest_wander": 0.13,
+        "slope_exponent": 1.35,
+        "folds_meters": 16,
+        "end_fade": 0.2
+      },
+      {
+        "kind": "ridge",
+        "center": {
+          "cell": [
+            "-1",
+            "0",
+            "-1"
+          ],
+          "offset": [
+            744,
+            0,
+            1004
+          ]
+        },
+        "azimuth_degrees": 62,
+        "width_meters": 1450,
+        "depth_meters": 800,
+        "height_meters": 220,
+        "phase": 2.8,
+        "crest_wander": 0.13,
+        "slope_exponent": 1.45,
+        "folds_meters": 12,
+        "end_fade": 0.2
+      },
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "-1",
+            "0",
+            "0"
+          ],
+          "offset": [
+            804,
+            0,
+            350
+          ]
+        },
+        "radius_meters": 220,
+        "amount_meters": 35
+      },
+      {
+        "kind": "channel",
+        "points": [
+          {
+            "cell": [
+              "0",
+              "0",
+              "0"
+            ],
+            "offset": [
+              20,
+              0,
+              80
+            ]
+          },
+          {
+            "cell": [
+              "0",
+              "0",
+              "0"
+            ],
+            "offset": [
+              30,
+              0,
+              150
+            ]
+          },
+          {
+            "cell": [
+              "0",
+              "0",
+              "0"
+            ],
+            "offset": [
+              90,
+              0,
+              400
+            ]
+          },
+          {
+            "cell": [
+              "-1",
+              "0",
+              "0"
+            ],
+            "offset": [
+              984,
+              0,
+              650
+            ]
+          },
+          {
+            "cell": [
+              "0",
+              "0",
+              "0"
+            ],
+            "offset": [
+              0,
+              0,
+              900
+            ]
+          }
+        ],
+        "width_meters": 180,
+        "bed_start_meters": -2,
+        "bed_end_meters": -3,
+        "blend": 1
+      },
+      {
+        "kind": "level",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "0"
+          ],
+          "offset": [
+            145,
+            0,
+            350
+          ]
+        },
+        "radius_meters": 50,
+        "height_meters": 46.240763641414446,
+        "slope": [
+          0,
+          0
+        ],
+        "blend": 1
+      }
+    ],
+    "water_level_meters": 0.05
+  },
+  "region": {
+    "origin": {
+      "cell": [
+        "-1",
+        "0",
+        "-1"
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ]
+    },
+    "cells": [
+      512,
+      512
+    ],
+    "spacing_meters": 4
+  },
+  "frame_origin": {
+    "cell": [
+      "0",
+      "0",
+      "0"
+    ],
+    "offset": [
+      0,
+      0,
+      0
+    ]
+  },
+  "river_points": [
+    [
+      20,
+      80
+    ],
+    [
+      30,
+      150
+    ],
+    [
+      90,
+      400
+    ],
+    [
+      -40,
+      650
+    ],
+    [
+      0,
+      900
+    ]
+  ],
+  "spawn_xz": [
+    145,
+    350
+  ],
+  "description": "Finite native island: real ridges/valley/channel bed; flat visual water (no fluid), no streaming. Landscape179 is the shape/lighting direction, not a byte-identical scene."
+}

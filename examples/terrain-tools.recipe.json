@@ -1,0 +1,261 @@
+{
+  "description": "Editable terrain tools demo. Land and a static water-level plane are visual meshes; no fluid, terrain collider or streaming is implied.",
+  "document": {
+    "version": 1,
+    "space_version": 1,
+    "id": "archipelago",
+    "revision": 1,
+    "datum": {
+      "cell": [
+        "0",
+        "0",
+        "0"
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ]
+    },
+    "base": {
+      "kind": "constant",
+      "height_meters": -3
+    },
+    "operations": [
+      {
+        "kind": "noise",
+        "seed": 731,
+        "period_meters": 64,
+        "octaves": 5,
+        "persistence": 0.45,
+        "amplitude_meters": 1.1,
+        "style": "smooth"
+      },
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "-1",
+            "0",
+            "-1"
+          ],
+          "offset": [
+            1009,
+            0,
+            1023
+          ]
+        },
+        "radius_meters": 42,
+        "amount_meters": 19
+      },
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "0"
+          ],
+          "offset": [
+            12,
+            0,
+            5
+          ]
+        },
+        "radius_meters": 30,
+        "amount_meters": 27
+      },
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "-1"
+          ],
+          "offset": [
+            39,
+            0,
+            1010
+          ]
+        },
+        "radius_meters": 17,
+        "amount_meters": 11
+      },
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "-1",
+            "0",
+            "0"
+          ],
+          "offset": [
+            997,
+            0,
+            7
+          ]
+        },
+        "radius_meters": 8,
+        "amount_meters": -8
+      },
+      {
+        "kind": "level",
+        "center": {
+          "cell": [
+            "-1",
+            "0",
+            "-1"
+          ],
+          "offset": [
+            1004,
+            0,
+            1012
+          ]
+        },
+        "radius_meters": 9,
+        "height_meters": 4,
+        "slope": [
+          0.08,
+          0.02
+        ],
+        "blend": 0.9
+      },
+      {
+        "kind": "channel",
+        "points": [
+          {
+            "cell": [
+              "0",
+              "0",
+              "0"
+            ],
+            "offset": [
+              12,
+              0,
+              4
+            ]
+          },
+          {
+            "cell": [
+              "0",
+              "0",
+              "0"
+            ],
+            "offset": [
+              6,
+              0,
+              0
+            ]
+          },
+          {
+            "cell": [
+              "0",
+              "0",
+              "-1"
+            ],
+            "offset": [
+              1,
+              0,
+              1018
+            ]
+          },
+          {
+            "cell": [
+              "-1",
+              "0",
+              "-1"
+            ],
+            "offset": [
+              1020,
+              0,
+              1010
+            ]
+          },
+          {
+            "cell": [
+              "-1",
+              "0",
+              "-1"
+            ],
+            "offset": [
+              1017,
+              0,
+              1000
+            ]
+          }
+        ],
+        "width_meters": 2.8,
+        "bed_start_meters": 13,
+        "bed_end_meters": -1,
+        "blend": 1
+      }
+    ],
+    "water_level_meters": 0
+  },
+  "patches": [
+    {
+      "origin": {
+        "cell": [
+          "-1",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          960,
+          0,
+          992
+        ]
+      },
+      "cells": [
+        64,
+        64
+      ],
+      "spacing_meters": 1
+    },
+    {
+      "origin": {
+        "cell": [
+          "0",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          0,
+          0,
+          992
+        ]
+      },
+      "cells": [
+        64,
+        64
+      ],
+      "spacing_meters": 1
+    }
+  ],
+  "frame_origin": {
+    "cell": [
+      "0",
+      "0",
+      "0"
+    ],
+    "offset": [
+      0,
+      0,
+      0
+    ]
+  },
+  "camera": {
+    "position": [
+      99,
+      87,
+      122
+    ],
+    "target": [
+      0,
+      6,
+      0
+    ],
+    "fov_degrees": 47
+  }
+}

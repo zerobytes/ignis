@@ -1,0 +1,623 @@
+{
+  "version": 44,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      12.0,
+      18.0,
+      -17.0
+    ],
+    "target": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 24.0,
+    "depth": 20.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "ally_a",
+      "name": "ally_a",
+      "transform": {
+        "position": [
+          -3.0,
+          0.8,
+          -2.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.2,
+        0.5,
+        1.0
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "vitality": {
+        "initial": 50,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team",
+      "blocks_vision": false
+    },
+    {
+      "id": "ally_b",
+      "name": "ally_b",
+      "transform": {
+        "position": [
+          3.0,
+          0.8,
+          -2.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.8,
+        0.2,
+        0.85
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "vitality": {
+        "initial": 35,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team",
+      "blocks_vision": false
+    },
+    {
+      "id": "enemy",
+      "name": "enemy",
+      "transform": {
+        "position": [
+          -4.0,
+          0.8,
+          3.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.9,
+        0.2,
+        0.15
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "foes"
+    },
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          24.5,
+          0.5,
+          20.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "healer",
+      "name": "healer",
+      "transform": {
+        "position": [
+          0.0,
+          0.8,
+          0.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.15,
+        0.9,
+        0.4
+      ],
+      "body": "npc",
+      "npc": {
+        "target": "enemy",
+        "objectives": [
+          {
+            "priority": 2,
+            "when": "always",
+            "action": {
+              "kind": "use_ability",
+              "slot": 1,
+              "retry_ticks": 15,
+              "policy": {
+                "allies": {
+                  "ranking": "lowest_health_ratio",
+                  "include_self": true
+                },
+                "vitality_below": {
+                  "subject": "target",
+                  "basis_points": 7000
+                },
+                "approach": {
+                  "margin": 0.4
+                }
+              }
+            }
+          },
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 3.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 20.0,
+          "fov_degrees": 360.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "support"
+        ]
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team",
+      "blocks_vision": false
+    },
+    {
+      "id": "hidden_ally",
+      "name": "hidden_ally",
+      "transform": {
+        "position": [
+          4.0,
+          0.8,
+          4.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "vitality": {
+        "initial": 10,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team",
+      "blocks_vision": false
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          0.0,
+          0.8,
+          -6.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player",
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "injure",
+          "restore",
+          "self_heal"
+        ]
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "screen",
+      "name": "Occlusion screen",
+      "transform": {
+        "position": [
+          2.0,
+          1.5,
+          2.0
+        ],
+        "size": [
+          0.4,
+          3.0,
+          3.0
+        ]
+      },
+      "color": [
+        0.25,
+        0.65,
+        0.5
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          12.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -10.0
+        ],
+        "size": [
+          24.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          10.0
+        ],
+        "size": [
+          24.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -12.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ],
+  "spatial_network": {
+    "nodes": [],
+    "links": []
+  },
+  "ability_catalog": {
+    "resources": [
+      {
+        "id": "energy",
+        "scale": 1
+      }
+    ],
+    "abilities": [
+      {
+        "id": "support",
+        "selection": "actor",
+        "range": 4.0,
+        "relation": "allied",
+        "cast_ticks": 45,
+        "cooldown_ticks": 120,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "heal",
+            "recipient": "target",
+            "amount": 30
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "injure",
+        "selection": "actor",
+        "range": 14.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 15,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "recipient": "target",
+            "amount": 20
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "restore",
+        "selection": "actor",
+        "range": 14.0,
+        "relation": null,
+        "cast_ticks": 15,
+        "cooldown_ticks": 30,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "heal",
+            "recipient": "target",
+            "amount": 30
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "self_heal",
+        "selection": "self_actor",
+        "range": 0.0,
+        "relation": null,
+        "cast_ticks": 15,
+        "cooldown_ticks": 30,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "heal",
+            "recipient": "target",
+            "amount": 30
+          }
+        ],
+        "requires_below": null
+      }
+    ]
+  }
+}

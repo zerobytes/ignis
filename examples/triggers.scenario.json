@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "name": "Enter and leave a gameplay region",
+  "budget_ticks": 200,
+  "steps": [
+    {
+      "op": "set_input",
+      "input": {
+        "x": 1.0,
+        "z": 0.0,
+        "mode": "walk"
+      }
+    },
+    {
+      "op": "until",
+      "condition": {
+        "kind": "trigger_occupied",
+        "id": "exit_zone",
+        "target": "player",
+        "expected": true
+      },
+      "max_ticks": 100
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "trigger_entries",
+        "id": "exit_zone",
+        "at_least": 1
+      }
+    },
+    {
+      "op": "until",
+      "condition": {
+        "kind": "trigger_occupied",
+        "id": "exit_zone",
+        "target": "player",
+        "expected": false
+      },
+      "max_ticks": 100
+    }
+  ]
+}

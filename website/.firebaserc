@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "ignisengine"
+  },
+  "targets": {
+    "ignisengine": {
+      "hosting": {
+        "website": [
+          "ignis"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

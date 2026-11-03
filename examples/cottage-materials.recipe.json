@@ -1,0 +1,479 @@
+{
+  "version": 1,
+  "source": "cottage-material-baseline.scene.json",
+  "materials": {
+    "masonry": {
+      "pattern": {
+        "seed": 51,
+        "frequency": [
+          55,
+          55,
+          55
+        ],
+        "low": [
+          0.87,
+          0.86,
+          0.82
+        ],
+        "high": [
+          1.06,
+          1.05,
+          1.02
+        ],
+        "bump": 0.0013,
+        "kind": "noise",
+        "warp": 0.25,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 151,
+        "frequency": [
+          1.1,
+          1.1,
+          1.1
+        ],
+        "low": [
+          0.58,
+          0.64,
+          0.53
+        ],
+        "high": [
+          1.18,
+          1.16,
+          1.08
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.6,
+        "octaves": 2,
+        "contrast": 2.4
+      },
+      "reflectance": {
+        "roughness": 0.92,
+        "f0": 0.04
+      }
+    },
+    "stone-blocks": {
+      "pattern": {
+        "seed": 9,
+        "frequency": [
+          55,
+          55,
+          55
+        ],
+        "low": [
+          0.87,
+          0.86,
+          0.82
+        ],
+        "high": [
+          1.06,
+          1.05,
+          1.02
+        ],
+        "bump": 0.0013,
+        "kind": "noise",
+        "warp": 0.25,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 109,
+        "frequency": [
+          1.1,
+          1.1,
+          1.1
+        ],
+        "low": [
+          0.58,
+          0.64,
+          0.53
+        ],
+        "high": [
+          1.18,
+          1.16,
+          1.08
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.6,
+        "octaves": 2,
+        "contrast": 2.4
+      },
+      "reflectance": {
+        "roughness": 0.92,
+        "f0": 0.04
+      }
+    },
+    "carved-stone": {
+      "pattern": {
+        "seed": 3,
+        "frequency": [
+          55,
+          55,
+          55
+        ],
+        "low": [
+          0.87,
+          0.86,
+          0.82
+        ],
+        "high": [
+          1.06,
+          1.05,
+          1.02
+        ],
+        "bump": 0.0013,
+        "kind": "noise",
+        "warp": 0.25,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 103,
+        "frequency": [
+          1.1,
+          1.1,
+          1.1
+        ],
+        "low": [
+          0.58,
+          0.64,
+          0.53
+        ],
+        "high": [
+          1.18,
+          1.16,
+          1.08
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.6,
+        "octaves": 2,
+        "contrast": 2.4
+      },
+      "reflectance": {
+        "roughness": 0.92,
+        "f0": 0.04
+      }
+    },
+    "porch-column": {
+      "pattern": {
+        "seed": 3,
+        "frequency": [
+          55,
+          55,
+          55
+        ],
+        "low": [
+          0.87,
+          0.86,
+          0.82
+        ],
+        "high": [
+          1.06,
+          1.05,
+          1.02
+        ],
+        "bump": 0.0013,
+        "kind": "noise",
+        "warp": 0.25,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 103,
+        "frequency": [
+          1.1,
+          1.1,
+          1.1
+        ],
+        "low": [
+          0.58,
+          0.64,
+          0.53
+        ],
+        "high": [
+          1.18,
+          1.16,
+          1.08
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.6,
+        "octaves": 2,
+        "contrast": 2.4
+      },
+      "reflectance": {
+        "roughness": 0.92,
+        "f0": 0.04
+      }
+    },
+    "paving": {
+      "pattern": {
+        "seed": 33,
+        "frequency": [
+          55,
+          55,
+          55
+        ],
+        "low": [
+          0.87,
+          0.86,
+          0.82
+        ],
+        "high": [
+          1.06,
+          1.05,
+          1.02
+        ],
+        "bump": 0.0013,
+        "kind": "noise",
+        "warp": 0.25,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 133,
+        "frequency": [
+          1.1,
+          1.1,
+          1.1
+        ],
+        "low": [
+          0.58,
+          0.64,
+          0.53
+        ],
+        "high": [
+          1.18,
+          1.16,
+          1.08
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.6,
+        "octaves": 2,
+        "contrast": 2.4
+      },
+      "reflectance": {
+        "roughness": 0.92,
+        "f0": 0.04
+      }
+    },
+    "slate-0": {
+      "pattern": {
+        "seed": 11,
+        "frequency": [
+          34,
+          6,
+          34
+        ],
+        "low": [
+          0.81,
+          0.87,
+          0.89
+        ],
+        "high": [
+          1.07,
+          1.1,
+          1.1
+        ],
+        "bump": 0.0014,
+        "kind": "ridged",
+        "warp": 0.35,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 151,
+        "frequency": [
+          2.5,
+          1,
+          2.5
+        ],
+        "low": [
+          0.53,
+          0.66,
+          0.64
+        ],
+        "high": [
+          1.3,
+          1.28,
+          1.1
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.7,
+        "octaves": 2,
+        "contrast": 2
+      },
+      "reflectance": {
+        "roughness": 0.83,
+        "f0": 0.04
+      }
+    },
+    "slate-1": {
+      "pattern": {
+        "seed": 21,
+        "frequency": [
+          34,
+          6,
+          34
+        ],
+        "low": [
+          0.81,
+          0.87,
+          0.89
+        ],
+        "high": [
+          1.07,
+          1.1,
+          1.1
+        ],
+        "bump": 0.0014,
+        "kind": "ridged",
+        "warp": 0.35,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 151,
+        "frequency": [
+          2.5,
+          1,
+          2.5
+        ],
+        "low": [
+          0.53,
+          0.66,
+          0.64
+        ],
+        "high": [
+          1.3,
+          1.28,
+          1.1
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.7,
+        "octaves": 2,
+        "contrast": 2
+      },
+      "reflectance": {
+        "roughness": 0.83,
+        "f0": 0.04
+      }
+    },
+    "slate-2": {
+      "pattern": {
+        "seed": 31,
+        "frequency": [
+          34,
+          6,
+          34
+        ],
+        "low": [
+          0.81,
+          0.87,
+          0.89
+        ],
+        "high": [
+          1.07,
+          1.1,
+          1.1
+        ],
+        "bump": 0.0014,
+        "kind": "ridged",
+        "warp": 0.35,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 151,
+        "frequency": [
+          2.5,
+          1,
+          2.5
+        ],
+        "low": [
+          0.53,
+          0.66,
+          0.64
+        ],
+        "high": [
+          1.3,
+          1.28,
+          1.1
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.7,
+        "octaves": 2,
+        "contrast": 2
+      },
+      "reflectance": {
+        "roughness": 0.83,
+        "f0": 0.04
+      }
+    },
+    "oak": {
+      "pattern": {
+        "seed": 7,
+        "frequency": [
+          65,
+          1.2,
+          65
+        ],
+        "low": [
+          0.6,
+          0.65,
+          0.62
+        ],
+        "high": [
+          1.18,
+          1.12,
+          1.02
+        ],
+        "bump": 0.0015,
+        "kind": "ridged",
+        "warp": 0.4,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "secondary_pattern": {
+        "seed": 170,
+        "frequency": [
+          1.4,
+          0.7,
+          1.4
+        ],
+        "low": [
+          0.7,
+          0.73,
+          0.69
+        ],
+        "high": [
+          1.1,
+          1.08,
+          1
+        ],
+        "bump": 0,
+        "kind": "noise",
+        "warp": 0.6,
+        "octaves": 2,
+        "contrast": 1
+      },
+      "reflectance": {
+        "roughness": 0.8,
+        "f0": 0.04
+      }
+    }
+  },
+  "source_sha256": "7286e74c023f7319331589a5828a372a389d44619e203356a3449367802f1e2c",
+  "legacy_capture_sha256": {
+    "hero": "af437ce49ba3256d4bbe747b53b25de2709c0cb7398aa503e0b2df626108e488",
+    "detail": "f741c7aebbb6d8fd9d24cfb389ed5363bc6c94cc8a13c745d77ee2f2bc0f523e"
+  }
+}

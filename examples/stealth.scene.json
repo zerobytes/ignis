@@ -1,0 +1,256 @@
+{
+  "version": 8,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      13.6,
+      15.2,
+      16.1
+    ],
+    "target": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 16.0,
+    "depth": 14.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "barrier",
+      "name": "barrier",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          6.0,
+          2.0,
+          0.6
+        ]
+      },
+      "color": [
+        0.15,
+        0.65,
+        0.45
+      ],
+      "body": "fixed",
+      "sound_transmission": 0.65
+    },
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          16.5,
+          0.5,
+          14.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "hunter",
+      "name": "hunter",
+      "transform": {
+        "position": [
+          0.0,
+          0.85,
+          2.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.75,
+        0.15,
+        0.8
+      ],
+      "body": "npc",
+      "npc": {
+        "target": "player",
+        "surface": "floor",
+        "speed": 1.5,
+        "stop_distance": 1.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 6.0,
+          "fov_degrees": 120.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 1800,
+          "search_ticks": 1200,
+          "search_turn_degrees_per_second": 90.0,
+          "max_investigation_distance": 40.0,
+          "area_search": {
+            "radius": 2.0,
+            "points": 4,
+            "scan_ticks": 120,
+            "seed": 0
+          },
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      }
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          0.0,
+          0.85,
+          -2.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player",
+      "footsteps": {
+        "surface": "floor",
+        "stride": 0.3,
+        "radius": 8.0,
+        "min_speed": 0.1
+      },
+      "locomotion": {
+        "walk": {
+          "speed": 4.0,
+          "noise_multiplier": 1.0
+        },
+        "sneak": {
+          "speed": 1.5,
+          "noise_multiplier": 0.2
+        },
+        "run": {
+          "speed": 6.0,
+          "noise_multiplier": 1.8
+        }
+      }
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          8.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          14.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -7.0
+        ],
+        "size": [
+          16.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          7.0
+        ],
+        "size": [
+          16.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -8.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          14.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ]
+}

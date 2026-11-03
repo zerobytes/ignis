@@ -1,0 +1,239 @@
+{
+  "version": 10,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      13.6,
+      15.2,
+      16.1
+    ],
+    "target": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 16.0,
+    "depth": 14.0,
+    "seed": 73,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "exit_marker",
+      "name": "Exit floor marker",
+      "transform": {
+        "position": [
+          0.0,
+          0.025,
+          2.0
+        ],
+        "size": [
+          2.0,
+          0.05,
+          2.0
+        ]
+      },
+      "color": [
+        0.2,
+        0.8,
+        0.4
+      ],
+      "body": null,
+      "blocks_vision": false
+    },
+    {
+      "id": "exit_zone",
+      "name": "Exit region",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          2.0
+        ],
+        "size": [
+          2.0,
+          2.0,
+          2.0
+        ]
+      },
+      "color": [
+        0.2,
+        0.8,
+        0.4
+      ],
+      "body": null,
+      "trigger": {
+        "enabled": true,
+        "targets": [
+          "player"
+        ]
+      },
+      "visible": false
+    },
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          16.5,
+          0.5,
+          14.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          -3.0,
+          0.85,
+          2.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player"
+    },
+    {
+      "id": "unselected_crate",
+      "name": "Unselected occupant",
+      "transform": {
+        "position": [
+          -0.5,
+          0.85,
+          2.9
+        ],
+        "size": [
+          0.3,
+          1.6,
+          0.3
+        ]
+      },
+      "color": [
+        0.5,
+        0.6,
+        0.7
+      ],
+      "body": "dynamic"
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          8.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          14.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -7.0
+        ],
+        "size": [
+          16.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          7.0
+        ],
+        "size": [
+          16.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -8.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          14.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+[package]
+name = "ignis-engine"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A Rust 3D engine with a shared command API for humans and AI agents"
+license-file = "LICENSE"
+repository = "https://github.com/zerobytes/ignis"
+readme = "README.md"
+keywords = ["game-engine", "3d", "mcp", "procedural", "gamedev"]
+categories = ["game-engines", "graphics"]
+publish = false
+
+[lib]
+name = "ignis"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ignis"
+path = "src/main.rs"
+
+[features]
+default = ["device-audio"]
+device-audio = ["dep:cpal"]
+
+[dependencies]
+cpal = { version = "=0.16.0", optional = true }
+anyhow = "1"
+base64 = "0.22"
+bytemuck = { version = "1", features = ["derive"] }
+egui = "=0.33.3"
+egui-wgpu = { version = "=0.33.3", default-features = false }
+egui-winit = { version = "=0.33.3", default-features = false, features = ["clipboard"] }
+bytes = "1"
+ciborium = "=0.2.2"
+ring = "0.17"
+quinn = { version = "0.11.12", default-features = false, features = ["runtime-tokio", "rustls-ring"] }
+rcgen = { version = "0.14.10", default-features = false, features = ["crypto", "ring"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros", "io-util"] }
+getrandom = "0.3"
+subtle = "2.6"
+glam = { version = "0.30", features = ["serde"] }
+png = "0.18"
+pollster = "0.4"
+rapier3d = { version = "=0.30.1", features = ["enhanced-determinism", "serde-serialize"] }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+schemars = "1"
+tempfile = "3"
+thiserror = "2"
+wgpu = "27"
+winit = "0.30"
+meshopt = "=0.6.2"
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
+
+[profile.release]
+strip = true

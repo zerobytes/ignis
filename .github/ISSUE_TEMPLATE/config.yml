@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions, ideas and showcases
+    url: https://github.com/zerobytes/ignis/discussions
+    about: Ask for help, discuss a larger change, or share what you made.
+  - name: Private security report
+    url: https://github.com/zerobytes/ignis/security/advisories/new
+    about: Report a vulnerability privately; do not disclose exploits in an issue.

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "name": "Patrol resumes after investigating sound",
+  "budget_ticks": 2400,
+  "steps": [
+    {
+      "op": "step",
+      "ticks": 30
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "patrol_phase",
+        "id": "hunter",
+        "phase": "moving"
+      }
+    },
+    {
+      "op": "emit_noise",
+      "origin": {
+        "kind": "position",
+        "position": [
+          0.0,
+          0.8,
+          4.0
+        ]
+      },
+      "radius": 12.0
+    },
+    {
+      "op": "step",
+      "ticks": 1
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "npc_memory",
+        "id": "hunter",
+        "source": "sound"
+      }
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "patrol_phase",
+        "id": "hunter",
+        "phase": "suspended"
+      }
+    },
+    {
+      "op": "until",
+      "condition": {
+        "kind": "patrol_phase",
+        "id": "hunter",
+        "phase": "moving"
+      },
+      "max_ticks": 1000
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "npc_memory",
+        "id": "hunter",
+        "source": null
+      }
+    },
+    {
+      "op": "until",
+      "condition": {
+        "kind": "patrol_visits",
+        "id": "hunter",
+        "at_least": 1
+      },
+      "max_ticks": 1000
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "seed": 201,
+  "size": 14.0,
+  "count": 650,
+  "path": true,
+  "weights": {
+    "capim_muralha": 0.24,
+    "capim_longo": 0.14,
+    "canico": 0.15,
+    "junco": 0.09,
+    "pluma_alta": 0.11,
+    "macega_seca": 0.08,
+    "mato_ramos": 0.11,
+    "flores_altas": 0.08
+  }
+}

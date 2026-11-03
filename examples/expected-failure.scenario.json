@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "Intentional failed expectation",
+  "budget_ticks": 60,
+  "steps": [
+    {
+      "op": "step",
+      "ticks": 30
+    },
+    {
+      "op": "set_input",
+      "input": {
+        "x": 1.0,
+        "z": 0.0,
+        "mode": "sneak"
+      }
+    },
+    {
+      "op": "step",
+      "ticks": 20
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "npc_memory",
+        "id": "hunter",
+        "source": "sound"
+      }
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "footsteps",
+        "min": 1,
+        "max": 3
+      }
+    },
+    {
+      "op": "assert",
+      "condition": {
+        "kind": "position_within",
+        "id": "player",
+        "center": [
+          0.5,
+          0.8,
+          -2.0
+        ],
+        "radius": 0.1
+      }
+    },
+    {
+      "op": "until",
+      "condition": {
+        "kind": "npc_observed",
+        "id": "hunter",
+        "expected": false
+      },
+      "max_ticks": 1
+    }
+  ]
+}

@@ -1,0 +1,880 @@
+{
+  "interactions": {
+    "values": [
+      {
+        "id": "visits",
+        "initial": 0,
+        "minimum": 0,
+        "maximum": 10
+      }
+    ],
+    "events": [],
+    "points": [
+      {
+        "initial": {
+          "solid": null,
+          "visible": null,
+          "blocks_vision": null,
+          "sound_transmission": null
+        },
+        "id": "well",
+        "entity": "well",
+        "offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "approach": null,
+        "tags": [
+          "recharge"
+        ],
+        "actions": [
+          "charge",
+          "fail"
+        ],
+        "mutable": false
+      },
+      {
+        "initial": {
+          "solid": null,
+          "visible": null,
+          "blocks_vision": null,
+          "sound_transmission": null
+        },
+        "id": "shrine",
+        "entity": "shrine",
+        "offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "approach": null,
+        "tags": [],
+        "actions": [
+          "speak"
+        ],
+        "mutable": false
+      }
+    ],
+    "actions": [
+      {
+        "id": "charge",
+        "range": 2.0,
+        "conditions": [],
+        "effects": [
+          {
+            "kind": "resource",
+            "resource": "charge",
+            "delta": 100
+          }
+        ],
+        "cooldown_ticks": 10,
+        "dialogue": null
+      },
+      {
+        "id": "speak",
+        "range": 3.0,
+        "conditions": [],
+        "effects": [],
+        "cooldown_ticks": 0,
+        "dialogue": "oracle"
+      },
+      {
+        "id": "fail",
+        "range": 8.0,
+        "conditions": [],
+        "effects": [
+          {
+            "kind": "resource",
+            "resource": "energy",
+            "delta": -5
+          },
+          {
+            "kind": "add_value",
+            "key": "visits",
+            "delta": 1000
+          }
+        ],
+        "cooldown_ticks": 0,
+        "dialogue": null
+      }
+    ],
+    "dialogues": [
+      {
+        "id": "oracle",
+        "entry": "offer",
+        "nodes": [
+          {
+            "id": "offer",
+            "text": "Escolha um caminho.",
+            "choices": [
+              {
+                "id": "bold",
+                "text": "Aceitar desafio",
+                "next": null,
+                "conditions": [],
+                "effects": [
+                  {
+                    "kind": "resource",
+                    "resource": "bold",
+                    "delta": 1
+                  }
+                ],
+                "personality_weights": [
+                  0,
+                  0,
+                  0,
+                  -1000,
+                  1000,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "id": "safe",
+                "text": "Escolher seguranca",
+                "next": null,
+                "conditions": [],
+                "effects": [
+                  {
+                    "kind": "resource",
+                    "resource": "safe",
+                    "delta": 1
+                  }
+                ],
+                "personality_weights": [
+                  0,
+                  0,
+                  0,
+                  1000,
+                  -1000,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        ],
+        "range": 3.0,
+        "session_ticks": 600,
+        "lock_locomotion": false
+      },
+      {
+        "id": "guide",
+        "entry": "loop",
+        "nodes": [
+          {
+            "id": "loop",
+            "text": "Visitar?",
+            "choices": [
+              {
+                "id": "repeat",
+                "text": "Uma visita",
+                "next": "loop",
+                "conditions": [],
+                "effects": [
+                  {
+                    "kind": "resource",
+                    "resource": "energy",
+                    "delta": -1
+                  },
+                  {
+                    "kind": "add_value",
+                    "key": "visits",
+                    "delta": 1
+                  }
+                ],
+                "personality_weights": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "id": "finish",
+                "text": "Terminar",
+                "next": "thanks",
+                "conditions": [],
+                "effects": [],
+                "personality_weights": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          {
+            "id": "thanks",
+            "text": "Fechado.",
+            "choices": []
+          }
+        ],
+        "range": 3.0,
+        "session_ticks": 600,
+        "lock_locomotion": true
+      }
+    ]
+  },
+  "version": 94,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      25.5,
+      28.5,
+      27.599998
+    ],
+    "target": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 30.0,
+    "depth": 24.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "brave",
+      "name": "brave",
+      "transform": {
+        "position": [
+          -3.0,
+          0.81,
+          -2.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.2,
+        0.5,
+        0.9
+      ],
+      "body": "npc",
+      "npc": {
+        "routine": {
+          "max_trip_ticks": 1800,
+          "cycle_ticks": 3600,
+          "offset_ticks": 0,
+          "phase_variation": 0,
+          "seed": 0,
+          "auto_dialogue": true,
+          "needs": [
+            {
+              "resource": "charge",
+              "tag": "recharge",
+              "action": "charge",
+              "below": 2500,
+              "satisfied": 9000,
+              "priority": 100,
+              "interval_ticks": 60,
+              "delta": 0,
+              "personality_weights": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          ],
+          "schedule": [
+            {
+              "start": 0,
+              "end": 800,
+              "point": "shrine",
+              "action": "speak",
+              "priority": 0
+            }
+          ]
+        },
+        "circulation": {
+          "radius": 4.0,
+          "horizon_seconds": 1.0,
+          "personal_space": 0.15
+        },
+        "mind": {
+          "intelligence": 1.0,
+          "personality": {
+            "anxiety": 0.5,
+            "caution": 0.5,
+            "concern": 0.5,
+            "fear": 0.0,
+            "courage": 1.0,
+            "curiosity": 0.5,
+            "aggression": 0.5,
+            "sociability": 0.5,
+            "discipline": 0.5
+          },
+          "seed": 0,
+          "variation": 0.0
+        },
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "routine"
+            }
+          }
+        ],
+        "mobility": {
+          "walk": true,
+          "jump_speed": null,
+          "fly_speed": null,
+          "glide": null
+        },
+        "local_connections": {
+          "walk": true,
+          "fly": false,
+          "max_distance": 8.0
+        },
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 12.0,
+          "fov_degrees": 120.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 600,
+          "search_ticks": 180,
+          "search_turn_degrees_per_second": 90.0
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "charge",
+            "initial": 0,
+            "capacity": 100
+          },
+          {
+            "resource": "bold",
+            "initial": 0,
+            "capacity": 100
+          },
+          {
+            "resource": "safe",
+            "initial": 0,
+            "capacity": 100
+          }
+        ],
+        "grants": []
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "blocks_vision": false,
+      "character_controller": {
+        "max_slope_degrees": 30.0,
+        "slide_slope_degrees": 35.0,
+        "step": null,
+        "snap_distance": 0.3,
+        "offset": 0.01,
+        "gravity": 9.81,
+        "max_fall_speed": 50.0,
+        "push_dynamic_bodies": false
+      }
+    },
+    {
+      "id": "careful",
+      "name": "careful",
+      "transform": {
+        "position": [
+          -3.0,
+          0.81,
+          2.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.9,
+        0.4,
+        0.2
+      ],
+      "body": "npc",
+      "npc": {
+        "routine": {
+          "max_trip_ticks": 1800,
+          "cycle_ticks": 3600,
+          "offset_ticks": 0,
+          "phase_variation": 0,
+          "seed": 0,
+          "auto_dialogue": true,
+          "needs": [
+            {
+              "resource": "charge",
+              "tag": "recharge",
+              "action": "charge",
+              "below": 2500,
+              "satisfied": 9000,
+              "priority": 100,
+              "interval_ticks": 60,
+              "delta": 0,
+              "personality_weights": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          ],
+          "schedule": [
+            {
+              "start": 0,
+              "end": 800,
+              "point": "shrine",
+              "action": "speak",
+              "priority": 0
+            }
+          ]
+        },
+        "circulation": {
+          "radius": 4.0,
+          "horizon_seconds": 1.0,
+          "personal_space": 0.15
+        },
+        "mind": {
+          "intelligence": 1.0,
+          "personality": {
+            "anxiety": 0.5,
+            "caution": 0.5,
+            "concern": 0.5,
+            "fear": 1.0,
+            "courage": 0.0,
+            "curiosity": 0.5,
+            "aggression": 0.5,
+            "sociability": 0.5,
+            "discipline": 0.5
+          },
+          "seed": 0,
+          "variation": 0.0
+        },
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "routine"
+            }
+          }
+        ],
+        "mobility": {
+          "walk": true,
+          "jump_speed": null,
+          "fly_speed": null,
+          "glide": null
+        },
+        "local_connections": {
+          "walk": true,
+          "fly": false,
+          "max_distance": 8.0
+        },
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 12.0,
+          "fov_degrees": 120.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 600,
+          "search_ticks": 180,
+          "search_turn_degrees_per_second": 90.0
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "charge",
+            "initial": 0,
+            "capacity": 100
+          },
+          {
+            "resource": "bold",
+            "initial": 0,
+            "capacity": 100
+          },
+          {
+            "resource": "safe",
+            "initial": 0,
+            "capacity": 100
+          }
+        ],
+        "grants": []
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "blocks_vision": false,
+      "character_controller": {
+        "max_slope_degrees": 30.0,
+        "slide_slope_degrees": 35.0,
+        "step": null,
+        "snap_distance": 0.3,
+        "offset": 0.01,
+        "gravity": 9.81,
+        "max_fall_speed": 50.0,
+        "push_dynamic_bodies": false
+      }
+    },
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          30.5,
+          0.5,
+          24.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "guide",
+      "name": "guide",
+      "transform": {
+        "position": [
+          -5.0,
+          0.81,
+          0.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.6,
+        0.2,
+        0.8
+      ],
+      "body": "npc",
+      "npc": {
+        "dialogue": "guide",
+        "circulation": {
+          "radius": 4.0,
+          "horizon_seconds": 1.0,
+          "personal_space": 0.15
+        },
+        "mind": {
+          "intelligence": 1.0,
+          "personality": {
+            "anxiety": 0.5,
+            "caution": 0.5,
+            "concern": 0.5,
+            "fear": 0.5,
+            "courage": 0.5,
+            "curiosity": 0.5,
+            "aggression": 0.5,
+            "sociability": 0.5,
+            "discipline": 0.5
+          },
+          "seed": 0,
+          "variation": 0.0
+        },
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "mobility": {
+          "walk": true,
+          "jump_speed": null,
+          "fly_speed": null,
+          "glide": null
+        },
+        "local_connections": {
+          "walk": true,
+          "fly": false,
+          "max_distance": 8.0
+        },
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 12.0,
+          "fov_degrees": 120.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 600,
+          "search_ticks": 180,
+          "search_turn_degrees_per_second": 90.0
+        }
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "blocks_vision": false,
+      "character_controller": {
+        "max_slope_degrees": 30.0,
+        "slide_slope_degrees": 35.0,
+        "step": null,
+        "snap_distance": 0.3,
+        "offset": 0.01,
+        "gravity": 9.81,
+        "max_fall_speed": 50.0,
+        "push_dynamic_bodies": false
+      }
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          -6.5,
+          0.8,
+          0.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player",
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 10,
+            "capacity": 10
+          }
+        ],
+        "grants": []
+      }
+    },
+    {
+      "id": "shrine",
+      "name": "shrine",
+      "transform": {
+        "position": [
+          5.0,
+          0.8,
+          0.0
+        ],
+        "size": [
+          0.2,
+          0.2,
+          0.2
+        ]
+      },
+      "color": [
+        0.2,
+        0.6,
+        0.5
+      ],
+      "body": null
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          15.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          24.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -12.0
+        ],
+        "size": [
+          30.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          12.0
+        ],
+        "size": [
+          30.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -15.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          24.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "well",
+      "name": "well",
+      "transform": {
+        "position": [
+          4.0,
+          0.8,
+          0.0
+        ],
+        "size": [
+          0.2,
+          0.2,
+          0.2
+        ]
+      },
+      "color": [
+        0.2,
+        0.6,
+        0.5
+      ],
+      "body": null
+    }
+  ],
+  "spatial_network": {
+    "nodes": [],
+    "links": []
+  },
+  "ability_catalog": {
+    "resources": [
+      {
+        "id": "charge",
+        "scale": 1
+      },
+      {
+        "id": "bold",
+        "scale": 1
+      },
+      {
+        "id": "safe",
+        "scale": 1
+      },
+      {
+        "id": "energy",
+        "scale": 1
+      }
+    ],
+    "abilities": []
+  }
+}

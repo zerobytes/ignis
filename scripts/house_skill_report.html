@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Casa — reconstrução pela skill</title>
+<style>*{box-sizing:border-box}body{margin:32px auto;padding:0 24px;max-width:1500px;background:#17191d;color:#e7e6e2;font:16px/1.5 system-ui}h1{font-size:29px;margin-bottom:8px}h2{font-size:21px}.note{background:#2b2d31;padding:18px;border-left:4px solid #c6a66a;border-radius:4px}a{color:#d2bd88}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.grid img{width:100%;display:block}.overlay{position:relative;width:100%;line-height:0}.overlay img{display:block;width:100%}.overlay .top{position:absolute;inset:0;clip-path:inset(0 50% 0 0)}input[type=range]{width:100%;accent-color:#c6a66a}button{font:inherit;background:#393b40;color:#eee;border:1px solid #666;border-radius:5px;padding:8px 14px;cursor:pointer}button[aria-pressed=true]{background:#655a3d}table{border-collapse:collapse}td,th{padding:9px 22px;border-bottom:1px solid #45474c;text-align:left}.small{color:#bdbdb9;font-size:14px}.modes{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}details{margin:22px 0}code{background:#292b30;padding:2px 5px}figure{margin:0}figcaption{padding:8px 0}@media(max-width:800px){.grid{grid-template-columns:1fr}}</style>
+<h1>Casa — primeira reconstrução pela skill e pelo MCP</h1>
+<p>Imagem original e cena criada com a interface pública do Ignis. Fontes de modelagem restritas; o contexto anterior não foi apagado, portanto este não é um teste cego independente.</p>
+<p class="note">
+<strong>Resultado ainda distante da referência.</strong> A estrutura, os vãos e os motivos foram construídos, mas perfis, conexões, proporções, materiais e vegetação precisam de trabalho. Validação técnica e pixels reproduzíveis não aprovam a fidelidade visual.</p>
+<div class="grid">
+<figure>
+<img src="artifacts/reference.png" alt="Imagem original da casa">
+<figcaption>Referência original</figcaption>
+</figure>
+<figure>
+<img src="artifacts/reconstruction.png" alt="Reconstrução renderizada pelo Ignis">
+<figcaption>Captura real do Ignis — câmera manual</figcaption>
+</figure>
+</div>
+<h2>Conferir a sobreposição</h2>
+<p class="small">A sobreposição não alinha nem corrige as imagens. Arraste para revelar o render sobre a referência.</p>
+<div class="overlay">
+<img src="artifacts/reference.png" alt="Referência da sobreposição">
+<img class="top" id="top" src="artifacts/reconstruction.png" alt="Render sobreposto">
+</div>
+<label for="blend">Parcela visível do render</label>
+<input id="blend" type="range" min="0" max="100" value="50">
+<h2>Examinar a cena</h2>
+<div class="modes">
+<button data-src="reconstruction.png" aria-pressed="true">Materiais</button>
+<button data-src="clay.png" aria-pressed="false">Forma neutra</button>
+<button data-src="spatial.png" aria-pressed="false">Vista elevada</button>
+<button data-src="difference.png" aria-pressed="false">Diferença de pixels</button>
+</div>
+<img id="view" src="artifacts/reconstruction.png" alt="Vista escolhida" style="width:100%">
+<p class="small">Forma neutra preserva a geometria com materiais/cores uniformes. A vista elevada verifica a hipótese volumétrica, sem comprovar faces ocultas da referência. Diferença em cinza usa escala fixa de erro RGB.</p>
+<details>
+<summary>Métricas brutas por região</summary>
+<p>Câmera não calibrada; luz/material/forma contribuem juntos. SSIM não é percentual de fidelidade. Regiões fixas e sem segmentação.</p>
+<table>
+<tr>
+<th>Região</th>
+<th>MAE RGB ↓</th>
+<th>SSIM ↑</th>
+</tr>__METRIC_ROWS__</table>
+<p>Os valores locais da varanda, entrada e bay permanecem baixos. O total inclui o fundo e não substitui a avaliação por peça.</p>
+</details>
+<h2>O que foi verificado</h2>
+<p>Captura repetida, undo, save/load e replay estático de zero ticks: pixels idênticos. Recusa de asset além do limite preservou a cena.</p>
+<p>__COUNTS__</p>
+<p>
+<a href="report.json">Relatório completo e correspondências</a> · <a href="examples/house.scene.json">Cena editável</a> · <a href="../../docs/house-skill-experiment.md">Análise e limites do experimento</a>
+</p>
+<script>document.getElementById('blend').addEventListener('input',e=>document.getElementById('top').style.clipPath='inset(0 '+(100-e.target.value)+'% 0 0)');document.querySelectorAll('button[data-src]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('view').src='artifacts/'+b.dataset.src;document.querySelectorAll('button[data-src]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))}));</script>
+</html>

@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "source": "cottage-material-baseline.scene.json",
+  "source_sha256": "7286e74c023f7319331589a5828a372a389d44619e203356a3449367802f1e2c",
+  "metal_recipe_sha256": "0a30dcf3ffa83781c521e117bb9cc6810184430f1fad3db0e3f347ac60d6d0b4",
+  "legacy_capture_sha256": {
+    "hero": "5d20bc41df52bec8fbe617f324d20b8bdc082278bb875991b34a227371b54922",
+    "detail": "38ffdb169c19406dad3f6dc9bec4cfb52120d06192a3af44c0a6407308a757c8",
+    "front": "f15af89f9b33d8334dd556f9dbb155fdc3b8575f8da6428c9fbbee9a2f9c1189",
+    "ornament": "e7f79f065214e5f616e2809c9fd375806d704fbe9d683190b92fc601745a1176"
+  },
+  "lighting": {
+    "ambient": 0,
+    "direct_intensity": 0.68,
+    "environment": {
+      "sky": [
+        0.6,
+        0.75,
+        0.95
+      ],
+      "horizon": [
+        0.8,
+        0.75,
+        0.6
+      ],
+      "ground": [
+        0.05,
+        0.04,
+        0.025
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "intensity": 0.55
+    }
+  }
+}

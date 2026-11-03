@@ -1,0 +1,967 @@
+{
+  "repository": "https://github.com/makehumancommunity/makehuman",
+  "revision": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+  "license": "CC0-1.0 (graphical data only)",
+  "files": [
+    {
+      "path": "LICENSE.md",
+      "sha256": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1"
+    },
+    {
+      "path": "LICENSE.ASSETS.md",
+      "sha256": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c"
+    },
+    {
+      "path": "makehuman/data/3dobjs/base.obj",
+      "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
+    },
+    {
+      "path": "makehuman/data/rigs/default.mhskel",
+      "sha256": "99f179bce0aa850b45d4191a1d0d234c5851f881c057439470ded3bddf729a24"
+    },
+    {
+      "path": "makehuman/data/rigs/default_weights.mhw",
+      "sha256": "0f3641d651ae3d00ad6b4ccee43142edb109d3bd909d27d9e4139ef1beed8625"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/african-female-young.target",
+      "sha256": "92d61eeb3c164b421fd5a7c3537ee45e7e1a51de4d49bf312e19c3df2be1d8fc"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/asian-female-young.target",
+      "sha256": "095fe79694fa19e1fe98d93009ec116199bd524e081c640351a10eccf2cca1eb"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/caucasian-female-young.target",
+      "sha256": "118379f6e8ba9266247fdb8788a20e1df40a239f97ced0b9905bcbcc74f6e820"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-minmuscle-minweight.target",
+      "sha256": "856167f0a03efedd69f91e1cbad065957c8e8fef6acaaaf5b85a32b0f018fa67"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-minmuscle-minweight-minheight.target",
+      "sha256": "48fe0e14e4db968f42d8e48751895fe1547c0424a531002132bce7691ec8aa74"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-minmuscle-minweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-mincup-minfirmness.target",
+      "sha256": "8ae3416520b514a150ea1d297a968855b0b3aebf53e9bc6a16abe5a748bd671d"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-mincup-averagefirmness.target",
+      "sha256": "8c42c8301090775b6e545706fce62460a9eeedd7cf2f7e4b193a359b668871be"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-mincup-maxfirmness.target",
+      "sha256": "e4b0dd2758d4620cf2f26e1f7829541b9773846140879f5ecb233a175fbf2d94"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-averagecup-minfirmness.target",
+      "sha256": "c1c1ac06662211505f5d710149275ef76f431f98ada24fdf0706d367c1e0760c"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-averagecup-maxfirmness.target",
+      "sha256": "cb35d792634d1cba1a532c7e172f44bd6db563ab45b42faa91fe794e8cb1e697"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-maxcup-minfirmness.target",
+      "sha256": "5be9bd2c0a6a4799038585dfea5b67b36f747cd564e8672ba79e401ffa520979"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-maxcup-averagefirmness.target",
+      "sha256": "1ea1ef84b46fa73ac64d411b4b1aee1189b31f52137844aa9da99f6206dd24a0"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-minweight-maxcup-maxfirmness.target",
+      "sha256": "4548bc7e2721d950b90a36fd3df688537e7c8b849b39dc5ecc2437dbad20c070"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-minmuscle-averageweight.target",
+      "sha256": "ab588aadac1ce474969f38b3dbc08c2dc081e861a223f70250e5cae135d054a3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-minmuscle-averageweight-minheight.target",
+      "sha256": "375857dff927f67da53786fc5ac0545c473f4959e3b326727b6b91f49ebdd2e3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-minmuscle-averageweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-mincup-minfirmness.target",
+      "sha256": "05b12acef7b7a925a0fb3ab45bb807e340eaccbe8489c4d74a75ed0080715e1b"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-mincup-averagefirmness.target",
+      "sha256": "05b12acef7b7a925a0fb3ab45bb807e340eaccbe8489c4d74a75ed0080715e1b"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-mincup-maxfirmness.target",
+      "sha256": "05b12acef7b7a925a0fb3ab45bb807e340eaccbe8489c4d74a75ed0080715e1b"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-averagecup-minfirmness.target",
+      "sha256": "74162081c370b9034398cd9b5f083741f1f428035a6d12a4d578b05a4568548e"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-averagecup-maxfirmness.target",
+      "sha256": "9ff0ace7b46b0fa6125878370ceb6a1d8b851c3b14f240d69ab0dfb81c15f674"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-maxcup-minfirmness.target",
+      "sha256": "5fb89ec9b435e47c3423d7fe03d2a111f507ead15fd94cc540c4f2de1f9b3d2b"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-maxcup-averagefirmness.target",
+      "sha256": "a7d6f2b5d5137ad5a0db49536e5444b4731a168694457d49010bb644948e258b"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-averageweight-maxcup-maxfirmness.target",
+      "sha256": "b8a003853aa186aed5309990812c079e0c4271af989fdc42c30cbb2b180eab30"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-minmuscle-maxweight.target",
+      "sha256": "66600ccaea3d4c54b1427c81f49160a7cbb2794fbcb7a695ec6e6a4743d72364"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-minmuscle-maxweight-minheight.target",
+      "sha256": "375857dff927f67da53786fc5ac0545c473f4959e3b326727b6b91f49ebdd2e3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-minmuscle-maxweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-mincup-minfirmness.target",
+      "sha256": "14f53af3f31f0c0a7d19c0e0dcf7fdeb75f337da5a55acd40a09dcece1e579a8"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-mincup-averagefirmness.target",
+      "sha256": "ffae4061ee4052322ce72bb329da3c36e5fba6d83aed6418ef83f4217ef687da"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-mincup-maxfirmness.target",
+      "sha256": "8fa69893682557517da462aeff32981475f037b925bc3cfb56494f14f565e842"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-averagecup-minfirmness.target",
+      "sha256": "63ca4f85add90fd93c1d9828923cc99a2d6ca2226c3e677852c4f3a7746c3df0"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-averagecup-maxfirmness.target",
+      "sha256": "59ec723fd1e302b927539a8c316937943464bf44dc080fe351494b7e16474279"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-maxcup-minfirmness.target",
+      "sha256": "3469a74ca86b2d51183c71bc003867be9e1bccb7d95d00725f713665f560dd35"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-maxcup-averagefirmness.target",
+      "sha256": "f539179d07844f9c1d8da2546c17f629280ab2d6193e3468efbc9513a230255d"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-minmuscle-maxweight-maxcup-maxfirmness.target",
+      "sha256": "d16f4bc9030b2d11cd058ae61e8f453da23c9a45b73da6801beb6ac05fd6ec4b"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-averagemuscle-minweight.target",
+      "sha256": "e53a4afc87ac2703460a59e8290b1111478aeee5c02ece6735328c1f8c62eb63"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-averagemuscle-minweight-minheight.target",
+      "sha256": "375857dff927f67da53786fc5ac0545c473f4959e3b326727b6b91f49ebdd2e3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-averagemuscle-minweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-mincup-minfirmness.target",
+      "sha256": "d7166c4bb33cc47c50a8a1b29c4e548d3ceca0783ecd24a26ea58359b4d89b57"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-mincup-averagefirmness.target",
+      "sha256": "f7c34c72a4461cbf8edc9f615613e2d19dd164a1d19022d72bd67efb7248f5ca"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-mincup-maxfirmness.target",
+      "sha256": "659b0475b08964d373a5af7f405e86c88ce8d76dbdbafff5db955b6bda65e005"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-averagecup-minfirmness.target",
+      "sha256": "c1c1ac06662211505f5d710149275ef76f431f98ada24fdf0706d367c1e0760c"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-averagecup-maxfirmness.target",
+      "sha256": "cb35d792634d1cba1a532c7e172f44bd6db563ab45b42faa91fe794e8cb1e697"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-maxcup-minfirmness.target",
+      "sha256": "106393b8e3a1ee69eb0b17c3c2a37c99c061ed88210ae347480b1d71304ea112"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-maxcup-averagefirmness.target",
+      "sha256": "bc0653099dc3c7bd490642b0a5e718939bbeec33f86095b69d724567adfba3b6"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-minweight-maxcup-maxfirmness.target",
+      "sha256": "2e975bc0268147d938198ca76093fdfc44279be08a80052e7e73926ab29e97fb"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-averagemuscle-averageweight.target",
+      "sha256": "4ba5396ddabda448ece15650a566fbebfbb10239256ccb201e8f883429e12249"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-averagemuscle-averageweight-minheight.target",
+      "sha256": "375857dff927f67da53786fc5ac0545c473f4959e3b326727b6b91f49ebdd2e3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-averagemuscle-averageweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-mincup-minfirmness.target",
+      "sha256": "65e4ca16353f6c0e23b420cf5d9b31d8993943b76e6cd3a6961943371dd6bc2f"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-mincup-averagefirmness.target",
+      "sha256": "65e4ca16353f6c0e23b420cf5d9b31d8993943b76e6cd3a6961943371dd6bc2f"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-mincup-maxfirmness.target",
+      "sha256": "65e4ca16353f6c0e23b420cf5d9b31d8993943b76e6cd3a6961943371dd6bc2f"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-averagecup-minfirmness.target",
+      "sha256": "0034893c985e04012db712bc140d83a41ea3b9e12c48df1461dad388a716b553"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-averagecup-maxfirmness.target",
+      "sha256": "31f1d91824fcbb98ccf52f2c4d20c8e7c77c77ae596c58d1cf91c34801552b60"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-maxcup-minfirmness.target",
+      "sha256": "86b295a63ad779e7e86051a166a8b5fb76c35814c03b66a63b68b803edfcd5d3"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-maxcup-averagefirmness.target",
+      "sha256": "b5aaa1595cf4efcee69022fc60034d93ab6f6fc473e6f8e162e5526803b074bf"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-averageweight-maxcup-maxfirmness.target",
+      "sha256": "76737472bf148e69bd5e80da982b88aa0926b51ef9ea1ac6217da88d86cf55cf"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-averagemuscle-maxweight.target",
+      "sha256": "3648e7f9b34d947726161b563b90ba92b29860bac4c4f82aea3cec37bad2bb4e"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-averagemuscle-maxweight-minheight.target",
+      "sha256": "375857dff927f67da53786fc5ac0545c473f4959e3b326727b6b91f49ebdd2e3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-averagemuscle-maxweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-mincup-minfirmness.target",
+      "sha256": "f7b60522393f5b7d82ac3fa14ec903b26e031d77b83c41f8cffd80e845bf804f"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-mincup-averagefirmness.target",
+      "sha256": "f7b60522393f5b7d82ac3fa14ec903b26e031d77b83c41f8cffd80e845bf804f"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-mincup-maxfirmness.target",
+      "sha256": "f7b60522393f5b7d82ac3fa14ec903b26e031d77b83c41f8cffd80e845bf804f"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-averagecup-minfirmness.target",
+      "sha256": "71348a68fe579f11554afb702062220cedca22cf7ca6ae8222d34af0a9c62a84"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-averagecup-maxfirmness.target",
+      "sha256": "02a3f8a7422aaf1655a9e8f0c3edd276581d07482ad8b59057d6c6397dfb4c90"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-maxcup-minfirmness.target",
+      "sha256": "8c05c6d7fcca0111ab9d08869748b0fe554a985381b53c527c3a7c916f25333a"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-maxcup-averagefirmness.target",
+      "sha256": "05544ef4bed841fa7944335aedc887abad0b442c3209fa3254ba47f8631a9f82"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-averagemuscle-maxweight-maxcup-maxfirmness.target",
+      "sha256": "16ccf9ae926c23b4b215173f4edde6b79d2cffc51ebe7108c61e1dfc3bb5fb89"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-maxmuscle-minweight.target",
+      "sha256": "05351f0063429f4e1e484501b73997a6fb129b93939db355d108f98d5479fb10"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-maxmuscle-minweight-minheight.target",
+      "sha256": "375857dff927f67da53786fc5ac0545c473f4959e3b326727b6b91f49ebdd2e3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-maxmuscle-minweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-mincup-minfirmness.target",
+      "sha256": "fef224d937ac950c8e420486bff9f86ddb87d282ab31d19e384f524d069754fe"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-mincup-averagefirmness.target",
+      "sha256": "1b6085d02be8be5dfd696ec665f9be30aac3515940d050a86100bac92b4031b1"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-mincup-maxfirmness.target",
+      "sha256": "04a0d1c6c549dc660695e6a79c57423c046bdabd122a500d3213a82f885879c8"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-averagecup-minfirmness.target",
+      "sha256": "c9cde97bdb7133e9a4edd76091123dfe8f89361dc9c986ec05e7c3012dbeaae8"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-averagecup-maxfirmness.target",
+      "sha256": "cb35d792634d1cba1a532c7e172f44bd6db563ab45b42faa91fe794e8cb1e697"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-maxcup-minfirmness.target",
+      "sha256": "e5291365623120b763a0ed391c403245e58176d66c5fbf6e2265fcf976bb70c8"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-maxcup-averagefirmness.target",
+      "sha256": "1ea8f093dda8a93c04608a4f78bc54898e6979105244f21946e11db3f7514c2a"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-minweight-maxcup-maxfirmness.target",
+      "sha256": "4a4230c96fbe4d7dc68f6088923c1705d47f81534c50573afd9366e191a96aac"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-maxmuscle-averageweight.target",
+      "sha256": "2e56b09b44a8497b927585447fdaac5ea7293521d1f3a3df1059495873c53f4e"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-maxmuscle-averageweight-minheight.target",
+      "sha256": "375857dff927f67da53786fc5ac0545c473f4959e3b326727b6b91f49ebdd2e3"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-maxmuscle-averageweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-mincup-minfirmness.target",
+      "sha256": "89a9fbb1ccb21da2a54a647a7c08ead8a527425786c2f3d2f218d5c81b14ffa2"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-mincup-averagefirmness.target",
+      "sha256": "f9e827e1f0af0dec1f04f96f1ce771f281bb51fbcf6e4a01be5cb6be24a89383"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-mincup-maxfirmness.target",
+      "sha256": "f9e827e1f0af0dec1f04f96f1ce771f281bb51fbcf6e4a01be5cb6be24a89383"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-averagecup-minfirmness.target",
+      "sha256": "e841c5ea679fd911e8fd60e42d987ec4513185f81918d3545f9c3f52f9f6a0fa"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-averagecup-maxfirmness.target",
+      "sha256": "2a7f7d1cfeab45fba2b2f89318694c89f7b5afa1ab4395fdf2f5e37c46e6f634"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-maxcup-minfirmness.target",
+      "sha256": "e5dae9aba6fb8acbb4462c85fcbfd44e6041461c01130813fc7d372c33b77925"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-maxcup-averagefirmness.target",
+      "sha256": "ee30c72778b92897da2cb71c65cee08a0f9d299d19d26a99288ad7bf13e5b4b1"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-averageweight-maxcup-maxfirmness.target",
+      "sha256": "3a99cd342479e57e1b20aae5515d87cbd17499505dbdffd6346d1d734b250f65"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-female-young-maxmuscle-maxweight.target",
+      "sha256": "1b4600abf475b517db2379338a4d36a5f77fb1ad94fd0b210451bfeaa9e7e9b6"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-maxmuscle-maxweight-minheight.target",
+      "sha256": "b7edc54eb9735ab752a79e7be15d0be92c81168fe5b5705ac7857b45a79e11d4"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/female-young-maxmuscle-maxweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-mincup-minfirmness.target",
+      "sha256": "539fd6a14663b06c2d1d6d912dbf34d07403cb70a90c41622fa9844fae6554ad"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-mincup-averagefirmness.target",
+      "sha256": "ccae5bd0f7f146615e89a49db08e4457399331d1793353c6f30786c5999e52cc"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-mincup-maxfirmness.target",
+      "sha256": "fbf037406329c35d0271ecf283e3ea076d64e4a4aad013364fed6345f3b2d94c"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-averagecup-minfirmness.target",
+      "sha256": "3be15013427705e85aa0066017827fd0bcc2f45effca8b0b4c9ccfaa2dcd0d52"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-averagecup-maxfirmness.target",
+      "sha256": "1119cc2d73994980bb2bba6eca663395ddcdc0ef25825e545e72d20fdb68b191"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-maxcup-minfirmness.target",
+      "sha256": "2775ca7573c3528d048dcb06bfcdc46c75a771ad82e717be4719f569e9800099"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-maxcup-averagefirmness.target",
+      "sha256": "cea1964ff0831345fe431f288fdffacf60d252476d384e34b8b8ae144499caa9"
+    },
+    {
+      "path": "makehuman/data/targets/breast/female-young-maxmuscle-maxweight-maxcup-maxfirmness.target",
+      "sha256": "bf446331f05d008280a35b4c6a02b4a45c8ca293f6c859076f3f1362516a6d39"
+    },
+    {
+      "path": "makehuman/data/targets/hip/hip-scale-horiz-decr.target",
+      "sha256": "b841b486b0f404249d47e0076c31f95c33e358f1cc45e47b499484c84b901330"
+    },
+    {
+      "path": "makehuman/data/targets/hip/hip-scale-horiz-incr.target",
+      "sha256": "2863ee4478f548cd2cdd932037fcd21e6b364b9a2d86911d3b603be18f598da7"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-scale-horiz-decr.target",
+      "sha256": "8377c248eec6838292f55287b6a399398f7cb88e6d7d0af6781d8e30298e0d6f"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-scale-horiz-incr.target",
+      "sha256": "73f278c2be9c6eebead7ac4cd206879810a9e0202519493af0ed8b2e3842fbb5"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-scale-depth-decr.target",
+      "sha256": "1f14e272b398ea5845957dc92a8ccbcde103b2a2fd6fca4acd14a824a9f76b2d"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-scale-depth-incr.target",
+      "sha256": "095c3fd83173dc91c20d7ed06655ff67fe823795fb7f2df2c5560845f661a0dc"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-vshape-decr.target",
+      "sha256": "f9da55d42731ef5fcfeaa9a473d84044cd7d19076c67dab5139cf001e85b09b2"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-vshape-incr.target",
+      "sha256": "9d0ac9eec39a14d51d7db50e48292b3db67aed9b91e654b379f4dbe348644684"
+    },
+    {
+      "path": "makehuman/data/targets/buttocks/buttocks-volume-decr.target",
+      "sha256": "cbead3b5ea8fb4726e77b2ef16d8c4fa3df54ed3787338bc9bc8271cd400dcc9"
+    },
+    {
+      "path": "makehuman/data/targets/buttocks/buttocks-volume-incr.target",
+      "sha256": "1ba81c82932e21420ff20bc8f35489061f2f3d79d4b3130b61fe872602156b01"
+    },
+    {
+      "path": "makehuman/data/targets/breast/breast-dist-decr.target",
+      "sha256": "a052af5c0b7bac35b0ce429ebbf240da036d93941370d8b576e19ec837d110a3"
+    },
+    {
+      "path": "makehuman/data/targets/breast/breast-dist-incr.target",
+      "sha256": "52f631c09ff5ebaa7d350cc966d2cc531017d9d554bd42a98bc3b0aee98af55f"
+    },
+    {
+      "path": "makehuman/data/targets/breast/breast-point-decr.target",
+      "sha256": "aaf081541b8fc812f433b01d94ec27aa9c27e59280b0c291eb8b0962201d5ed6"
+    },
+    {
+      "path": "makehuman/data/targets/breast/breast-point-incr.target",
+      "sha256": "0e5b90f891c9a84df0a19472014a78e98090247dfcc6e4edc8f2ede3215e1397"
+    },
+    {
+      "path": "makehuman/data/targets/nose/nose-scale-horiz-decr.target",
+      "sha256": "1227e6f513d202585e40045fe4234778597bb591ac492e7f9313347cd9a9f2ec"
+    },
+    {
+      "path": "makehuman/data/targets/nose/nose-scale-horiz-incr.target",
+      "sha256": "cc319e3ddb0523fa2b563dcfc840cf2f915a890abe5612009a0becebecd3c5ae"
+    },
+    {
+      "path": "makehuman/data/targets/nose/nose-scale-vert-decr.target",
+      "sha256": "a154747135740f63f60df812024fcde24df2a6713effa3c6f27797aeee7d3311"
+    },
+    {
+      "path": "makehuman/data/targets/nose/nose-scale-vert-incr.target",
+      "sha256": "b87163e4272d77bcdb7b51328504167f71a7a47b630dc9b13da9c68e0f06c20f"
+    },
+    {
+      "path": "makehuman/data/targets/chin/chin-width-decr.target",
+      "sha256": "ac081bd1652c203fc8973f20988a868a423a49f1fe6449cb974727fd46c26af1"
+    },
+    {
+      "path": "makehuman/data/targets/chin/chin-width-incr.target",
+      "sha256": "deef506bfe1883d9d4c38667332c9970785226566efbae4724fd3d60c02efcf4"
+    },
+    {
+      "path": "makehuman/data/targets/chin/chin-prominent-decr.target",
+      "sha256": "071afc623e6feb38afa5dde7abca83710c062bf1281e30a51fa42a6fbacfc00e"
+    },
+    {
+      "path": "makehuman/data/targets/chin/chin-prominent-incr.target",
+      "sha256": "d2493ca5f69aabeb8557d77a56c49cfcf2062ff90c0cad03073d87990d11448b"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-scale-horiz-decr.target",
+      "sha256": "07a9ef160755467a470bd0a1df035143d83ebddbc12e4612e69e93a64644405c"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-scale-horiz-incr.target",
+      "sha256": "ccfc39cca249883ebc46af6f2c96c4130df13a67ebce30a2550af17a48637770"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-upperarm-scale-vert-decr.target",
+      "sha256": "0ab970d41543592b704e3420f74ebdac4c519758fe89aa4b464ded139bdb35f9"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-upperarm-scale-vert-incr.target",
+      "sha256": "a06044a28208a74e8212d808f593fbba949aaea25bcc3eb77413edd63c3333b7"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-lowerarm-scale-vert-decr.target",
+      "sha256": "40a5cf49b52ec056c8944ef2b5d6e3de1f060a8f7cdd99173e526935c61a41a4"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-lowerarm-scale-vert-incr.target",
+      "sha256": "20b2853fb05a0575cb355e344e59daa59ac441eafb3daf54d7c9215bdd48cea6"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-upperleg-scale-vert-decr.target",
+      "sha256": "b76d5a7dc14e04d93d9a105e3da412fd06866a5bde14df238b8232a6f987c38a"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-upperleg-scale-vert-incr.target",
+      "sha256": "0a4dc4d99c5f7480e24c28fb8c8e713b3302ef1c281b3fc28fb09e9962c51ec7"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-lowerleg-scale-vert-decr.target",
+      "sha256": "5192ff54d531a10fec28212f685acf1c32d9239b10597ea916b37c43324d9ae7"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-lowerleg-scale-vert-incr.target",
+      "sha256": "a429a1656d12627ecbe585183427fa0de279f5e2fef9c3d9d8cc55ed4a1204f3"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-upperarm-scale-vert-decr.target",
+      "sha256": "9b17594d6e21866e63ba83ae8aae3c08a9525d982f2f4084ccaaa2f86b88d057"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-upperarm-scale-vert-incr.target",
+      "sha256": "e17caf49c2d53291b558cc7ccb25d22aafc9583822d916e919e9ee8263b0ae98"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-lowerarm-scale-vert-decr.target",
+      "sha256": "3bc171a9aa18248cd381761f8ec154dc57e77d2e2bfa44353cfda0795e13a3b6"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-lowerarm-scale-vert-incr.target",
+      "sha256": "305e3937ade1d8b89ed4a07f963b6bd4a3953c8f21dce04158d26743a50d569f"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-upperleg-scale-vert-decr.target",
+      "sha256": "3ed01a679f78bd66ee68181f1ef9913624496fde33294c1496b1ece90f6ccd7f"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-upperleg-scale-vert-incr.target",
+      "sha256": "2f68bbc82c91eb39238e2131ed4b555294c216808e41bf809c1102e8e033fe42"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-lowerleg-scale-vert-decr.target",
+      "sha256": "114693f0acd00df3580b0741f79969a24c48af6a58f4a4b89cc22c7adb97bc0b"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-lowerleg-scale-vert-incr.target",
+      "sha256": "1effc9813ad8d901218b59d79a89583de6cd7572d84b9317d16c58843478d307"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-upperarm-muscle-incr.target",
+      "sha256": "61440e900b9e65748005e837b129abd48b1cd8fb98a653a2288a1bd3ace810d7"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-lowerarm-muscle-incr.target",
+      "sha256": "68511185971789f16fc625788f6abd61bfee61d5580b015745ad4fa7faa83d6b"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-upperleg-muscle-incr.target",
+      "sha256": "f5804422cee551ab197a7e41b4d1a9c25d5f7c2d8277e0615c1b61341bc65647"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-lowerleg-muscle-incr.target",
+      "sha256": "5c4323925e92e0875d4a3ce5e72db3ee0394dc865183349ac12ac8051dc1bd53"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/l-upperarm-shoulder-muscle-incr.target",
+      "sha256": "0d1994d9d45b5f7b5d4884262514fee53c6fd111bce1cc931a6fcb69f60aa8b6"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-upperarm-muscle-incr.target",
+      "sha256": "cf81df0a8d38bd66742d017dbcfe77f180659dfd61ed3fc94cb25751ccd4417b"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-lowerarm-muscle-incr.target",
+      "sha256": "f4c207478c621e2ac9c0c1e6e1e67803e25a7ee083fe2aa8e31cf831d20d1ab3"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-upperleg-muscle-incr.target",
+      "sha256": "833d03f125d75a933164e69918fdc075080ea453a11091a132f58f3d68f7def8"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-lowerleg-muscle-incr.target",
+      "sha256": "e2d438a2ef32948d77316343f7882cfabe5cfe447b8b96bc31131c6812f10792"
+    },
+    {
+      "path": "makehuman/data/targets/armslegs/r-upperarm-shoulder-muscle-incr.target",
+      "sha256": "33d8d39af985071484836ebda826ab50332408256b1e6d2ab2240d480fd00295"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-muscle-dorsi-incr.target",
+      "sha256": "a9eb27874c600716c4ac058caf922671c6556427f00373d0d31c7615d31ded56"
+    },
+    {
+      "path": "makehuman/data/targets/torso/torso-muscle-pectoral-incr.target",
+      "sha256": "0299c687b73a5e217d00273da99acb8a983c8a83640177062fdc27d20bdce77b"
+    },
+    {
+      "path": "makehuman/data/targets/stomach/stomach-tone-incr.target",
+      "sha256": "0fc4629f4f38b7c83dadc3a1a650f0db6e8c50f974ff57eb920d4881cadcf0d9"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/african-male-young.target",
+      "sha256": "894abc1fbb3d28543a51fef16f89d5d4bdf9aa2e1534413339811a3d47818b7d"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/asian-male-young.target",
+      "sha256": "ed2e8c191cb6b87b4a2d97c80486acb2604fa549316c7aa2a738a5d5a14334dc"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/caucasian-male-young.target",
+      "sha256": "70e228ba7164737dae664454394536fc5935fa48d333c1a97d77e2dc6eacc5f5"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-averagemuscle-averageweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-averagemuscle-averageweight-minheight.target",
+      "sha256": "76a79d873dc0820ae336645903591f8e6a8adc69865210a6a66f49908caa810b"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-averagemuscle-maxweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-averagemuscle-maxweight-minheight.target",
+      "sha256": "76a79d873dc0820ae336645903591f8e6a8adc69865210a6a66f49908caa810b"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-averagemuscle-minweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-averagemuscle-minweight-minheight.target",
+      "sha256": "76a79d873dc0820ae336645903591f8e6a8adc69865210a6a66f49908caa810b"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-maxmuscle-averageweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-maxmuscle-averageweight-minheight.target",
+      "sha256": "76a79d873dc0820ae336645903591f8e6a8adc69865210a6a66f49908caa810b"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-maxmuscle-maxweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-maxmuscle-maxweight-minheight.target",
+      "sha256": "225c493ffc12035d0f64e55d8bf54c395d99240186a8c225e6df53d58b4edb24"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-maxmuscle-minweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-maxmuscle-minweight-minheight.target",
+      "sha256": "76a79d873dc0820ae336645903591f8e6a8adc69865210a6a66f49908caa810b"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-minmuscle-averageweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-minmuscle-averageweight-minheight.target",
+      "sha256": "76a79d873dc0820ae336645903591f8e6a8adc69865210a6a66f49908caa810b"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-minmuscle-maxweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-minmuscle-maxweight-minheight.target",
+      "sha256": "6a09165857ab21cb890c09f67f8d209cdc19564b277155e17e48e18de07be885"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-minmuscle-minweight-maxheight.target",
+      "sha256": "3baacc70187410ebba2b62c56a53775266ab859b7844d47e658d36ee78493621"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/height/male-young-minmuscle-minweight-minheight.target",
+      "sha256": "2e663001577ea071808ca95dd771acbb059675ef99ab0ec800a1541be384d8f8"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-averagemuscle-averageweight.target",
+      "sha256": "4ba5396ddabda448ece15650a566fbebfbb10239256ccb201e8f883429e12249"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-averagemuscle-maxweight.target",
+      "sha256": "3e77ff5a07a9b870db5226507e1cf8a295f0e09c109fb72142770f5f50427b5e"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-averagemuscle-minweight.target",
+      "sha256": "fac0d53b7051f4d1f06230d0b419e916eb5bae5ce67c031a9998fdde05229755"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-maxmuscle-averageweight.target",
+      "sha256": "c171ff9cc95e96273beb3e3b1969a01988c2d4982ebc6fe04bf81cf72ee3b295"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-maxmuscle-maxweight.target",
+      "sha256": "95392741389537889a37dc67a7d8453c93b30f27131e3e622bee3f30d1d8738c"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-maxmuscle-minweight.target",
+      "sha256": "5873f11edc96fde72a79ec35fa1d292a6a1a594b5eadfd82d59faf48834561de"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-minmuscle-averageweight.target",
+      "sha256": "aa2bd57c3d82cbcbaee3f35e75c7d03952bbb9624003d7ee6f1aa50e04bfa5ba"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-minmuscle-maxweight.target",
+      "sha256": "14580444f1480b1c6b396973f8c040cc36e5ca8914addf17d11c5a023a958de2"
+    },
+    {
+      "path": "makehuman/data/targets/macrodetails/universal-male-young-minmuscle-minweight.target",
+      "sha256": "3af713db636eb41f32af5010981bad30efe743a3ab1d4a61c619c664b610a51a"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-angles-down.target",
+      "sha256": "39181b6688e6f5ada15b47a82977c75379152434c61dafe8822afb3f551d4fa6"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-angles-up.target",
+      "sha256": "8ddc2f53f4264742f4e10ddafd128e059e09c6a4268a2722e9495bad0f274898"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-cupidsbow-decr.target",
+      "sha256": "debb5dc739434f127604157a9cf361658d1a9814d099a82e43076f612dd3cc20"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-cupidsbow-incr.target",
+      "sha256": "341055fc0d804cec57f0d2aaccc7a090e7d649a5f1b60dbb7d44e4ff2ce40869"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-cupidsbow-width-decr.target",
+      "sha256": "96075322d5f5a8a7129eefc4fd74d8d9f8b92eaf0719329a45b2d1cf4679f0d7"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-cupidsbow-width-incr.target",
+      "sha256": "f66e986b25c1998a2217d917b41075b61f245bdf35769c6a9b21a58588242321"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-ext-down.target",
+      "sha256": "e549b246a81f901363b82534be07b2ca4be38914d6d3968692c50160d3f344cb"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-ext-up.target",
+      "sha256": "9c56c0078efef520ab755c9d74d81f3c9ef7581b946ae24e70848624e25a15fc"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-height-decr.target",
+      "sha256": "26503f3ae2e468d90e10a4c0cb73a17414051108c240b6a5c8079ad2e27f8d92"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-height-incr.target",
+      "sha256": "42181c0b02e0ed30d2d453ae15dbd87600da561d6e4df6fdbd7cc272bdbf5a98"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-middle-down.target",
+      "sha256": "97fbac0d2d0295f0d7ccd0f23356df95077de410ff36ea7e8bd7a02a28ad1759"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-middle-up.target",
+      "sha256": "b52334380917a0b648a35cfd89dd48fbb7fa95745fff28753d30ea73d169de7c"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-volume-decr.target",
+      "sha256": "45f1fe355546cdaa86581512810ee1cd2c6971ac67ffb46d3391ac438e539d15"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-volume-incr.target",
+      "sha256": "dbdaf045b00c67bf8672d53bc8cf94eb3e3dea316de6fe18a278f7080564c65d"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-width-decr.target",
+      "sha256": "f125ab08820f8762d5c623eb72182f5d86dcead188bfbd863d9f117554bd2b7a"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-lowerlip-width-incr.target",
+      "sha256": "6be43c8f0333323dd9affc9141066502d136d15d767596257c08b64cca82a847"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-philtrum-volume-decr.target",
+      "sha256": "e7400e4042f6f2a7fc3ec330ebc8f7f8269173eae52e29785ff00b0f831b0a6b"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-philtrum-volume-incr.target",
+      "sha256": "5b3020ed98d17882e43d47c10886ccf72a0976bb772ec8599553bab5ecefcf91"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-ext-down.target",
+      "sha256": "86093379323ca71d4568cdf90c78b1b6fdf773432ccd76b0e3f9202bb07a96b9"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-ext-up.target",
+      "sha256": "e00274071ac520d7ecb0e55f51b7b9895f9adb19094a48d0b8c6ec4ec4f715fb"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-height-decr.target",
+      "sha256": "9ec5e25eedc30442f06d0df75275438ba8778d48910b8fd6478efecf78621349"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-height-incr.target",
+      "sha256": "4eed688bb333c53b579e06bc1c555a5d01a61dbe3f9702aa4e1340384c597c49"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-middle-down.target",
+      "sha256": "bc35d43e1e631c84df30730cb3578ba35bc645fbf55d0b586ebebb2f424a56ab"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-middle-up.target",
+      "sha256": "5c36d059a282170ce74e86b03a65523539bd474dd1ecf6f6f95046c6a32b177b"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-volume-decr.target",
+      "sha256": "20b285d94ecb62cf605907d65659ab11ff760dbb938ba9ae7fc13429b1e3ba16"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-volume-incr.target",
+      "sha256": "b124cbd9b9be318264f61a143da603b42e0357ed92b4b6afd1b31a83daaf8568"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-width-decr.target",
+      "sha256": "03c14256205de15266956e741a6d4aa4df46070ad539187b6b3168d0cb16ac0e"
+    },
+    {
+      "path": "makehuman/data/targets/mouth/mouth-upperlip-width-incr.target",
+      "sha256": "fde8bbe4e9d856ff2acb66820955816630c0bc8b5ce9484f34d5284aeb1481f9"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-scale-decr.target",
+      "sha256": "dbe6da6a32a278887bd851c1ce8a3cc8be36e2c833d033afc043a865f171583c"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-scale-incr.target",
+      "sha256": "8112e638fb6ecc46569c527494f5b20acd0c5544d891dbf09c7876402eac384c"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-lobe-decr.target",
+      "sha256": "2d4d34aae12fc052b62f2e5aa1d49b0dde62f83d01389419216a89612bce3b9e"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-lobe-incr.target",
+      "sha256": "e4bd014dbcf89fc32c095e7827ad72415e78a985e7a26757a95d78c0e8336298"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-scale-depth-decr.target",
+      "sha256": "838561daa96d138c8dd39cfa2b653ca4fa4c0b254ddf0859a34dd68b7c0ee11c"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-scale-depth-incr.target",
+      "sha256": "c452990c28b6ebba8e255264242da414050de9b18f57ba533ae594392391b8e7"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-scale-vert-decr.target",
+      "sha256": "674e7c3c877bbdb4b88af3b51ada33907485383ee1fa2ce0adbc402cf0647580"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-scale-vert-incr.target",
+      "sha256": "8938d2885af1de71e4ba43911c8410e08c4c4488b40ec1950f1c0b2fca213fa0"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-wing-decr.target",
+      "sha256": "1075c326f7e841e7f1681300f6b1e864d90f40ee94fb2ff7dc612a8b8f1d27c7"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-wing-incr.target",
+      "sha256": "0db8c028668131078eaa2d8e38b3062389626ffda0be4273f8e7c5ae68ef7b70"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-scale-decr.target",
+      "sha256": "aae4f2455ace56046d1e58fff9a83fea220cd722e24727af352fbaf376a2bb35"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-scale-incr.target",
+      "sha256": "4fa34a2a4d7254fdb5ac514b85b755b8ed0d73ed21450778b2dcb64275a3619d"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-lobe-decr.target",
+      "sha256": "42191c7331a17a2b5cb1d614bf43893f70fcb9a20ae5e09c0c656f4f8bd2f56d"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-lobe-incr.target",
+      "sha256": "884b026675b3a4f387348f3c74ff7d5cc4d325a697be3bd25cf2bb2d8c2ed58f"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-scale-depth-decr.target",
+      "sha256": "8cfb642f7800351e52f175a170df2dbe263f9490630f475c012e6abb4aa718a6"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-scale-depth-incr.target",
+      "sha256": "f795f5f5693dccbe1ab07f06863cda5c7b7d629bab4c0f95c187e0fd64156ba2"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-scale-vert-decr.target",
+      "sha256": "21f9d96508eb0048b16bbec070cc7c2532d3b1109d4341de3358f6a9eac30c72"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-scale-vert-incr.target",
+      "sha256": "3b7ca63a6a16ffc2f044476ceaf352e8d5b1bbd09e6181292a06335293a486c5"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-wing-decr.target",
+      "sha256": "796e5cb0448084d4bf03a1584ffed3edfe82241391ba1a63b5855775454171af"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-wing-incr.target",
+      "sha256": "392f18098b531cbf62c15ea68e647b918a9d88f730ac34c2a260bbe1a282ba4d"
+    },
+    {
+      "path": "makehuman/data/targets/ears/l-ear-shape-pointed.target",
+      "sha256": "fb69b849f07de8297473f070f1fbddbc0c821f96770634ecb2af54691ac54414"
+    },
+    {
+      "path": "makehuman/data/targets/ears/r-ear-shape-pointed.target",
+      "sha256": "32598e38492c6b1d34d0e700a61d9710b73d7be4070b4c5597125f53d0fab5e3"
+    }
+  ]
+}

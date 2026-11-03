@@ -1,0 +1,703 @@
+{
+  "version": 39,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      12.0,
+      13.0,
+      17.0
+    ],
+    "target": [
+      0.0,
+      0.8,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 24.0,
+    "depth": 20.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          24.5,
+          0.5,
+          20.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "half_ice",
+      "name": "half_ice",
+      "transform": {
+        "position": [
+          0.0,
+          0.8,
+          1.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.1,
+        0.5,
+        1.0
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 2,
+            "when": "always",
+            "action": {
+              "kind": "use_ability",
+              "slot": 1,
+              "retry_ticks": 30,
+              "policy": {
+                "vitality_below": null,
+                "approach": null
+              }
+            }
+          },
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "own_half"
+        ]
+      },
+      "vitality": {
+        "initial": 1000,
+        "maximum": 1000,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "immune_ice",
+      "name": "immune_ice",
+      "transform": {
+        "position": [
+          5.0,
+          0.8,
+          1.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.7,
+        0.2,
+        0.9
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 2,
+            "when": "always",
+            "action": {
+              "kind": "use_ability",
+              "slot": 1,
+              "retry_ticks": 30,
+              "policy": {
+                "vitality_below": null,
+                "approach": null
+              }
+            }
+          },
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "own_immune"
+        ]
+      },
+      "vitality": {
+        "initial": 1000,
+        "maximum": 1000,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          0.0,
+          0.8,
+          -5.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player",
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 1000,
+            "capacity": 1000
+          }
+        ],
+        "grants": [
+          "mixed",
+          "projectile",
+          "periodic",
+          "resist",
+          "clean",
+          "heal"
+        ]
+      },
+      "vitality": {
+        "initial": 1000,
+        "maximum": 1000,
+        "scale": 1
+      }
+    },
+    {
+      "id": "unprotected",
+      "name": "unprotected",
+      "transform": {
+        "position": [
+          -5.0,
+          0.8,
+          1.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        0.9,
+        0.2,
+        0.1
+      ],
+      "body": "npc",
+      "npc": {
+        "objectives": [
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 1.0,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 10.0,
+          "fov_degrees": 150.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 90,
+          "search_ticks": 120,
+          "search_turn_degrees_per_second": 90.0,
+          "hearing": {
+            "range": 12.0
+          }
+        }
+      },
+      "vitality": {
+        "initial": 1000,
+        "maximum": 1000,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          12.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -10.0
+        ],
+        "size": [
+          24.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          10.0
+        ],
+        "size": [
+          24.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -12.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ],
+  "spatial_network": {
+    "nodes": [],
+    "links": []
+  },
+  "ability_catalog": {
+    "attributes": {
+      "definitions": [],
+      "bases": [],
+      "buffs": [
+        {
+          "id": "half_ice",
+          "duration_ticks": 216000,
+          "reapply": "refresh",
+          "modifiers": [
+            {
+              "attribute": "combat.damage_received.multiplier",
+              "operation": {
+                "kind": "multiply",
+                "basis_points": 5000
+              },
+              "priority": 0,
+              "tags_all": [
+                "ice"
+              ],
+              "abilities": []
+            }
+          ],
+          "category": "resistance",
+          "dispellable": true
+        },
+        {
+          "id": "immune_ice",
+          "duration_ticks": 216000,
+          "reapply": "refresh",
+          "modifiers": [
+            {
+              "attribute": "combat.damage_received.multiplier",
+              "operation": {
+                "kind": "multiply",
+                "basis_points": 0
+              },
+              "priority": 0,
+              "tags_all": [
+                "ice"
+              ],
+              "abilities": []
+            }
+          ],
+          "category": "resistance",
+          "dispellable": true
+        }
+      ],
+      "tags": [
+        "fire",
+        "ice",
+        "magical",
+        "theme"
+      ]
+    },
+    "resources": [
+      {
+        "id": "energy",
+        "scale": 1
+      }
+    ],
+    "abilities": [
+      {
+        "tags": [
+          "theme"
+        ],
+        "id": "mixed",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 0,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage_components",
+            "recipient": "target",
+            "components": [
+              {
+                "amount": 40,
+                "tags": [
+                  "fire",
+                  "magical"
+                ]
+              },
+              {
+                "amount": 60,
+                "tags": [
+                  "ice",
+                  "magical"
+                ]
+              }
+            ]
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "tags": [
+          "theme"
+        ],
+        "delivery": {
+          "kind": "projectile",
+          "speed": 8.0,
+          "half_extent": 0.1,
+          "max_distance": 20.0
+        },
+        "id": "projectile",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 0,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage_components",
+            "recipient": "target",
+            "components": [
+              {
+                "amount": 40,
+                "tags": [
+                  "fire",
+                  "magical"
+                ]
+              },
+              {
+                "amount": 60,
+                "tags": [
+                  "ice",
+                  "magical"
+                ]
+              }
+            ]
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "tags": [
+          "theme"
+        ],
+        "periodic": {
+          "interval_ticks": 60,
+          "pulses": 3,
+          "reapply": "refresh"
+        },
+        "id": "periodic",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 0,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage_components",
+            "recipient": "target",
+            "components": [
+              {
+                "amount": 40,
+                "tags": [
+                  "fire",
+                  "magical"
+                ]
+              },
+              {
+                "amount": 60,
+                "tags": [
+                  "ice",
+                  "magical"
+                ]
+              }
+            ]
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "resist",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 0,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "apply_buff",
+            "recipient": "target",
+            "buff": "half_ice"
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "clean",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 0,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "dispel",
+            "recipient": "target",
+            "category": "resistance",
+            "max_instances": 8,
+            "require_match": true
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "heal",
+        "selection": "actor",
+        "range": 12.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 0,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "heal",
+            "recipient": "target",
+            "amount": 500
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "own_half",
+        "selection": "self_actor",
+        "range": 0.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 3600,
+        "costs": [],
+        "effects": [
+          {
+            "kind": "apply_buff",
+            "recipient": "target",
+            "buff": "half_ice"
+          }
+        ],
+        "requires_below": null
+      },
+      {
+        "id": "own_immune",
+        "selection": "self_actor",
+        "range": 0.0,
+        "relation": null,
+        "cast_ticks": 0,
+        "cooldown_ticks": 3600,
+        "costs": [],
+        "effects": [
+          {
+            "kind": "apply_buff",
+            "recipient": "target",
+            "buff": "immune_ice"
+          }
+        ],
+        "requires_below": null
+      }
+    ]
+  }
+}

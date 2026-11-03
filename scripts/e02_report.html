@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E02 · reconstrução no Ignis</title>
+<style>
+:root{color-scheme:light dark;--bg:#171c1b;--panel:#222a27;--text:#ebe8dc;--muted:#aaa994;--line:#414a42;--accent:#d6be79}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}main{max-width:1550px;margin:auto;padding:30px}h1{font-size:32px;font-weight:500;margin:0}h2{font-size:23px;font-weight:500}h3{font-size:18px;font-weight:500}p{margin:8px 0}a{color:var(--accent)}.muted{color:var(--muted)}.top{display:flex;gap:20px;justify-content:space-between;align-items:start}.pill{border:1px solid var(--line);border-radius:20px;padding:6px 12px;white-space:nowrap}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:20px 0}.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}button,select{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:8px 12px;font:inherit;cursor:pointer}button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pair img{width:100%;display:block}.label{color:var(--muted);font-size:13px;margin:4px 0}.overlay{position:relative;overflow:hidden;width:100%;display:none}.overlay>img{width:100%;display:block}.overlay .cover{position:absolute;inset:0;clip-path:inset(0 50% 0 0)}.overlay .cover img{width:100%;display:block}.overlay .divider{position:absolute;top:0;bottom:0;left:50%;border-left:2px solid var(--accent)}input[type=range]{width:min(400px,65vw)}.metrics{display:flex;gap:22px;flex-wrap:wrap;margin-top:16px}.metrics strong{font-size:21px;font-weight:500}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:18px}.card{margin:0;align-self:start}.card .pair{align-items:start}.card img{background:#7b7c70}.status{color:#e4c78b}details{margin-top:10px}summary{cursor:pointer;color:var(--accent)}.small{font-size:13px}.viewport{margin:14px 0}.view-single{display:none;width:100%}.diagnosis{border-left:2px solid var(--accent);padding-left:12px;margin-top:12px}.method{max-width:1000px}footer{margin:40px 0;color:var(--muted)}@media(max-width:700px){main{padding:16px}.top{display:block}.pair{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.overlay{margin-top:12px}.pill{display:inline-block;margin-top:12px}}
+</style></head>
+<body><main>
+<header class="top"><div><p class="muted">IGNIS · ESTUDO E02</p><h1>Da referência à cena editável</h1><p class="muted">Análise global → recortes aprofundados → construção → comparação local</p></div><span class="pill">Fidelidade ainda insuficiente</span></header>
+<section class="panel">
+<div class="controls" id="views">
+<button data-view="pair" aria-pressed="true">Lado a lado</button><button data-view="overlay" aria-pressed="false">Sobreposição</button>
+<button data-view="clay.png" aria-pressed="false">Forma neutra</button><button data-view="spatial.png" aria-pressed="false">Vista elevada</button>
+<button data-view="side.png" aria-pressed="false">Vista lateral</button><button data-view="baseline.png" aria-pressed="false">Hipótese paralela</button>
+<button data-view="difference.png" aria-pressed="false">Diferença RGB</button></div>
+<div class="viewport"><div class="pair" id="main-pair"><div><p class="label">REFERÊNCIA ORIGINAL · 1402 × 1122</p><img src="reference.png" alt="Referência E02 fornecida"></div><div><p class="label">CAPTURA REAL DO IGNIS · MESMO GRID DE PIXELS</p><img src="render.png" alt="Reconstrução renderizada pelo Ignis"></div></div>
+<div class="overlay" id="overlay"><img src="reference.png" alt="Referência original"><div class="cover"><img src="render.png" alt="Render sobreposto sem alinhamento"></div><div class="divider"></div></div>
+<img class="view-single" id="single" alt="Vista diagnóstica nativa"></div>
+<div class="controls" id="blend-controls" hidden><label for="blend">Divisão da sobreposição</label><input type="range" id="blend" min="0" max="100" value="50"></div>
+<div class="metrics" id="metrics"></div>
+<p class="small muted">MAE e SSIM incluem diferenças de câmera, luz, cor e fundo. SSIM não é percentual de fidelidade. Os recortes abaixo mantêm as mesmas coordenadas nas duas imagens, sem alinhamento ou resize independentes.</p>
+</section>
+<section class="panel method"><h2>O que mudou com a inspeção local</h2><p>Os recortes acrescentaram a segunda porta, os degraus próprios da entrada, a galeria entre telhados, a água-furtada e variações do motivo ramificado. A primeira hipótese colocou a ala em paralelo com a fachada alta e avançou o corpo alto sobre o pátio.</p><p>A revisão alterou a orientação da ala, o recuo do corpo alto, a abertura da balaustrada e o perfil longitudinal da cobertura. Proporções, junções, molduras, telhas, interior e vegetação continuam aproximados.</p><p class="muted small">As duas hipóteses deste relatório foram recapturadas com a mesma câmera e viewport. As vistas elevada/lateral verificam a hipótese construída, sem comprovar faces ausentes da foto. A forma neutra não neutraliza a referência.</p><p id="checks" class="small"></p></section>
+<section><div class="top"><div><h2>18 fichas visuais</h2><p class="muted">Cada par mostra a mesma janela da imagem. Recortes filhos aprofundam uma pergunta do conjunto pai.</p></div><label>Filtrar <select id="filter"><option value="all">Todas</option><option value="parent">Contexto</option><option value="child">Sub-recortes</option></select></label></div><div class="cards" id="cards"></div></section>
+<footer><p>Publicação, captura, materiais, undo, persistência e replay passaram pela interface MCP do Ignis. Recortes são extrações determinísticas por Pillow.</p><p>Uma fonte de coluna por seções e uma fonte de galeria compartilhada; demais fontes geométricas calculadas no cliente. Cena visual sem prova de colisão, fechamento manifold, interior ou reconstrução do verso.</p><p><a href="native/house.scene.json">Cena nativa</a> · <a href="report.json">Relatório completo</a> · <a href="evidence.json">Manifesto dos recortes</a> · <a href="verification.json">Verificação técnica</a></p></footer>
+</main>
+<script>
+const report=__REPORT_DATA__;
+const q=s=>document.querySelector(s), fmt=v=>v==null?'indisponível':v.toFixed(4);
+const metrics=report.comparison.report.metrics,base=report['baseline-comparison'].report.metrics;
+q('#metrics').innerHTML=`<div><span class="label">MAE RGB · atual</span><br><strong>${fmt(metrics.rgb_mae)}</strong></div><div><span class="label">SSIM luma · atual</span><br><strong>${fmt(metrics.ssim_luma)}</strong></div><div><span class="label">MAE / SSIM · hipótese paralela</span><br><strong>${fmt(base.rgb_mae)} / ${fmt(base.ssim_luma)}</strong></div>`;
+const checks=report.verification;
+q('#checks').textContent=`${checks.stored_vertices.toLocaleString('pt-BR')} vértices e ${checks.stored_triangles.toLocaleString('pt-BR')} triângulos armazenados · ${checks.assets} assets · ${checks.instances} instâncias. Captura repetida, undo de aparência, save/load, replay estático de zero ticks e carga em processo novo: pixels idênticos. Validação técnica não constitui aceite visual.`;
+const byId=Object.fromEntries(report.comparison.report.regions.map(r=>[r.region.id,r.metrics]));
+const baseById=Object.fromEntries(report['baseline-comparison'].report.regions.map(r=>[r.region.id,r.metrics]));
+for(const item of report.regions){
+ const card=document.createElement('article');card.className='panel card';card.dataset.kind=item.parent?'child':'parent';
+ const heading=document.createElement('h3');heading.textContent=`${item.feature_id} · ${item.id}`;card.append(heading);
+ const context=document.createElement('p');context.className='muted small';context.textContent=`Caixa ${item.box.join(', ')} px${item.parent?' · filha de '+item.parent:''}`;card.append(context);
+ const pair=document.createElement('div');pair.className='pair';
+ for(const [label,path] of [['Referência',item.reference],['Render',item.candidate]]){const col=document.createElement('div');const text=document.createElement('p');text.className='label';text.textContent=label;const image=document.createElement('img');image.src=path;image.alt=`${label}: ${item.id}`;image.loading='lazy';col.append(text,image);pair.append(col);}card.append(pair);
+ const m=byId[item.id],bm=baseById[item.id];const numbers=document.createElement('p');numbers.className='small muted';numbers.textContent=`MAE ${fmt(m?.rgb_mae)} · SSIM ${fmt(m?.ssim_luma)} · hipótese paralela: ${fmt(bm?.rgb_mae)} / ${fmt(bm?.ssim_luma)}`;card.append(numbers);
+ const diagnosis=document.createElement('div');diagnosis.className='diagnosis';const status=document.createElement('p');status.className='status small';status.textContent=item.review.status;const text=document.createElement('p');text.textContent=item.review.diagnosis;diagnosis.append(status,text);card.append(diagnosis);
+ const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Análise aprofundada e implicação construtiva';details.append(summary);
+ for(const value of [item.analysis,item.construction,item.review.next_action]){if(value){const p=document.createElement('p');p.textContent=value;details.append(p);}}card.append(details);q('#cards').append(card);
+}
+q('#filter').addEventListener('change',e=>{document.querySelectorAll('.card').forEach(c=>c.hidden=e.target.value!=='all'&&c.dataset.kind!==e.target.value);});
+q('#views').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#views button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const view=b.dataset.view;q('#main-pair').style.display=view==='pair'?'grid':'none';q('#overlay').style.display=view==='overlay'?'block':'none';q('#single').style.display=!['pair','overlay'].includes(view)?'block':'none';q('#blend-controls').hidden=view!=='overlay';if(!['pair','overlay'].includes(view))q('#single').src=view;});
+q('#blend').addEventListener('input',e=>{const value=Number(e.target.value);q('.cover').style.clipPath=`inset(0 ${100-value}% 0 0)`;q('.divider').style.left=`${value}%`;});
+</script></body></html>

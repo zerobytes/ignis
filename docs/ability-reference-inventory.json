@@ -1,0 +1,104 @@
+{
+  "reference_project": "LandOfChaos",
+  "revision": "7b978932c0428b9b8f3691f5edb73226e49fac89",
+  "review_date": "2026-10-24",
+  "scope": "Read-only source study. No runtime execution, asset import or external project modification.",
+  "files": [
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityProgram.h",
+      "sha256": "1c19e52e270637e8efb2cf8a88d43e74f2662e568bcc35802ec38e6778eb41b9",
+      "lines": 237,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityProgram.cpp",
+      "sha256": "5f10a6d926f8478738fd9f37808ba65513a8e70e31b7ab28156ad6205cd68079",
+      "lines": 82,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityExecution.cpp",
+      "sha256": "58821778daeb8c2108f43011549b032ed372622360499ba208d3d0c697b2b663",
+      "lines": 554,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityStageActor.cpp",
+      "sha256": "406abaf32af475120e74c566a359ff00a2a3c38a48188de9c564926f719e0d57",
+      "lines": 501,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityTargeting.cpp",
+      "sha256": "c0454a4ebba94e02809801dca7c918a555d36bd9bba9d21f770aa3b4028881c1",
+      "lines": 210,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityActions.cpp",
+      "sha256": "e3ff28780dcae906c5c21f94100260cdc5eb4a909353a6d22d51f6d7b77f835b",
+      "lines": 314,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSComposedGameplayAbility.cpp",
+      "sha256": "61bd52ab9c996518e5683cb6878465321e63ea8ceb980d1243ad5bf8f6f0950b",
+      "lines": 115,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityInputComponent.cpp",
+      "sha256": "d33441736cf416e8d5237c396a1f767e9ab6b96a25ac754c3fc14a93e8feeada",
+      "lines": 60,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityLegacyAdapter.cpp",
+      "sha256": "6aa6c6d023f7d3e6fbcb083332e2b0bf9f965cf92345bf71f0b579af82c8a3b3",
+      "lines": 206,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityExamples.cpp",
+      "sha256": "411b3ffd106caead347eb68fb643dffb0947a7a91e0d100216e7af1fe8fa434b",
+      "lines": 227,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityEvents.cpp",
+      "sha256": "5f00cde51ebfc25cab28fb4f48132b4ffc04c43c18124471ce3f4c5e72381706",
+      "lines": 19,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoS/Abilities/LoSAbilityEffectOutcome.h",
+      "sha256": "712042502f09161302c12d8c1e59dc78d0a9f03178b6a35b7a168d6ad8718245",
+      "lines": 19,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoC/LoCAttributeSet.h",
+      "sha256": "2b98ea5f4668d6254e0ba2852ce7ea83e611174bedb206be9647e3182861a324",
+      "lines": 196,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "Source/LandOfChaos/LoC/LoCAttributeSet.cpp",
+      "sha256": "e5a5c2c7bddecbab100e23f5dddefc68f2196f5cace253813c70f71626da1ba4",
+      "lines": 411,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "docs/gameplay/ABILITY_ENGINE.md",
+      "sha256": "a0c69a38fbf2f74454b3fa65b627ffe83f0b0ff8a9012450dec7f0236b97ab4d",
+      "lines": 232,
+      "matches_worktree_at_read": true
+    },
+    {
+      "path": "docs/gameplay/ABILITY_ENGINE_VALIDATION.json",
+      "sha256": "1b939e64b9e5a533eae5710c13ccb382e5aa59537e622760eb9f9aa4e0f1ff4a",
+      "lines": 2380,
+      "matches_worktree_at_read": true
+    }
+  ]
+}

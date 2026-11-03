@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "seed": 200,
+  "size": 10.0,
+  "count": 2400,
+  "path": true,
+  "weights": {
+    "grama_baixa": 0.24,
+    "grama_fina": 0.18,
+    "folha_larga": 0.06,
+    "capim_arqueado": 0.045,
+    "capim_alto": 0.015,
+    "capim_seco": 0.045,
+    "capim_espiga": 0.04,
+    "capim_panicula": 0.03,
+    "capim_pluma": 0.02,
+    "mato_trifolio": 0.17,
+    "flores_brancas": 0.085,
+    "flores_roxas": 0.07
+  }
+}

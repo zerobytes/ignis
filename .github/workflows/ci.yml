@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**/*.md', 'docs/media/**', 'website/**', 'LICENSE', 'NOTICE']
+  pull_request:
+    paths-ignore: ['**/*.md', 'docs/media/**', 'website/**', 'LICENSE', 'NOTICE']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  rust:
+    name: Rust core / Linux (headless, no device audio)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --locked --no-default-features --all-targets -- -D warnings
+      - name: State atomicity and portable-save regressions
+        run: cargo test --locked --no-default-features --test local_transactions --test portable_save
+      - name: Build the public entry point
+        run: cargo build --locked --no-default-features --bin ignis
+      - name: Inspect the included scene without a GPU or a window
+        run: >-
+          ./target/debug/ignis --root "$GITHUB_WORKSPACE"
+          --scene examples/stealth-lab.scene.json
+          --command '{"command":{"op":"inspect"}}' > /tmp/ignis-inspection.json
+      - name: Check the inspection reply
+        run: python3 -c 'import json; r=json.load(open("/tmp/ignis-inspection.json")); assert isinstance(r.get("scene"), dict) and r.get("tick") == 0, "unexpected inspection reply"'

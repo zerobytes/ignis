@@ -1,0 +1,419 @@
+{
+  "version": 82,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      16.0,
+      17.0,
+      21.0
+    ],
+    "target": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 30.0,
+    "depth": 20.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          30.5,
+          0.5,
+          20.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "guard",
+      "name": "guard",
+      "transform": {
+        "position": [
+          -6.0,
+          0.8,
+          7.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.7,
+        0.2,
+        0.8
+      ],
+      "body": "npc",
+      "npc": {
+        "target": "player",
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 0.3,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 20.0,
+          "fov_degrees": 360.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 120,
+          "search_ticks": 60,
+          "search_turn_degrees_per_second": 0.0
+        }
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "character_controller": {
+        "max_slope_degrees": 30.0,
+        "slide_slope_degrees": 35.0,
+        "step": null,
+        "snap_distance": 0.15,
+        "offset": 0.01,
+        "gravity": 9.81,
+        "max_fall_speed": 50.0,
+        "push_dynamic_bodies": false
+      }
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          -5.0,
+          0.81,
+          4.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player",
+      "character_controller": {
+        "max_slope_degrees": 30.0,
+        "slide_slope_degrees": 35.0,
+        "step": {
+          "max_height": 0.3,
+          "min_width": 0.4
+        },
+        "snap_distance": 0.15,
+        "offset": 0.01,
+        "gravity": 9.81,
+        "max_fall_speed": 50.0,
+        "push_dynamic_bodies": false
+      }
+    },
+    {
+      "id": "ramp_allowed",
+      "name": "ramp_allowed",
+      "transform": {
+        "position": [
+          -1.0,
+          0.72794044,
+          4.0
+        ],
+        "size": [
+          4.0,
+          1.4558809,
+          2.5
+        ]
+      },
+      "geometry": {
+        "kind": "wedge",
+        "rise": "positive_x"
+      },
+      "color": [
+        0.2,
+        0.75,
+        0.4
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "ramp_allowed_landing",
+      "name": "ramp_allowed_landing",
+      "transform": {
+        "position": [
+          3.0,
+          0.72794044,
+          4.0
+        ],
+        "size": [
+          4.0,
+          1.4558809,
+          2.5
+        ]
+      },
+      "color": [
+        0.2,
+        0.75,
+        0.4
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "ramp_steep",
+      "name": "ramp_steep",
+      "transform": {
+        "position": [
+          -1.0,
+          1.6781993,
+          -4.0
+        ],
+        "size": [
+          4.0,
+          3.3563986,
+          2.5
+        ]
+      },
+      "geometry": {
+        "kind": "wedge",
+        "rise": "positive_x"
+      },
+      "color": [
+        0.85,
+        0.25,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "ramp_steep_landing",
+      "name": "ramp_steep_landing",
+      "transform": {
+        "position": [
+          3.0,
+          1.6781993,
+          -4.0
+        ],
+        "size": [
+          4.0,
+          3.3563986,
+          2.5
+        ]
+      },
+      "color": [
+        0.85,
+        0.25,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "stair_0",
+      "name": "stair_0",
+      "transform": {
+        "position": [
+          -2.0,
+          0.1,
+          0.0
+        ],
+        "size": [
+          1.0,
+          0.2,
+          2.0
+        ]
+      },
+      "color": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "stair_1",
+      "name": "stair_1",
+      "transform": {
+        "position": [
+          -1.0,
+          0.2,
+          0.0
+        ],
+        "size": [
+          1.0,
+          0.4,
+          2.0
+        ]
+      },
+      "color": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "stair_2",
+      "name": "stair_2",
+      "transform": {
+        "position": [
+          0.0,
+          0.3,
+          0.0
+        ],
+        "size": [
+          1.0,
+          0.6,
+          2.0
+        ]
+      },
+      "color": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "stair_3",
+      "name": "stair_3",
+      "transform": {
+        "position": [
+          1.0,
+          0.4,
+          0.0
+        ],
+        "size": [
+          1.0,
+          0.8,
+          2.0
+        ]
+      },
+      "color": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          15.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -10.0
+        ],
+        "size": [
+          30.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          10.0
+        ],
+        "size": [
+          30.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -15.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ],
+  "spatial_network": {
+    "nodes": [],
+    "links": []
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "definitions": [
+    {
+      "id": "parent",
+      "profile": {
+        "id": "parent-profile",
+        "width": 0.25,
+        "height": 2
+      },
+      "depth": 0.25,
+      "sampling_tolerance": 0.002,
+      "segments": [
+        6,
+        4,
+        6
+      ],
+      "trajectory": {
+        "kind": "cubic_bezier",
+        "id": "parent-axis",
+        "control_points_xz": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "surface_tolerance": 0.002
+      },
+      "sections": {
+        "id": "parent-sections",
+        "cross_section": "ellipse",
+        "interpolation": "pchip",
+        "stations": [
+          {
+            "id": "start",
+            "at": 0,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "lower",
+            "at": 0.35,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "upper",
+            "at": 0.55,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "other",
+            "at": 0.75,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "end",
+            "at": 1,
+            "width": 1,
+            "depth": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "child",
+      "profile": {
+        "id": "child-profile",
+        "width": 0.12,
+        "height": 0.9
+      },
+      "depth": 0.12,
+      "sampling_tolerance": 0.002,
+      "segments": [
+        6,
+        4,
+        6
+      ],
+      "trajectory": {
+        "kind": "cubic_bezier",
+        "id": "child-axis",
+        "control_points_xz": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "surface_tolerance": 0.002
+      },
+      "sections": {
+        "id": "child-sections",
+        "cross_section": "ellipse",
+        "interpolation": "pchip",
+        "stations": [
+          {
+            "id": "start",
+            "at": 0,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "lower",
+            "at": 0.35,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "upper",
+            "at": 0.55,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "other",
+            "at": 0.75,
+            "width": 1,
+            "depth": 1
+          },
+          {
+            "id": "end",
+            "at": 1,
+            "width": 1,
+            "depth": 1
+          }
+        ]
+      }
+    }
+  ],
+  "connection": {
+    "id": "join",
+    "parent_instance": "parent-instance",
+    "child_instance": "child-instance",
+    "parent_sections": [
+      "lower",
+      "upper"
+    ],
+    "child_section": "lower",
+    "parent_root": "root",
+    "child_root": "root",
+    "appearance": "parent",
+    "shape": {
+      "hub_offset": [
+        0,
+        0,
+        0
+      ],
+      "hub_radius": 0.1,
+      "blend": 0.025,
+      "cell_size": 0.035,
+      "guard_length": 0.004,
+      "collar_length": 0.018,
+      "relaxation_steps": 3,
+      "material_offset": [
+        0,
+        0,
+        0
+      ],
+      "material_relaxation_steps": 0
+    },
+    "skin": {
+      "iterations": 256,
+      "tolerance": 1e-06
+    }
+  }
+}

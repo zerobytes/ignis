@@ -1,0 +1,21 @@
+{
+  "id": "curved-cylinder",
+  "profile": {"id": "cylinder-profile", "width": 0.04, "height": 0.3},
+  "depth": 0.04,
+  "trajectory": {
+    "kind": "cubic_bezier",
+    "id": "cylinder-axis",
+    "control_points_xz": [[0, 0], [0, 0], [-0.1, 0], [-0.1, 0]],
+    "surface_tolerance": 0.0002
+  },
+  "sections": {
+    "id": "cylinder-sections",
+    "cross_section": "ellipse",
+    "stations": [
+      {"id": "start", "at": 0, "width": 1, "depth": 1},
+      {"id": "end", "at": 1, "width": 1, "depth": 1}
+    ]
+  },
+  "segments": [14, 63, 14],
+  "sampling_tolerance": 0.001
+}

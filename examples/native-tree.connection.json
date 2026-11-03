@@ -1,0 +1,38 @@
+{
+  "id": "secondary06-junction",
+  "parent_instance": "tree-branch-editable-1",
+  "child_instance": "tree-secondary-06",
+  "parent_sections": [
+    "branch1-030",
+    "branch1-044"
+  ],
+  "child_section": "secondary06-1",
+  "parent_root": "base",
+  "child_root": "base",
+  "appearance": "parent",
+  "shape": {
+    "hub_offset": [
+      0,
+      -0.025,
+      0
+    ],
+    "hub_radius": 0.08,
+    "blend": 0.05,
+    "cell_size": 0.024,
+    "guard_length": 0.004,
+    "collar_length": 0.018,
+    "relaxation_steps": 3,
+    "material_offset": [
+      0,
+      0,
+      0
+    ],
+    "seam_relaxation_steps": 0,
+    "seam_max_displacement": 0.004,
+    "material_relaxation_steps": 32
+  },
+  "skin": {
+    "iterations": 256,
+    "tolerance": 1e-06
+  }
+}

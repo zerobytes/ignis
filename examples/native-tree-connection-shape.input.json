@@ -1,0 +1,200 @@
+{
+  "baseline": {
+    "id": "secondary06-junction",
+    "parent_instance": "tree-branch-editable-1",
+    "child_instance": "tree-secondary-06",
+    "parent_sections": [
+      "branch1-030",
+      "branch1-044"
+    ],
+    "child_section": "secondary06-1",
+    "parent_root": "base",
+    "child_root": "base",
+    "appearance": "parent",
+    "shape": {
+      "hub_offset": [
+        0,
+        0,
+        0
+      ],
+      "hub_radius": 0.09,
+      "blend": 0.025,
+      "cell_size": 0.028,
+      "guard_length": 0.004,
+      "collar_length": 0.018,
+      "relaxation_steps": 3,
+      "material_offset": [
+        0,
+        0,
+        0
+      ],
+      "seam_relaxation_steps": 0,
+      "seam_max_displacement": 0.004,
+      "material_relaxation_steps": 32
+    },
+    "skin": {
+      "iterations": 256,
+      "tolerance": 1e-06
+    }
+  },
+  "phases": {
+    "initial": [
+      [
+        "baseline",
+        {}
+      ],
+      [
+        "density024",
+        {
+          "cell_size": 0.024
+        }
+      ],
+      [
+        "density022",
+        {
+          "cell_size": 0.022
+        }
+      ],
+      [
+        "narrow075",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.075,
+          "blend": 0.018
+        }
+      ],
+      [
+        "narrow065",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.065,
+          "blend": 0.015
+        }
+      ],
+      [
+        "soft075",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.075,
+          "blend": 0.04
+        }
+      ],
+      [
+        "offset075",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.075,
+          "hub_offset": [
+            0.01,
+            0,
+            0.015
+          ]
+        }
+      ],
+      [
+        "collar035",
+        {
+          "cell_size": 0.024,
+          "collar_length": 0.035
+        }
+      ],
+      [
+        "collar050",
+        {
+          "cell_size": 0.024,
+          "collar_length": 0.05
+        }
+      ],
+      [
+        "relax8",
+        {
+          "cell_size": 0.024,
+          "relaxation_steps": 8
+        }
+      ],
+      [
+        "density020",
+        {
+          "cell_size": 0.02
+        }
+      ],
+      [
+        "softwide",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.09,
+          "blend": 0.05
+        }
+      ]
+    ],
+    "refined": [
+      [
+        "baseline",
+        {}
+      ],
+      [
+        "soft065hub075",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.075,
+          "blend": 0.065
+        }
+      ],
+      [
+        "soft080hub070",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.07,
+          "blend": 0.08
+        }
+      ],
+      [
+        "soft060dense",
+        {
+          "cell_size": 0.022,
+          "hub_radius": 0.075,
+          "blend": 0.06
+        }
+      ],
+      [
+        "back080",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.08,
+          "blend": 0.05,
+          "hub_offset": [
+            -0.015,
+            0,
+            -0.02
+          ]
+        }
+      ],
+      [
+        "up080",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.08,
+          "blend": 0.05,
+          "hub_offset": [
+            0,
+            0.025,
+            0
+          ]
+        }
+      ],
+      [
+        "down080",
+        {
+          "cell_size": 0.024,
+          "hub_radius": 0.08,
+          "blend": 0.05,
+          "hub_offset": [
+            0,
+            -0.025,
+            0
+          ]
+        }
+      ]
+    ]
+  }
+}

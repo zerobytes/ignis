@@ -1,0 +1,500 @@
+{
+  "version": 24,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      15.0,
+      17.0,
+      21.0
+    ],
+    "target": [
+      0.0,
+      2.0,
+      0.0
+    ],
+    "fov_degrees": 50.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 24.0,
+    "depth": 20.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          24.5,
+          0.5,
+          20.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "flyer",
+      "name": "flyer",
+      "transform": {
+        "position": [
+          0.0,
+          4.5,
+          -7.5
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.1,
+        0.6,
+        1.0
+      ],
+      "body": "npc",
+      "npc": {
+        "mobility": {
+          "walk": false,
+          "jump_speed": null,
+          "fly_speed": 3.0,
+          "glide": null
+        },
+        "local_connections": {
+          "walk": false,
+          "fly": true,
+          "max_distance": 8.0
+        },
+        "surface": "floor",
+        "speed": 4.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 0.1,
+          "fov_degrees": 90.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 30,
+          "search_ticks": 1,
+          "search_turn_degrees_per_second": 0.0,
+          "hearing": {
+            "range": 12.0
+          }
+        },
+        "patrol": {
+          "route": {
+            "kind": "ring_3d",
+            "center": [
+              0.0,
+              4.5,
+              -5.0
+            ],
+            "normal": [
+              1.0,
+              2.0,
+              0.0
+            ],
+            "radius": 2.5,
+            "points": 6,
+            "seed": 0
+          },
+          "traversal": "loop",
+          "wait_ticks": 30,
+          "travel_ticks": 1200,
+          "retry_ticks": 120,
+          "arrival_distance": 0.2
+        }
+      }
+    },
+    {
+      "id": "glider",
+      "name": "glider",
+      "transform": {
+        "position": [
+          2.0,
+          5.8,
+          4.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.15,
+        0.9,
+        0.35
+      ],
+      "body": "npc",
+      "npc": {
+        "mobility": {
+          "walk": false,
+          "jump_speed": null,
+          "fly_speed": null,
+          "glide": {
+            "speed": 4.0,
+            "sink_speed": 2.0
+          }
+        },
+        "surface": "floor",
+        "speed": 4.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 12.0,
+          "fov_degrees": 120.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 600,
+          "search_ticks": 180,
+          "search_turn_degrees_per_second": 90.0
+        },
+        "patrol": {
+          "route": {
+            "kind": "points_3d",
+            "points": [
+              [
+                8.0,
+                0.8,
+                4.0
+              ],
+              [
+                2.0,
+                5.8,
+                4.0
+              ]
+            ]
+          },
+          "traversal": "loop",
+          "wait_ticks": 30,
+          "travel_ticks": 1200,
+          "retry_ticks": 120,
+          "arrival_distance": 0.2
+        }
+      }
+    },
+    {
+      "id": "jumper",
+      "name": "jumper",
+      "transform": {
+        "position": [
+          -6.0,
+          0.8,
+          0.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.75,
+        0.15,
+        0.85
+      ],
+      "body": "npc",
+      "npc": {
+        "mobility": {
+          "walk": false,
+          "jump_speed": 10.0,
+          "fly_speed": null,
+          "glide": null
+        },
+        "surface": "floor",
+        "speed": 4.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 12.0,
+          "fov_degrees": 120.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 600,
+          "search_ticks": 180,
+          "search_turn_degrees_per_second": 90.0
+        },
+        "patrol": {
+          "route": {
+            "kind": "points_3d",
+            "points": [
+              [
+                -2.0,
+                1.8,
+                0.0
+              ],
+              [
+                -6.0,
+                0.8,
+                0.0
+              ]
+            ]
+          },
+          "traversal": "loop",
+          "wait_ticks": 30,
+          "travel_ticks": 1200,
+          "retry_ticks": 120,
+          "arrival_distance": 0.2
+        }
+      }
+    },
+    {
+      "id": "platform",
+      "name": "Jump landing",
+      "transform": {
+        "position": [
+          -1.5,
+          0.5,
+          0.0
+        ],
+        "size": [
+          3.0,
+          1.0,
+          3.0
+        ]
+      },
+      "color": [
+        0.45,
+        0.38,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          -8.0,
+          0.8,
+          7.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player"
+    },
+    {
+      "id": "walker",
+      "name": "walker",
+      "transform": {
+        "position": [
+          -6.0,
+          0.8,
+          3.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "body": "npc",
+      "npc": {
+        "mobility": {
+          "walk": true,
+          "jump_speed": null,
+          "fly_speed": null,
+          "glide": null
+        },
+        "local_connections": {
+          "walk": true,
+          "fly": false,
+          "max_distance": 8.0
+        },
+        "surface": "floor",
+        "speed": 4.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 12.0,
+          "fov_degrees": 120.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 600,
+          "search_ticks": 180,
+          "search_turn_degrees_per_second": 90.0
+        },
+        "patrol": {
+          "route": {
+            "kind": "points_3d",
+            "points": [
+              [
+                -2.0,
+                1.8,
+                0.0
+              ]
+            ]
+          },
+          "traversal": "loop",
+          "wait_ticks": 30,
+          "travel_ticks": 1200,
+          "retry_ticks": 120,
+          "arrival_distance": 0.2
+        }
+      }
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          12.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -10.0
+        ],
+        "size": [
+          24.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          10.0
+        ],
+        "size": [
+          24.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -12.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          20.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ],
+  "spatial_network": {
+    "nodes": [
+      [
+        -6.0,
+        0.0,
+        0.0
+      ],
+      [
+        -2.0,
+        1.0,
+        0.0
+      ],
+      [
+        2.0,
+        5.0,
+        4.0
+      ],
+      [
+        8.0,
+        0.0,
+        4.0
+      ]
+    ],
+    "links": [
+      {
+        "from": 0,
+        "to": 1,
+        "mode": "jump"
+      },
+      {
+        "from": 1,
+        "to": 0,
+        "mode": "jump"
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "mode": "glide"
+      }
+    ]
+  }
+}

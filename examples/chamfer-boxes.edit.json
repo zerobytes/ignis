@@ -1,0 +1,8 @@
+{
+  "kind":"chamfer_boxes",
+  "id":"beveled-blocks",
+  "boxes":[
+    {"center":[-0.6,0,0],"size":[1,0.6,0.4],"bevel":0},
+    {"center":[0.6,0,0],"size":[1,0.6,0.4],"bevel":0.04}
+  ]
+}

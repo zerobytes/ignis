@@ -1,0 +1,16 @@
+{
+  "format": "IGFT1",
+  "origin": "Procedural tree from graphics-research build_probe_assets.py, seed7231; native Y-up export",
+  "source_vertices_sha256": "2bd03d3118b5de521ecb2838b8a791ac01e27dc66a5fe4fe4836174199ef351c",
+  "source_indices_sha256": "7b2de1e51658ac7c4348fbe500ccbf0f81250c1593ff265df60e7ccaf0c1ed1a",
+  "sha256": "4cd725e7d9b42ad6c5bc4f9d1a8ad924125b8ed074722c32fea140dfa9d53c6b",
+  "vertices": 17272,
+  "triangles": 20292,
+  "parts": {
+    "5": "bark",
+    "6": "leaves"
+  },
+  "bytes": 531952,
+  "layout": "8-byte magic, u32 vertex/triangle counts, float32 xyz vertices, u32[3] indices + u32 material per triangle; little endian",
+  "notes": "Exact original positions/triangles, position duplicates welded; unused normal/color channels omitted. Runtime normals/materials are native Ignis."
+}

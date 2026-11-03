@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "space_version": 1,
+  "id": "procedural_planet",
+  "revision": 1,
+  "center": {"cell": ["0", "0", "0"], "offset": [0, 0, 0]},
+  "diameter_meters": 800,
+  "surface_gravity_mps2": 9.81,
+  "base_height_meters": -3,
+  "operations": [
+    {"kind": "noise", "seed": 731, "wavelength_meters": 300, "amplitude_meters": 32, "octaves": 5, "persistence": 0.5},
+    {"kind": "raise", "direction": [0, 1, 0], "angular_radius_degrees": 32, "height_meters": 28},
+    {"kind": "raise", "direction": [1, 0, 0], "angular_radius_degrees": 48, "height_meters": 15}
+  ]
+}

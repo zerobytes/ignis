@@ -1,0 +1,43 @@
+{
+  "seed": 731199,
+  "diameter_meters": 12742000,
+  "center": {"cell": ["0", "0", "0"], "offset": [0, 0, 0]},
+  "gravity_mps2": 9.81,
+  "noise_layers": [
+    {"wavelength_meters": 30000, "amplitude_meters": 900, "octaves": 4, "persistence": 0.5},
+    {"wavelength_meters": 3300, "amplitude_meters": 420, "octaves": 4, "persistence": 0.5},
+    {"wavelength_meters": 650, "amplitude_meters": 95, "octaves": 3, "persistence": 0.45}
+  ],
+  "chains": [
+    {
+      "name": "western_divide",
+      "points_meters": [[-1900, 3200], [-2100, 0], [-2300, -3400], [-3200, -7200], [-2900, -12000], [-4200, -17500], [-3500, -24500]],
+      "stations": 9,
+      "radius_meters": [2800, 3400],
+      "height_meters": [1050, 1750],
+      "crest_peaks": {"stations": [1, 3, 6], "radius_meters": [800, 1150], "height_meters": [600, 1100]}
+    },
+    {
+      "name": "eastern_divide",
+      "points_meters": [[2100, 3200], [2400, -500], [2500, -4500], [3900, -9000], [4100, -15000], [5100, -20000], [4600, -25500]],
+      "stations": 9,
+      "radius_meters": [2900, 3500],
+      "height_meters": [1200, 1900],
+      "crest_peaks": {"stations": [1, 4, 7], "radius_meters": [750, 1100], "height_meters": [650, 1200]}
+    }
+  ],
+  "valley_floor": [
+    {"center_meters": [0, -1500], "radius_meters": 3500, "depth_meters": 220},
+    {"center_meters": [450, -7500], "radius_meters": 4200, "depth_meters": 300},
+    {"center_meters": [800, -14000], "radius_meters": 4800, "depth_meters": 380},
+    {"center_meters": [650, -22000], "radius_meters": 5000, "depth_meters": 450}
+  ],
+  "atmosphere_density": 0.00065,
+  "runtime": {"level": 12, "subdivisions": 64},
+  "verification_yaws": [0, 180],
+  "color": [0.42, 0.46, 0.32],
+  "material": {
+    "pattern": {"frequency": [0.012, 0.012, 0.012], "low": [0.52, 0.57, 0.4], "high": [1.05, 1.01, 0.8], "bump": 0, "warp": 0.3, "octaves": 2, "seed": 0, "contrast": 1.3, "kind": "noise"},
+    "reflectance": {"roughness": 0.9, "f0": 0}
+  }
+}

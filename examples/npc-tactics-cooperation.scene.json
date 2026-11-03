@@ -1,0 +1,477 @@
+{
+  "version": 93,
+  "name": "Procedural laboratory",
+  "camera": {
+    "position": [
+      25.5,
+      28.5,
+      27.599998
+    ],
+    "target": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fov_degrees": 48.0
+  },
+  "light": {
+    "direction": [
+      -0.5,
+      -1.0,
+      -0.3
+    ],
+    "ambient": 0.32
+  },
+  "recipe": {
+    "width": 30.0,
+    "depth": 24.0,
+    "seed": 42,
+    "obstacles": 0
+  },
+  "entities": [
+    {
+      "id": "a",
+      "name": "a",
+      "transform": {
+        "position": [
+          -2.0,
+          0.81,
+          -2.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.15,
+        0.5,
+        0.9
+      ],
+      "body": "npc",
+      "npc": {
+        "cooperation": {
+          "group": 7,
+          "role": 0,
+          "formation_offset": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "reserve_support": true,
+          "support_lease_ticks": 120
+        },
+        "mind": {
+          "intelligence": 1.0,
+          "personality": {
+            "anxiety": 0.5,
+            "caution": 0.5,
+            "concern": 0.0,
+            "fear": 0.5,
+            "courage": 0.5,
+            "curiosity": 0.5,
+            "aggression": 0.5,
+            "sociability": 0.5,
+            "discipline": 0.5
+          },
+          "seed": 0,
+          "variation": 0.0
+        },
+        "objectives": [
+          {
+            "priority": 2,
+            "when": "always",
+            "action": {
+              "kind": "use_ability",
+              "slot": 1,
+              "retry_ticks": 10,
+              "policy": {
+                "allies": {
+                  "ranking": "lowest_health_ratio",
+                  "include_self": false
+                },
+                "vitality_below": {
+                  "subject": "target",
+                  "basis_points": 9000
+                },
+                "approach": null
+              }
+            }
+          },
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "mobility": {
+          "walk": true,
+          "jump_speed": null,
+          "fly_speed": null,
+          "glide": null
+        },
+        "local_connections": {
+          "walk": true,
+          "fly": false,
+          "max_distance": 8.0
+        },
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 30.0,
+          "fov_degrees": 360.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 120,
+          "search_ticks": 60,
+          "search_turn_degrees_per_second": 0.0
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 100,
+            "capacity": 100
+          }
+        ],
+        "grants": [
+          "heal"
+        ]
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team",
+      "character_controller": {
+        "max_slope_degrees": 30.0,
+        "slide_slope_degrees": 35.0,
+        "step": null,
+        "snap_distance": 0.3,
+        "offset": 0.01,
+        "gravity": 9.81,
+        "max_fall_speed": 50.0,
+        "push_dynamic_bodies": false
+      }
+    },
+    {
+      "id": "b",
+      "name": "b",
+      "transform": {
+        "position": [
+          2.0,
+          0.81,
+          -2.0
+        ],
+        "size": [
+          0.6,
+          1.6,
+          0.6
+        ]
+      },
+      "color": [
+        0.15,
+        0.8,
+        0.5
+      ],
+      "body": "npc",
+      "npc": {
+        "cooperation": {
+          "group": 7,
+          "role": 0,
+          "formation_offset": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "reserve_support": true,
+          "support_lease_ticks": 120
+        },
+        "mind": {
+          "intelligence": 1.0,
+          "personality": {
+            "anxiety": 0.5,
+            "caution": 0.5,
+            "concern": 1.0,
+            "fear": 0.5,
+            "courage": 0.5,
+            "curiosity": 0.5,
+            "aggression": 0.5,
+            "sociability": 0.5,
+            "discipline": 0.5
+          },
+          "seed": 0,
+          "variation": 0.0
+        },
+        "objectives": [
+          {
+            "priority": 2,
+            "when": "always",
+            "action": {
+              "kind": "use_ability",
+              "slot": 1,
+              "retry_ticks": 10,
+              "policy": {
+                "allies": {
+                  "ranking": "lowest_health_ratio",
+                  "include_self": false
+                },
+                "vitality_below": {
+                  "subject": "target",
+                  "basis_points": 9000
+                },
+                "approach": null
+              }
+            }
+          },
+          {
+            "priority": 0,
+            "when": "always",
+            "action": {
+              "kind": "wait"
+            }
+          }
+        ],
+        "mobility": {
+          "walk": true,
+          "jump_speed": null,
+          "fly_speed": null,
+          "glide": null
+        },
+        "local_connections": {
+          "walk": true,
+          "fly": false,
+          "max_distance": 8.0
+        },
+        "surface": "floor",
+        "speed": 2.0,
+        "stop_distance": 0.2,
+        "enabled": true,
+        "awareness": {
+          "mode": "perceptive",
+          "vision_range": 30.0,
+          "fov_degrees": 360.0,
+          "initial_facing_degrees": 0.0,
+          "memory_ticks": 120,
+          "search_ticks": 60,
+          "search_turn_degrees_per_second": 0.0
+        }
+      },
+      "abilities": {
+        "resources": [
+          {
+            "resource": "energy",
+            "initial": 100,
+            "capacity": 100
+          }
+        ],
+        "grants": [
+          "heal"
+        ]
+      },
+      "vitality": {
+        "initial": 100,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team",
+      "character_controller": {
+        "max_slope_degrees": 30.0,
+        "slide_slope_degrees": 35.0,
+        "step": null,
+        "snap_distance": 0.3,
+        "offset": 0.01,
+        "gravity": 9.81,
+        "max_fall_speed": 50.0,
+        "push_dynamic_bodies": false
+      }
+    },
+    {
+      "id": "floor",
+      "name": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          -0.25,
+          0.0
+        ],
+        "size": [
+          30.5,
+          0.5,
+          24.5
+        ]
+      },
+      "color": [
+        0.13,
+        0.19,
+        0.25
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "player",
+      "name": "player",
+      "transform": {
+        "position": [
+          0.0,
+          0.8,
+          0.0
+        ],
+        "size": [
+          0.7,
+          1.6,
+          0.7
+        ]
+      },
+      "color": [
+        1.0,
+        0.5,
+        0.08
+      ],
+      "body": "player",
+      "vitality": {
+        "initial": 20,
+        "maximum": 100,
+        "scale": 1
+      },
+      "faction": "team"
+    },
+    {
+      "id": "wall_east",
+      "name": "wall east",
+      "transform": {
+        "position": [
+          15.0,
+          0.35,
+          0.0
+        ],
+        "size": [
+          0.4,
+          0.7,
+          24.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_north",
+      "name": "wall north",
+      "transform": {
+        "position": [
+          0.0,
+          1.0,
+          -12.0
+        ],
+        "size": [
+          30.0,
+          2.0,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_south",
+      "name": "wall south",
+      "transform": {
+        "position": [
+          0.0,
+          0.35,
+          12.0
+        ],
+        "size": [
+          30.0,
+          0.7,
+          0.4
+        ]
+      },
+      "color": [
+        0.2,
+        0.36,
+        0.42
+      ],
+      "body": "fixed"
+    },
+    {
+      "id": "wall_west",
+      "name": "wall west",
+      "transform": {
+        "position": [
+          -15.0,
+          1.0,
+          0.0
+        ],
+        "size": [
+          0.4,
+          2.0,
+          24.0
+        ]
+      },
+      "color": [
+        0.23,
+        0.31,
+        0.43
+      ],
+      "body": "fixed"
+    }
+  ],
+  "spatial_network": {
+    "nodes": [],
+    "links": []
+  },
+  "ability_catalog": {
+    "resources": [
+      {
+        "id": "energy",
+        "scale": 1
+      }
+    ],
+    "abilities": [
+      {
+        "delivery": {
+          "kind": "projectile",
+          "speed": 10.0,
+          "half_extent": 0.05,
+          "max_distance": 20.0
+        },
+        "id": "heal",
+        "selection": "actor",
+        "range": 8.0,
+        "relation": "allied",
+        "cast_ticks": 0,
+        "cooldown_ticks": 90,
+        "costs": [
+          {
+            "resource": "energy",
+            "units": 5
+          }
+        ],
+        "effects": [
+          {
+            "kind": "heal",
+            "recipient": "target",
+            "amount": 80
+          }
+        ],
+        "requires_below": null
+      }
+    ]
+  }
+}
