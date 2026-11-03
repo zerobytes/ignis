@@ -36,7 +36,12 @@ fn main() -> Result<()> {
         .into(),
     )?;
     e.advance(60)?;
-    let build = e.replay().build_id;
+    // Obtaining a Replay expands every authored instance pose; a cost probe
+    // needs only link provenance, never that population-sized snapshot.
+    let provenance: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        "artifacts/horizon-meadow/batch-link-provenance.json",
+    )?)?;
+    let build = provenance["library_sha256"].clone();
     let mut frame = e.render_frame();
     let source = e.scene.meshes.clone();
     let mut sorted = source.clone();
@@ -128,7 +133,7 @@ fn main() -> Result<()> {
             fs::write(
                 output.join("batch-probe.json"),
                 serde_json::to_vec_pretty(
-                    &json!({"build_id":build,"scene":scene_path,"instances":source.instances.len(),"same_instance_records":true,"method":"warm serial draw plus completion; CPU/GPU overlap not separated; not presentation FPS","rows":rows}),
+                    &json!({"library_sha256":build,"scene":scene_path,"instances":source.instances.len(),"same_instance_records":true,"method":"warm serial draw plus completion; CPU/GPU overlap not separated; not presentation FPS","rows":rows}),
                 )?,
             )?;
         }

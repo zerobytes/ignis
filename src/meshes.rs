@@ -1513,6 +1513,170 @@ pub struct Frame {
     legacy_unique_static: bool,
 }
 impl Frame {
+    pub(crate) fn proxy_compatible(&self) -> bool {
+        self.static_surface_compatible(false)
+    }
+    pub(crate) fn reconstructed_coordinates_compatible(&self) -> bool {
+        self.static_surface_compatible(true)
+    }
+    fn static_surface_compatible(&self, allow_normal_overrides: bool) -> bool {
+        !self.canonical_planet
+            && !self.legacy_unique_static
+            && self.wind_residency.is_empty()
+            && self.wind_draws.is_empty()
+            && self.drawn_avatars.is_empty()
+            && (allow_normal_overrides || self.normal_overrides.iter().all(Option::is_none))
+            && self
+                .source
+                .assets
+                .iter()
+                .all(|a| a.rig.is_none() && a.clips.is_empty())
+            && self
+                .source
+                .assets
+                .iter()
+                .all(|a| a.material.procedural.is_none())
+            && self
+                .source
+                .instances
+                .iter()
+                .all(|i| i.attachment.is_none() && i.playback.is_none())
+    }
+    pub(crate) fn apply_proxy_normals(
+        &mut self,
+        overrides: &[(usize, Arc<Vec<[f32; 3]>>)],
+    ) -> Result<()> {
+        if overrides.iter().all(|(i, n)| {
+            self.normal_overrides
+                .get(*i)
+                .and_then(Option::as_ref)
+                .is_some_and(|a| Arc::ptr_eq(a, n))
+        }) {
+            return Ok(());
+        }
+        for (i, n) in overrides {
+            let a = self
+                .source
+                .assets
+                .get(*i)
+                .ok_or_else(|| invalid("Proxy normal asset missing"))?;
+            if n.len() != a.geometry.positions.len()
+                || n.iter().any(|v| {
+                    !Vec3::from(*v).is_finite()
+                        || (Vec3::from(*v).length_squared() - 1.).abs() > 0.001
+                })
+            {
+                return Err(invalid("Proxy normal stream mismatch"));
+            }
+        }
+        self.normal_overrides.resize(self.source.assets.len(), None);
+        for (i, n) in overrides {
+            if let Some(d) = self.draws.iter().find(|d| d.asset == *i) {
+                if !d.shared {
+                    return Err(invalid("Proxy normals require static shared geometry"));
+                }
+                for (v, index) in self.shared_vertices[d.range.clone()]
+                    .iter_mut()
+                    .zip(self.source.assets[*i].geometry.triangles.iter().flatten())
+                {
+                    v.normal = n[*index as usize];
+                }
+            }
+            self.normal_overrides[*i] = Some(n.clone());
+        }
+        self.generation = next_frame_generation();
+        self.geometry_generation = self.generation;
+        Ok(())
+    }
+    pub(crate) fn prepare_proxy_catalog(
+        &mut self,
+        document: &Document,
+    ) -> Result<Vec<crate::distant::selection::Draw>> {
+        let mut catalog = Document {
+            objects: Default::default(),
+            assets: document.assets.clone(),
+            instances: document
+                .assets
+                .iter()
+                .map(|a| Instance {
+                    id: a.id.clone(),
+                    asset: a.id.clone(),
+                    position: [0.; 3],
+                    rotation: [0., 0., 0., 1.],
+                    scale: 1.,
+                    color: [1.; 3],
+                    playback: None,
+                    attachment: None,
+                })
+                .collect(),
+        };
+        // This temporary catalog is never submitted to the renderer. Repetition
+        // admits small assets to the same resident stream as large ones.
+        let mut names = catalog
+            .instances
+            .iter()
+            .map(|i| i.id.clone())
+            .collect::<BTreeSet<_>>();
+        for index in 0..catalog.assets.len() {
+            let mut i = catalog.instances[index].clone();
+            let mut salt = 0;
+            loop {
+                let id = format!("proxy_catalog_{index}_{salt}");
+                if names.insert(id.clone()) {
+                    i.id = id;
+                    break;
+                }
+                salt += 1;
+            }
+            catalog.instances.push(i);
+        }
+        self.update(&catalog, 0);
+        if self.draws.len() != catalog.assets.len() * 2 || self.draws.iter().any(|d| !d.shared) {
+            return Err(invalid("Proxy catalog requires shared static assets"));
+        }
+        Ok(self.draws[..catalog.assets.len()].to_vec())
+    }
+    pub(crate) fn set_proxy_instances(
+        &mut self,
+        document: &Document,
+        templates: &[crate::distant::selection::Draw],
+    ) -> Result<()> {
+        if self.source.instances == document.instances
+            && Arc::ptr_eq(&self.source.objects, &document.objects)
+        {
+            return Ok(());
+        }
+        let lookup: std::collections::HashMap<_, _> = document
+            .assets
+            .iter()
+            .enumerate()
+            .map(|(i, a)| (a.id.as_str(), i))
+            .collect();
+        let mut counts = vec![0usize; document.assets.len()];
+        for i in &document.instances {
+            let slot = *lookup
+                .get(i.asset.as_str())
+                .ok_or_else(|| invalid("Proxy placement asset missing"))?;
+            counts[slot] += 1;
+        }
+        self.draws.clear();
+        for i in &document.instances {
+            let slot = lookup[i.asset.as_str()];
+            let mut d = templates
+                .get(slot)
+                .ok_or_else(|| invalid("Proxy catalog asset missing"))?
+                .clone();
+            d.instance.clone_from(&i.id);
+            d.world = transform(i.position, i.rotation) * Mat4::from_scale(Vec3::splat(i.scale));
+            d.color = i.color;
+            d.repeated = counts[slot] > 1;
+            self.draws.push(d);
+        }
+        self.source.clone_from(document);
+        self.generation = next_frame_generation();
+        self.static_generation = self.generation;
+        Ok(())
+    }
     /// Static planetary streams are already canonical. Keep indexed source arrays
     /// instead of expanding every terrain corner again on each catalog change.
     pub(crate) fn update_planet_canonical(

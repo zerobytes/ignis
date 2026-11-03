@@ -367,6 +367,7 @@ pub struct Renderer {
     transparency: crate::render_transparency::Transparency,
     particles: crate::render_particles::Gpu,
     surface_field: Option<crate::surface_field::Gpu>,
+    mesh_proxy: Option<crate::mesh_proxy::State>,
     depth_layout: wgpu::BindGroupLayout,
     shadow_pipeline: wgpu::RenderPipeline,
     shadow_bind_group: wgpu::BindGroup,
@@ -940,6 +941,7 @@ impl Renderer {
             transparency: Default::default(),
             particles,
             surface_field: None,
+            mesh_proxy: None,
             depth_layout,
             shadow_pipeline,
             shadow_bind_group,
@@ -989,6 +991,18 @@ impl Renderer {
             ))?;
             renderer.set_surface_field(Some(std::sync::Arc::new(field)))?;
         }
+        if let Ok(mode) = std::env::var("IGNIS_HORIZON_COORDS") {
+            renderer.set_reconstructed_coordinates(true, mode == "indexed");
+        }
+        if let Some(path) = std::env::var_os("IGNIS_HORIZON_PROXIES") {
+            anyhow::ensure!(
+                std::fs::metadata(&path)?.len() <= 256 * 1024 * 1024,
+                "Diagnostic proxy packet too large"
+            );
+            renderer.set_mesh_proxy(Some(std::sync::Arc::new(crate::mesh_proxy::Pack::decode(
+                &std::fs::read(path)?,
+            )?)));
+        }
         Ok(renderer)
     }
     /// Current sprite allocation and upload counters.
@@ -1016,6 +1030,17 @@ impl Renderer {
     }
     pub fn surface_field_info(&self) -> serde_json::Value {
         serde_json::to_value(self.surface_field.as_ref().map(|g| &g.stats)).unwrap()
+    }
+    /// Experimental estimated-error proxies; not an IGL/image certificate.
+    pub fn set_mesh_proxy(&mut self, packet: Option<std::sync::Arc<crate::mesh_proxy::Pack>>) {
+        self.mesh_proxy = packet.map(crate::mesh_proxy::State::new);
+    }
+    /// Experimental reconstruction of redundant static procedural coordinates.
+    pub fn set_reconstructed_coordinates(&mut self, enabled: bool, indexed: bool) {
+        self.instanced.set_reconstructed_coordinates(enabled, indexed);
+    }
+    pub fn mesh_proxy_info(&self) -> serde_json::Value {
+        serde_json::to_value(self.mesh_proxy.as_ref().map(|p| &p.stats)).unwrap()
     }
     /// Experimental sampled-coverage packet. Installing it does not enable it.
     /// No Scene/physics/replay state changes; a failed installation preserves the old packet.
@@ -1146,6 +1171,22 @@ impl Renderer {
         height: u32,
     ) -> Result<()> {
         anyhow::ensure!(width > 0 && height > 0, "Viewport cannot be empty");
+        if let Some(mut proxy) = self.mesh_proxy.take() {
+            let result = proxy.prepare(scene, width, height).and_then(|selected| {
+                self.draw(
+                    if selected {
+                        proxy.frame.as_ref().unwrap()
+                    } else {
+                        scene
+                    },
+                    view,
+                    width,
+                    height,
+                )
+            });
+            self.mesh_proxy = Some(proxy);
+            return result;
+        }
         if let Some(clip) = scene.clip {
             clip.validate()?;
         }

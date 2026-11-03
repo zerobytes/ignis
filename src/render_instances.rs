@@ -61,6 +61,7 @@ struct Key {
 }
 #[derive(Default)]
 struct Representations {
+    position_coordinates: bool,
     planet: Option<Arc<Vec<crate::meshes::SplitPosition>>>,
     normals: Option<Arc<Vec<[f32; 3]>>>,
     atmosphere: Option<Arc<Vec<u8>>>,
@@ -82,6 +83,7 @@ struct Geometry {
     triangles: usize,
     compact: bool,
     minimal: bool,
+    position_coordinates: bool,
     indexing_allowed: bool,
 }
 #[derive(Clone, PartialEq)]
@@ -170,6 +172,7 @@ pub(crate) struct Gpu {
     reverse_z: bool,
     full_compact: wgpu::RenderPipeline,
     full_minimal: wgpu::RenderPipeline,
+    full_position_coordinates: wgpu::RenderPipeline,
     cheap: wgpu::RenderPipeline,
     shadow: wgpu::RenderPipeline,
     shadow_compact: wgpu::RenderPipeline,
@@ -189,6 +192,8 @@ pub(crate) struct Gpu {
     indexing: bool,
     compact_vertices: bool,
     minimal_vertices: bool,
+    reconstruct_coordinates: bool,
+    reconstruct_indexing: bool,
     adaptive_occluders: bool,
     pub stats: Stats,
 }
@@ -208,10 +213,11 @@ impl Gpu {
         let pipeline = |cheap: bool,
                         shadow: bool,
                         compact: bool,
-                        minimal: bool,
+                        minimal_mode: u8,
                         transparent: bool,
                         reverse: bool,
                         planet: bool| {
+            let minimal = minimal_mode > 0;
             let opaque_targets = [Some(wgpu::ColorTargetState {
                 format,
                 blend: None,
@@ -245,6 +251,8 @@ impl Gpu {
                         }
                     } else if cheap {
                         "vs_shared_distant"
+                    } else if minimal_mode == 2 {
+                        "vs_shared_position_coordinates"
                     } else if minimal {
                         "vs_shared_minimal"
                     } else if compact {
@@ -302,7 +310,7 @@ impl Gpu {
                         "fs_main"
                     }),
                     compilation_options: wgpu::PipelineCompilationOptions {
-                        constants: if minimal {
+                        constants: if minimal_mode == 1 {
                             &[("uniform_material", 1.0)]
                         } else {
                             &[]
@@ -410,25 +418,26 @@ impl Gpu {
             empty_occlusion_input: None,
             source_ids: Vec::new(),
             transparent: [
-                pipeline(false, false, false, false, true, false, false),
-                pipeline(false, false, true, false, true, false, false),
-                pipeline(false, false, true, true, true, false, false),
+                pipeline(false, false, false, 0, true, false, false),
+                pipeline(false, false, true, 0, true, false, false),
+                pipeline(false, false, true, 1, true, false, false),
             ],
-            full: pipeline(false, false, false, false, false, false, false),
+            full: pipeline(false, false, false, 0, false, false, false),
             full_reverse: [
-                pipeline(false, false, false, false, false, true, false),
-                pipeline(false, false, true, false, false, true, false),
-                pipeline(false, false, true, true, false, true, false),
+                pipeline(false, false, false, 0, false, true, false),
+                pipeline(false, false, true, 0, false, true, false),
+                pipeline(false, false, true, 1, false, true, false),
             ],
-            planet: pipeline(false, false, false, false, false, true, true),
-            planet_compact: pipeline(false, false, true, false, false, true, true),
+            planet: pipeline(false, false, false, 0, false, true, true),
+            planet_compact: pipeline(false, false, true, 0, false, true, true),
             reverse_z: false,
-            full_compact: pipeline(false, false, true, false, false, false, false),
-            full_minimal: pipeline(false, false, true, true, false, false, false),
-            cheap: pipeline(true, false, false, false, false, false, false),
-            shadow: pipeline(false, true, false, false, false, false, false),
-            shadow_compact: pipeline(false, true, true, false, false, false, false),
-            shadow_minimal: pipeline(false, true, true, true, false, false, false),
+            full_compact: pipeline(false, false, true, 0, false, false, false),
+            full_minimal: pipeline(false, false, true, 1, false, false, false),
+            full_position_coordinates: pipeline(false, false, true, 2, false, false, false),
+            cheap: pipeline(true, false, false, 0, false, false, false),
+            shadow: pipeline(false, true, false, 0, false, false, false),
+            shadow_compact: pipeline(false, true, true, 0, false, false, false),
+            shadow_minimal: pipeline(false, true, true, 1, false, false, false),
             geometry: BTreeMap::new(),
             generation: None,
             representations: Vec::new(),
@@ -445,6 +454,8 @@ impl Gpu {
             indexing: true,
             compact_vertices: true,
             minimal_vertices: true,
+            reconstruct_coordinates: false,
+            reconstruct_indexing: false,
             adaptive_occluders: true,
             stats: Stats::default(),
         }
@@ -459,6 +470,13 @@ impl Gpu {
         if self.minimal_vertices != enabled {
             self.geometry.clear();
             self.minimal_vertices = enabled;
+        }
+    }
+    pub fn set_reconstructed_coordinates(&mut self, enabled: bool, indexed: bool) {
+        if self.reconstruct_coordinates != enabled || self.reconstruct_indexing != indexed {
+            self.geometry.clear();
+            self.reconstruct_coordinates = enabled;
+            self.reconstruct_indexing = indexed;
         }
     }
     pub fn set_indexing(&mut self, enabled: bool) {
@@ -531,6 +549,15 @@ impl Gpu {
                     live.insert((source, smooth, normal, Arc::as_ptr(p) as usize, slot + 1));
                 }
                 self.representations.push(Representations {
+                    position_coordinates: asset.geometry.material_coordinates.is_none()
+                        && asset.rig.is_none()
+                        && asset.clips.is_empty()
+                        && asset
+                            .geometry
+                            .positions
+                            .iter()
+                            .flatten()
+                            .all(|v| v.to_bits() != 0x80000000),
                     planet,
                     atmosphere,
                     lod,
@@ -584,6 +611,8 @@ impl Gpu {
                 visibility.masks[n],
             )
         };
+        let coordinates_compatible =
+            self.reconstruct_coordinates && frame.meshes.reconstructed_coordinates_compatible();
         for (n, draw) in frame.meshes.draws.iter().enumerate() {
             if draw.shared && visibility.masks[n] == 0 {
                 continue;
@@ -655,8 +684,30 @@ impl Gpu {
                 .and_then(|p| p.as_ref());
             let planet_compact =
                 planet.is_some() && self.compact_vertices && material.detail.is_none();
+            let asset = &frame.meshes.source.assets[draw.asset];
+            let representations = &self.representations[draw.asset];
+            // Explicit experimental path: the static source uses position as its
+            // procedural domain. Keep the full material shader, reconstruct only
+            // redundant vertex attributes. No planet, coverage or projected detail.
+            let position_coordinates = self.reconstruct_coordinates
+                && self.compact_vertices
+                && self.minimal_vertices
+                && !self.reverse_z
+                && frame.planet_air.is_none()
+                && planet.is_none()
+                && level.is_none()
+                && color.is_none()
+                && draw.repeated
+                && representations.position_coordinates
+                && material.detail.is_none()
+                && !material.has_coverage()
+                && material.surface.is_none()
+                && material.procedural.is_none()
+                && coordinates_compatible
+                && material.transmission == 0.;
             let indexed = self.indexing
-                && ((planet.is_some() && material.detail.is_none() && !material.has_coverage())
+                && ((position_coordinates && self.reconstruct_indexing)
+                    || (planet.is_some() && material.detail.is_none() && !material.has_coverage())
                     || color.is_some()
                     || (draw.repeated
                         && material.pattern.is_none()
@@ -668,12 +719,10 @@ impl Gpu {
                 // Finite planet optics also consumes the canonical radial domain,
                 // even when the authored material has no procedural channels.
                 && !frame.planet_air.is_some_and(|p| draw.asset < p.terrain_materials as usize)
-                && material.pattern.is_none()
-                && material.secondary_pattern.is_none()
+                && (position_coordinates || (material.pattern.is_none()
+                && material.secondary_pattern.is_none()))
                 && material.detail.is_none()
                 && !material.has_coverage();
-            let asset = &frame.meshes.source.assets[draw.asset];
-            let representations = &self.representations[draw.asset];
             let representation = if let Some(p) = planet {
                 Arc::as_ptr(p) as usize
             } else if level.is_none() {
@@ -713,6 +762,8 @@ impl Gpu {
                     0
                 } else if !self.compact_vertices {
                     3
+                } else if position_coordinates {
+                    6
                 } else if minimal_material {
                     1
                 } else {
@@ -976,6 +1027,7 @@ impl Gpu {
                     },
                     compact,
                     minimal,
+                    position_coordinates: position_coordinates && minimal,
                     indexing_allowed: indexed,
                 });
                 self.stats.geometry_uploads += 1;
@@ -1431,6 +1483,8 @@ impl Gpu {
                 &self.shadow
             } else if batch.key.cheap {
                 &self.cheap
+            } else if minimal && self.geometry[&batch.key].position_coordinates {
+                &self.full_position_coordinates
             } else if minimal {
                 &self.full_minimal
             } else if compact {

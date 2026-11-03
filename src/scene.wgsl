@@ -952,6 +952,17 @@ struct OcclusionOut {
     return out;
 }
 
+// Same full procedural material; only redundant static coordinates are reconstructed.
+@vertex fn vs_shared_position_coordinates(@location(0) position: vec3<f32>, @location(1) normal:vec3<f32>, i:StaticInstance) -> VertexOut {
+    var out:VertexOut;
+    out.world=shared_world(i,position);
+    out.clip=globals.view_projection * vec4<f32>(out.world,1.0);
+    out.normal=normalize(mat3x3<f32>(i.x.xyz,i.y.xyz,i.z.xyz)*normal);
+    out.color=i.tint; out.material=i.material;
+    out.rest=position; out.material_projection_weights=abs(normal);
+    return out;
+}
+
 // All tiles share the same split geocentric coordinates and observer constants.
 // Subtract before rescaling: close border vertices reconstruct bit-identically.
 fn planet_vertex(high:vec3<f32>,normal:vec3<f32>,low:vec3<f32>,rest:vec3<f32>,weights:vec3<f32>,i:StaticInstance)->VertexOut {
