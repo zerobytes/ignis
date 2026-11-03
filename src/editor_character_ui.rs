@@ -1,5 +1,7 @@
 use super::*;
 use crate::meshes::character::{Configuration, Placement};
+#[path = "editor_character_eyes.rs"]
+mod eyes;
 
 pub(super) struct State {
     key: Option<(String, u64)>,
@@ -8,16 +10,20 @@ pub(super) struct State {
     prefix: String,
     preset_path: String,
     confirm_regenerate: bool,
+    eyes_linked: bool,
+    eye_side: usize,
 }
 impl Default for State {
     fn default() -> Self {
         Self {
             key: None,
             draft: Default::default(),
-            source_path: "artifacts/character-base/human-nose.ignis-character".into(),
+            source_path: "artifacts/character-base/human-eyes.ignis-character".into(),
             prefix: "female".into(),
             preset_path: "artifacts/character-base/female.ignis-character-config".into(),
             confirm_regenerate: false,
+            eyes_linked: true,
+            eye_side: 0,
         }
     }
 }
@@ -256,6 +262,22 @@ pub(super) fn properties(
             let key=(prefix.clone(),service.engine.revision);
             if state.key.as_ref()!=Some(&key) {state.key=Some(key);state.draft=binding.recipe.configuration.clone();state.confirm_regenerate=false;}
             let mut changed=false;
+            if !source.eyes.is_empty() && ui.button("Enquadrar olhos").clicked() {
+                let mut center=glam::Vec3::ZERO;let mut count=0.;
+                for eye in &source.eyes {
+                    let id=format!("{}_{}",prefix,eye.iris);
+                    if let (Ok(asset),Some(instance))=(scene.meshes.asset(&id),scene.meshes.instances.iter().find(|i|i.id==id)) {
+                        let matrix=glam::Mat4::from_scale_rotation_translation(glam::Vec3::splat(instance.scale),glam::Quat::from_array(instance.rotation),instance.position.into());
+                        for p in &asset.geometry.positions {center+=matrix.transform_point3((*p).into());count+=1.;}
+                    }
+                }
+                if count>0. {
+                    center/=count;
+                    let forward=editor.handles.first().map_or(glam::Vec3::Z,|h|h.basis[2].into());
+                    let mut camera=scene.camera.clone();camera.target=center.to_array();camera.position=(center-forward*0.18).to_array();camera.fov_degrees=30.;
+                    edit(commands,Action::Camera {camera:Some(camera)});
+                }
+            }
             face_properties(ui, service, commands);
             ui.add_enabled_ui(editor.ready&&!service.engine.playing,|ui| {
                 if source.parameters.iter().any(|p|p.name=="body_masculinity") {
@@ -279,6 +301,7 @@ pub(super) fn properties(
                         }
                     });
                 }
+                changed |= eyes::controls(ui, source, &mut state.draft, &mut state.eyes_linked, &mut state.eye_side);
                 for (group,names) in [
                     ("Corpo",&["body_masculinity","adiposity","musculature","muscle_definition","muscle_striation","stature"][..]),
                     ("Cintura",&["waist_width"][..]),
@@ -293,7 +316,7 @@ pub(super) fn properties(
                     ("Rosto",&["nose_width","nose_length","jaw_width","chin_projection","mouth_width"][..]),
                     ("Outros",&[][..]),
                 ] {
-                    let params:Vec<_>=source.parameters.iter().filter(|p|!p.name.starts_with("face_") && !(source.version>=4 && p.name=="muscle_striation") && if group=="Outros" {label(&p.name).is_none()} else {names.contains(&p.name.as_str())}).collect();
+                    let params:Vec<_>=source.parameters.iter().filter(|p|!p.name.starts_with("face_") && !source.eyes.iter().any(|eye| p.name.starts_with(&format!("{}_",eye.prefix))) && !(source.version>=4 && p.name=="muscle_striation") && if group=="Outros" {label(&p.name).is_none()} else {names.contains(&p.name.as_str())}).collect();
                     if params.is_empty() {continue;}
                     egui::CollapsingHeader::new(group).default_open(true).show(ui,|ui| {
                         for p in params {

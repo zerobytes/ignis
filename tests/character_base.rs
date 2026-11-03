@@ -22,6 +22,7 @@ fn source() -> Source {
         warps: Vec::new(),
         surfaces: Vec::new(),
         refinements: Vec::new(),
+        eyes: Vec::new(),
         positions: vec![[0., 0., 0.], [0., 1., 0.], [1., 0., 0.]],
         parameters: vec![Parameter {
             name: "width".into(),
@@ -843,6 +844,7 @@ fn source3_rigid_socket_transport_preserves_the_entire_insert() {
         handles: vec![],
         surfaces: vec![],
         refinements: vec![],
+        eyes: vec![],
         joints: vec![
             Joint {
                 name: "root".into(),
@@ -1266,4 +1268,195 @@ fn source6_expanded_configuration_versions_are_atomic_and_durable() {
         )
         .unwrap();
     assert_eq!(service.engine.scene, after);
+}
+
+#[test]
+fn ocular_source_contract_cache_rigid_transport_and_durability() {
+    let mut s = source();
+    for (name, _, min, max, default) in eyes::CONTROLS {
+        s.parameters.push(Parameter {
+            name: format!("ocular_{name}"),
+            minimum: *min,
+            maximum: *max,
+            default: if *name == "quality" { 0. } else { *default },
+        });
+    }
+    for name in ["sclera", "iris", "cornea"] {
+        let mut p = s.parts[0].clone();
+        p.name = name.into();
+        p.socket = Some(255);
+        let mut sums = [0.; meshes::MAX_BONES];
+        sums[255] = 1.;
+        p.weights = vec![meshes::Weight::from_sums(&sums).unwrap(); 3];
+        s.parts.push(p);
+    }
+    s.eyes.push(Eye::new(
+        "sclera".into(),
+        "iris".into(),
+        "cornea".into(),
+        Anchor { vertices: vec![0] },
+        "ocular".into(),
+        0.012,
+    ));
+    s.validate().unwrap();
+    let mut bad = s.clone();
+    bad.version = 6;
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.eyes[0].cornea = "iris".into();
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.parts[3].weights[0] = s.parts[0].weights[0].clone();
+    assert!(bad.validate().is_err());
+    let (a, _) = s.compile(&Configuration::default(), &placement()).unwrap();
+    let (b, _) = s.compile(&Configuration::default(), &placement()).unwrap();
+    let ai = a.asset("test_iris").unwrap();
+    let bi = b.asset("test_iris").unwrap();
+    assert!(std::sync::Arc::ptr_eq(
+        ai.material.procedural.as_ref().unwrap(),
+        bi.material.procedural.as_ref().unwrap()
+    ));
+    let material = ai.material.procedural.as_ref().unwrap();
+    assert_eq!(material.fixed.as_ref().unwrap().resolution, 64);
+    assert_eq!(material.fixed.as_ref().unwrap().samples.len(), 5461);
+    assert!(material.sample([0.5, 0.5], 0.).color_roughness[0] < 0.003);
+    assert!(material.sample([0.8, 0.5], 0.).color_roughness[0] > 0.003);
+    assert!(
+        material
+            .sample([0.8, 0.5], 1.)
+            .color_roughness
+            .iter()
+            .all(|v| v.is_finite())
+    );
+    let mut config = Configuration::default();
+    config.parameters.insert("width".into(), 0.2);
+    let (translated, _) = s.compile(&config, &placement()).unwrap();
+    for id in ["test_sclera", "test_iris", "test_cornea"] {
+        let p = &a.asset(id).unwrap().geometry.positions;
+        let q = &translated.asset(id).unwrap().geometry.positions;
+        for (p, q) in p.iter().zip(q) {
+            assert!((q[0] - p[0] - 0.2).abs() < 1e-6);
+            assert_eq!(p[1], q[1]);
+            assert_eq!(p[2], q[2]);
+        }
+        assert_eq!(a.asset(id).unwrap().rig.as_ref().unwrap().bones.len(), 256);
+    }
+    let iris_again = translated.asset("test_iris").unwrap();
+    assert!(std::sync::Arc::ptr_eq(
+        material,
+        iris_again.material.procedural.as_ref().unwrap()
+    ));
+    config.parameters.insert("ocular_seed".into(), 91.);
+    let (different, _) = s.compile(&config, &placement()).unwrap();
+    assert_ne!(
+        material.fixed,
+        different
+            .asset("test_iris")
+            .unwrap()
+            .material
+            .procedural
+            .as_ref()
+            .unwrap()
+            .fixed
+    );
+    let root = tempfile::tempdir().unwrap();
+    std::fs::write(
+        root.path().join("ocular.ignis-character"),
+        serde_json::to_vec(&s).unwrap(),
+    )
+    .unwrap();
+    let mut service = Service::new(root.path(), RoomRecipe::default().generate().unwrap()).unwrap();
+    service
+        .execute(
+            Command::PublishCharacter {
+                path: "ocular.ignis-character".into(),
+                configuration: Default::default(),
+                placement: placement(),
+            }
+            .into(),
+        )
+        .unwrap();
+    let baseline = service.engine.scene.clone();
+    assert!(baseline.version >= 112);
+    service
+        .execute(
+            Command::OpenCharacterPanel {
+                open: true,
+                prefix: Some("test".into()),
+            }
+            .into(),
+        )
+        .unwrap();
+    let mut invalid = Configuration::default();
+    invalid.parameters.insert("ocular_pupil".into(), 0.9);
+    assert!(
+        service
+            .execute(
+                Command::SetCharacterParameters {
+                    prefix: "test".into(),
+                    configuration: invalid,
+                    gesture: None
+                }
+                .into()
+            )
+            .is_err()
+    );
+    assert_eq!(service.engine.scene, baseline);
+    service
+        .execute(
+            Command::SetCharacterParameters {
+                prefix: "test".into(),
+                configuration: config,
+                gesture: None,
+            }
+            .into(),
+        )
+        .unwrap();
+    let changed = service.engine.scene.clone();
+    service.execute(Command::Undo.into()).unwrap();
+    assert_eq!(service.engine.scene, baseline);
+    service.execute(Command::Redo.into()).unwrap();
+    assert_eq!(service.engine.scene, changed);
+    service
+        .execute(
+            Command::SaveReplay {
+                path: "ocular.replay.json".into(),
+            }
+            .into(),
+        )
+        .unwrap();
+    service
+        .execute(
+            Command::RunReplay {
+                path: "ocular.replay.json".into(),
+            }
+            .into(),
+        )
+        .unwrap();
+    assert_eq!(service.engine.scene, changed);
+    service
+        .execute(
+            Command::SaveScene {
+                path: "ocular.scene.json".into(),
+            }
+            .into(),
+        )
+        .unwrap();
+    service
+        .execute(
+            Command::LoadScene {
+                path: "ocular.scene.json".into(),
+            }
+            .into(),
+        )
+        .unwrap();
+    assert_eq!(service.engine.scene, changed);
+    service
+        .execute(
+            Command::SavePortableSave {
+                path: "ocular.ignis-portable".into(),
+            }
+            .into(),
+        )
+        .unwrap();
 }

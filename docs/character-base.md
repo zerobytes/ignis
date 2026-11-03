@@ -1,6 +1,8 @@
 # Base humana feminina — EAF-187
 
-Incremento atual: [base inferior da asa do nariz](character-nose.md).
+Incremento atual: [íris procedural e editor ocular](character-eyes.md).
+
+[Base inferior da asa do nariz](character-nose.md).
 
 [Vale central do arco do cupido](character-cupid.md).
 

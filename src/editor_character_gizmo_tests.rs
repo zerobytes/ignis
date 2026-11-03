@@ -75,6 +75,7 @@ fn service(root: &std::path::Path) -> Service {
         }],
         warps: vec![],
         refinements: vec![],
+        eyes: vec![],
         surfaces: vec![],
     };
     std::fs::write(

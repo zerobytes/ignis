@@ -16,8 +16,10 @@ pub use surface::Surface;
 
 mod refinement;
 pub use refinement::Refinement;
+pub mod eyes;
+pub use eyes::Eye;
 
-pub const VERSION: u16 = 6;
+pub const VERSION: u16 = 7;
 pub const MAX_PARAMETERS: usize = 512;
 pub const MAX_BYTES: usize = 96 * 1024 * 1024;
 pub const LEGACY_MAX_BYTES: usize = 64 * 1024 * 1024;
@@ -110,6 +112,8 @@ pub struct Source {
     pub surfaces: Vec<Surface>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub refinements: Vec<Refinement>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub eyes: Vec<Eye>,
 }
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -227,6 +231,7 @@ impl Source {
         }
         self.validate_controls(&parameters, deltas)?;
         self.validate_surfaces(&parameters)?;
+        self.validate_eyes(&parameters)?;
         names.clear();
         for (i, j) in self.joints.iter().enumerate() {
             super::id(&j.name)?;
@@ -420,6 +425,7 @@ impl Source {
             let mut asset = self.asset(part, id.clone(), &positions, bones.clone(), socket)?;
             self.apply_surface(part, &values, &mut asset);
             self.refine(part, &mut asset)?;
+            let eye_color = self.apply_eye(part, &values, socket, &mut asset)?;
             document.assets.push(asset);
             document.instances.push(Instance {
                 id: id.clone(),
@@ -427,13 +433,23 @@ impl Source {
                 position: placement.position,
                 rotation: placement.rotation,
                 scale: placement.scale,
-                color: part.color,
+                color: eye_color.unwrap_or(part.color),
                 playback: None,
                 attachment: None,
             });
         }
+        if !self.eyes.is_empty()
+            && document
+                .assets
+                .iter()
+                .map(|a| a.geometry.positions.len())
+                .sum::<usize>()
+                > MAX_VERTICES
+        {
+            return Err(invalid("Compiled character exceeds the vertex budget"));
+        }
         document.validate()?;
-        let report = serde_json::json!({"format":self.version,"source":self.id,"parameters":values,"active_targets":active,"handles":self.handles.len(),"posture_warps":self.warps.len(),"surfaces":self.surfaces.len(),
+        let report = serde_json::json!({"format":self.version,"source":self.id,"parameters":values,"active_targets":active,"handles":self.handles.len(),"posture_warps":self.warps.len(),"surfaces":self.surfaces.len(),"eyes":self.eyes,
             "parts":self.parts.len(),"bones":bones.len(),"vertices":document.assets.iter().map(|a|a.geometry.positions.len()).sum::<usize>(),
             "triangles":document.assets.iter().map(|a|a.geometry.triangles.len()).sum::<usize>(),"source_embedded_in_scene":false,
             "secondary_motion":false,"pose_correctives":false});
@@ -442,7 +458,7 @@ impl Source {
     pub fn inspect(&self) -> Result<serde_json::Value> {
         self.validate()?;
         Ok(
-            serde_json::json!({"format":self.version,"id":self.id,"provenance":self.provenance,"parameters":self.parameters,"handles":self.handles,"posture_warps":self.warps.len(),"surfaces":self.surfaces.len(),
+            serde_json::json!({"format":self.version,"id":self.id,"provenance":self.provenance,"parameters":self.parameters,"handles":self.handles,"posture_warps":self.warps.len(),"surfaces":self.surfaces.len(),"eyes":self.eyes,
             "targets":self.targets.len(),"source_vertices":self.positions.len(),"bones":self.joints.len(),
             "parts":self.parts.iter().map(|p|serde_json::json!({"name":p.name,"vertices":p.vertices.len(),"triangles":p.triangles.len()})).collect::<Vec<_>>(),"world_changed":false}),
         )
