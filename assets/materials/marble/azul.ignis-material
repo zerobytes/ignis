@@ -1,0 +1,87 @@
+{
+  "version": 2,
+  "material": {
+    "procedural": {
+      "version": 1,
+      "recipe": {
+        "marble": {
+          "version": 1,
+          "dark": [
+            0.002731743,
+            0.017641952,
+            0.035601314
+          ],
+          "light": [
+            0.14412849,
+            0.33245158,
+            0.3967553
+          ],
+          "calcite": [
+            0.76052463,
+            0.79910284,
+            0.71569365
+          ],
+          "gold": [
+            0.74540436,
+            0.5271152,
+            0.14702728
+          ],
+          "roughness": 0.22,
+          "cloud_contrast": 1.7,
+          "white_strength": 0.85,
+          "gold_strength": 0.0,
+          "network": 4,
+          "white_width": 0.019,
+          "warp": 0.08,
+          "banding": 0.6,
+          "main_vein": 0.3,
+          "fine_veins": 0.6,
+          "grain": 0.25,
+          "gold_metallic": 0.0,
+          "direction": [
+            1,
+            1
+          ],
+          "fold": 0.65,
+          "gold_width": 0.008,
+          "gold_flow": 0.0,
+          "breccia": 0.2,
+          "grain_frequency": 768
+        },
+        "seed": 931,
+        "unique_instances": false,
+        "plane": "xy",
+        "tile_size": [
+          1.0,
+          1.0
+        ],
+        "base": {
+          "color_roughness": [
+            1.0,
+            1.0,
+            1.0,
+            0.7
+          ],
+          "response": [
+            0.0,
+            0.5,
+            1.0,
+            1.0
+          ],
+          "emission": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "layers": [],
+        "height_m": 4e-05,
+        "relief": "bump",
+        "view_steps": 16,
+        "shadow_steps": 8
+      }
+    },
+    "transmission": 0.0
+  }
+}

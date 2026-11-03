@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 pub const VERSION: u16 = 1;
 pub const MAX_LAYERS: usize = 8;
-pub const MAX_FILE_BYTES: usize = 32 * 1024 * 1024;
+pub const MAX_FILE_BYTES: usize = 96 * 1024 * 1024;
 
 #[repr(C)]
 #[derive(
@@ -115,6 +115,8 @@ pub enum Relief {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Recipe {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marble: Option<super::marble::Marble>,
     pub seed: u32,
     /// Stable instance-ID variation is evaluated only in runtime mode.
     pub unique_instances: bool,
@@ -131,6 +133,7 @@ pub struct Recipe {
 impl Default for Recipe {
     fn default() -> Self {
         Self {
+            marble: None,
             seed: 1,
             unique_instances: false,
             plane: super::Plane::Xy,
@@ -169,6 +172,9 @@ impl Procedural {
     }
     pub fn validate(&self) -> Result<()> {
         let r = &self.recipe;
+        if let Some(m) = &r.marble {
+            m.validate()?;
+        }
         if self.version != VERSION
             || r.layers.len() > MAX_LAYERS
             || !r.base.valid()
@@ -202,7 +208,12 @@ impl Procedural {
                 ));
             }
         }
-        let metal = r.base.response[0] > 0. || r.layers.iter().any(|l| l.target.response[0] > 0.);
+        let metal = r
+            .marble
+            .as_ref()
+            .is_some_and(|m| m.gold_strength * m.gold_metallic > 0.)
+            || r.base.response[0] > 0.
+            || r.layers.iter().any(|l| l.target.response[0] > 0.);
         let transmission =
             r.base.emission[3] > 0. || r.layers.iter().any(|l| l.target.emission[3] > 0.);
         if metal && transmission {
@@ -211,14 +222,14 @@ impl Procedural {
             ));
         }
         if let Some(f) = &self.fixed
-            && (!matches!(f.resolution, 16 | 32 | 64 | 128 | 256)
+            && (!matches!(f.resolution, 16 | 32 | 64 | 128 | 256 | 512 | 1024)
                 || f.samples.len() != sample_count(f.resolution)
                 || f.samples.iter().any(|s| !s.valid())
                 || (f.samples.iter().any(|s| s.response[0] > 0.)
                     && f.samples.iter().any(|s| s.emission[3] > 0.)))
         {
             return Err(invalid(
-                "Fixed material requires resolution16/32/64/128/256 and a complete finite mip chain",
+                "Fixed material requires resolution16/32/64/128/256/512/1024 and a complete finite mip chain",
             ));
         }
 
@@ -239,8 +250,8 @@ impl Procedural {
     }
     pub fn bake(&self, resolution: u16) -> Result<Self> {
         self.validate()?;
-        if !matches!(resolution, 16 | 32 | 64 | 128 | 256) {
-            return Err(invalid("Bake resolution must be16/32/64/128/256"));
+        if !matches!(resolution, 16 | 32 | 64 | 128 | 256 | 512 | 1024) {
+            return Err(invalid("Bake resolution must be16/32/64/128/256/512/1024"));
         }
         let n = usize::from(resolution);
         let mut samples = Vec::with_capacity(sample_count(resolution));
@@ -335,7 +346,7 @@ fn smooth(a: f32, b: f32, x: f32) -> f32 {
 fn mix(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
-fn hash(x: i32, y: i32, n: [i32; 2], seed: u32) -> f32 {
+pub(super) fn hash(x: i32, y: i32, n: [i32; 2], seed: u32) -> f32 {
     let x = x.rem_euclid(n[0]) as u32;
     let y = y.rem_euclid(n[1]) as u32;
     let mut h = x.wrapping_mul(1597334677) ^ y.wrapping_mul(3812015801) ^ seed;
@@ -344,7 +355,7 @@ fn hash(x: i32, y: i32, n: [i32; 2], seed: u32) -> f32 {
     h ^= h >> 16;
     (h & 16777215) as f32 / 16777215.
 }
-fn noise(uv: [f32; 2], n: [i32; 2], seed: u32) -> f32 {
+pub(super) fn noise(uv: [f32; 2], n: [i32; 2], seed: u32) -> f32 {
     let p = [uv[0] * n[0] as f32, uv[1] * n[1] as f32];
     let b = p.map(|p| p.floor() as i32);
     let f = [p[0] - p[0].floor(), p[1] - p[1].floor()].map(|v| v * v * (3. - 2. * v));
@@ -405,7 +416,10 @@ fn field(uv: [f32; 2], n: [i32; 2], seed: u32, kind: Field, aa: f32) -> f32 {
 impl Recipe {
     pub fn evaluate(&self, uv: [f32; 2], footprint: f32) -> Sample {
         let uv = uv.map(|v| v - v.floor());
-        let mut sample = self.base;
+        let mut sample = self
+            .marble
+            .as_ref()
+            .map_or(self.base, |m| m.evaluate(uv, footprint, self.seed));
         for l in &self.layers {
             let seed = self.seed.wrapping_add(l.seed);
             let mut q = uv;
@@ -494,11 +508,14 @@ pub(crate) fn storage_bytes(source: &[super::Material]) -> u64 {
             && seen.insert(Arc::as_ptr(p) as usize)
         {
             bytes = bytes.saturating_add(96).saturating_add(
-                p.fixed
-                    .as_ref()
-                    .map_or((p.recipe.layers.len() * 96) as u64, |f| {
-                        (f.samples.len() * 48) as u64
-                    }),
+                p.fixed.as_ref().map_or(
+                    (p.recipe.layers.len() * 96
+                        + p.recipe
+                            .marble
+                            .as_ref()
+                            .map_or(0, |_| super::marble::WORDS * 16)) as u64,
+                    |f| (f.samples.len() * 48) as u64,
+                ),
             );
         }
     }
@@ -536,13 +553,16 @@ pub(crate) fn pack(source: &[super::Material]) -> (Vec<super::GpuMaterial>, Vec<
                     f32::from((r.seed & 65535) as u16),
                     r.layers.len() as f32,
                     f32::from((r.seed >> 16) as u16),
-                    0.,
+                    if r.marble.is_some() { 1. } else { 0. },
                 ]);
                 if let Some(f) = &p.fixed {
                     for s in f.samples.iter() {
                         data.extend([s.color_roughness, s.response, s.emission]);
                     }
                 } else {
+                    if let Some(m) = &r.marble {
+                        data.extend(m.packed());
+                    }
                     for l in &r.layers {
                         data.extend([
                             [

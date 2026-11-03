@@ -63,7 +63,8 @@ changes; the current release executable is replaced in its stable location.
 Select a mesh instance in the editor, expand **Aparência → Biblioteca de
 materiais**, and choose Pedra, Madeira, Metal pintado or Cerâmica. Runtime recipes
 expose base channels, ordered layers/masks, seed, stable per-object variation,
-plane, tile scale, height and relief budgets. The library path saves or loads an
+plane, tile scale, height and relief budgets. The marble family selector adds
+12 configurable mineral programs; see [procedural marble](marble-materials.md). The library path saves or loads an
 independent material. **Gerar asset fixo** precomputes the maps; **Editar receita
 em runtime** restores live evaluation from the retained recipe. **Gerar malha com
 relevo** creates a new static asset for the selected instance, with its own ID.
@@ -104,10 +105,13 @@ Bricks use staggered rows with even Y frequency; odd Y frequency uses aligned
 rows so the tile remains periodic. Coordinates are planar by explicit choice;
 there is no automatic UV unwrap or triplanar reconstruction in Recipe1.
 
-Fixed data includes the full mip chain at resolution 16, 32, 64, 128 or 256.
-Each sample uses 48 bytes: the complete 128 map uses 1,048,560 bytes; the 256 map
-uses 4,194,288 bytes, plus program header/table references. The library JSON file
-has a separate 32 MiB limit. Mipmaps average linear channels; the runtime field's
+Fixed data includes the full mip chain at resolution 16, 32, 64, 128, 256, 512
+or 1024. Each sample uses 48 bytes: the complete 128 map uses 1,048,560 bytes;
+the 256 map uses 4,194,288 bytes; the 1024 map uses 67,108,848 bytes, plus program
+headers/table references. Library2 saves fixed samples in a bounded binary
+envelope with lossless PNG compression of little-endian float bytes; runtime
+recipes remain JSON. Library1 JSON remains readable. The file limit is 96 MiB,
+independent of GPU binding, replay and network limits. Mipmaps average linear channels; the runtime field's
 footprint attenuation is an approximation and is not promised pixel-identical to
 sampled maps at every distance. Resolution, filtering and field frequency affect
 how closely the two modes match.

@@ -58,6 +58,7 @@ struct Marquee {
 
 struct Properties {
     material_displacement_id: String,
+    marble_family: crate::materials::marble::Family,
     material_path: String,
     material_resolution: u16,
     object: String,
@@ -943,6 +944,7 @@ pub(super) fn properties(
             .find(|o| o.members.contains(&instance.id));
         let object = owner.map_or_else(String::new, |o| o.id.clone());
         state.properties = Some(Properties {
+            marble_family: Default::default(),
             material_displacement_id: format!(
                 "{}-relief",
                 asset.id.chars().take(24).collect::<String>()
@@ -2333,6 +2335,24 @@ fn material_recipe_ui(
                 }
             }
         });
+        ui.horizontal(|ui| {
+            egui::ComboBox::from_id_salt("marble_family")
+                .selected_text(p.marble_family.label())
+                .show_ui(ui, |ui| {
+                    for family in crate::materials::marble::Family::ALL {
+                        ui.selectable_value(&mut p.marble_family, family, family.label());
+                    }
+                });
+            if ui.button("Gerar mármore").clicked() {
+                commands.push(command(Op::Marble {
+                    asset: asset.id.clone(),
+                    family: p.marble_family,
+                    seed: Some(931),
+                    unique_instances: false,
+                    execution: Execution::Runtime,
+                }));
+            }
+        });
         ui.text_edit_singleline(&mut p.material_path);
         ui.horizontal(|ui| {
             if ui.button("Salvar material").clicked() {
@@ -2367,7 +2387,7 @@ fn material_recipe_ui(
                 p.material_resolution, p.material_resolution
             ))
             .show_ui(ui, |ui| {
-                for size in [16, 32, 64, 128, 256] {
+                for size in [16, 32, 64, 128, 256, 512, 1024] {
                     ui.selectable_value(
                         &mut p.material_resolution,
                         size,
@@ -2426,9 +2446,15 @@ fn material_recipe_ui(
             ui.add(egui::Slider::new(&mut r.view_steps, 8..=48).text("Passos de profundidade"));
             ui.add(egui::Slider::new(&mut r.shadow_steps, 0..=24).text("Passos de sombra própria"));
         }
-        ui.collapsing("Superfície base", |ui| {
-            recipe_sample_ui(ui, &mut r.base);
-        });
+        if let Some(m) = &mut r.marble {
+            ui.collapsing("Estrutura do mármore", |ui| {
+                marble_ui(ui, m);
+            });
+        } else {
+            ui.collapsing("Superfície base", |ui| {
+                recipe_sample_ui(ui, &mut r.base);
+            });
+        }
         let mut remove = None;
         for (index, layer) in r.layers.iter_mut().enumerate() {
             ui.push_id(index, |ui| {
@@ -2483,6 +2509,45 @@ fn material_recipe_ui(
         }
     });
 }
+fn marble_ui(ui: &mut egui::Ui, m: &mut crate::materials::marble::Marble) {
+    for (label, color) in [
+        ("Matriz escura", &mut m.dark),
+        ("Matriz clara", &mut m.light),
+        ("Veios minerais", &mut m.calcite),
+        ("Dourado", &mut m.gold),
+    ] {
+        design_ui::field(ui, label, |ui| {
+            design_ui::color(ui, color);
+        });
+    }
+    ui.add(egui::Slider::new(&mut m.network, 1..=12).text("Rede de fraturas"));
+    ui.add(egui::Slider::new(&mut m.white_width, 0.001..=0.15).text("Largura dos veios"));
+    ui.add(egui::Slider::new(&mut m.gold_width, 0.001..=0.15).text("Largura dourada"));
+    ui.add(egui::Slider::new(&mut m.cloud_contrast, 0.5..=3.).text("Contraste mineral"));
+    ui.add(egui::Slider::new(&mut m.fold, 0. ..=4.).text("Dobras"));
+    for (label, value) in [
+        ("Deformação", &mut m.warp),
+        ("Bandas minerais", &mut m.banding),
+        ("Veio principal", &mut m.main_vein),
+        ("Ramificações finas", &mut m.fine_veins),
+        ("Calcita", &mut m.white_strength),
+        ("Dourado", &mut m.gold_strength),
+        ("Microgrão", &mut m.grain),
+        ("Domínios brechados", &mut m.breccia),
+        ("Fluxo do ouro", &mut m.gold_flow),
+        ("Metalicidade dourada", &mut m.gold_metallic),
+    ] {
+        ui.add(egui::Slider::new(value, 0. ..=1.).text(label));
+    }
+    ui.add(egui::Slider::new(&mut m.grain_frequency, 128..=1024).text("Escala do grão"));
+    ui.add(egui::Slider::new(&mut m.roughness, 0.2..=1.).text("Rugosidade da pedra"));
+    design_ui::field(ui, "Direção", |ui| {
+        for value in &mut m.direction {
+            ui.add(egui::DragValue::new(value).range(-4..=4));
+        }
+    });
+}
+
 fn recipe_sample_ui(ui: &mut egui::Ui, s: &mut crate::materials::recipe::Sample) {
     design_ui::field(ui, "Cor", |ui| {
         let mut c = [

@@ -345,6 +345,85 @@ fn fixed_level(info:vec4<u32>,uv:vec2<f32>,level:u32)->SurfaceSample {
     return sample_mix(sample_mix(fixed_texel(at,size,b),fixed_texel(at,size,b+vec2<i32>(1,0)),f.x),
         sample_mix(fixed_texel(at,size,b+vec2<i32>(0,1)),fixed_texel(at,size,b+vec2<i32>(1,1)),f.x),f.y);
 }
+// Marble1: periodic mineral domains, normalized fracture distance and fine grain.
+fn marble_noise(uv:vec2<f32>,n:i32,seed:u32,fp:f32)->f32 {
+    let coverage=1.0-smoothstep(0.25,0.75,fp*f32(n));
+    if coverage<=0.0 {return 0.5;}
+    return mix(0.5,periodic_noise(uv,vec2<i32>(n),seed),coverage);
+}
+fn marble_grain(uv:vec2<f32>,n:i32,seed:u32,fp:f32)->f32 {
+    let coverage=1.0-smoothstep(1.0,3.0,fp*f32(n));if coverage<=0.0 {return 0.5;}
+    let p=uv*f32(n);let offset=fp*f32(n)*0.25;var sum=0.0;
+    for(var y=-1;y<=1;y+=2){for(var x=-1;x<=1;x+=2){sum+=periodic_hash(vec2<i32>(floor(p+vec2<f32>(f32(x),f32(y))*offset)),vec2<i32>(n),seed);}}
+    return mix(0.5,sum*0.25,coverage);
+}
+fn marble_fbm(uv:vec2<f32>,n:i32,seed:u32,octaves:u32,fp:f32)->f32 {
+    var value=0.0;var total=0.0;var weight=0.5;
+    for(var i=0u;i<5u;i++) {
+        if i>=octaves {break;}
+        var q=uv;var footprint=fp;
+        if i%2u!=0u {q=vec2<f32>(uv.x+uv.y,uv.y-uv.x);footprint*=1.4142135623730951;}
+        value+=weight*marble_noise(q,n*i32(1u<<i),seed+i*1013u,footprint);total+=weight;weight*=0.5;
+    }
+    return value/total;
+}
+fn marble_cell(uv:vec2<f32>,n:i32,seed:u32)->vec2<f32> {
+    let p=uv*f32(n);let base=vec2<i32>(floor(p));var first=100.0;var second=100.0;var a=vec2<f32>(0.0);var b=vec2<f32>(0.0);var domain=0.0;
+    for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++) {
+        let c=base+vec2<i32>(x,y);let q=vec2<f32>(c)+vec2<f32>(periodic_hash(c,vec2<i32>(n),seed),periodic_hash(c,vec2<i32>(n),seed+11u));let d=dot(p-q,p-q);
+        if d<first {second=first;b=a;first=d;a=q;domain=periodic_hash(c,vec2<i32>(n),seed+912u);}else if d<second {second=d;b=q;}
+    }}
+    return vec2<f32>(0.5*(second-first)/max(length(b-a),0.00001),domain);
+}
+fn marble_sample(at:u32,uv:vec2<f32>,footprint:f32,seed:u32)->SurfaceSample {
+    let dark=procedural_data.items[at];let light=procedural_data.items[at+1u];let calcite=procedural_data.items[at+2u];let gilding=procedural_data.items[at+3u];
+    let structure=procedural_data.items[at+4u];let finish=procedural_data.items[at+5u];let shape=procedural_data.items[at+6u];let details=procedural_data.items[at+7u];
+    let a=marble_fbm(uv,2,seed+17u,5u,footprint);let b=marble_fbm(uv,3,seed+53u,5u,footprint);
+    let q=uv+structure.z*(vec2<f32>(a,b)-0.5)+0.004*(vec2<f32>(marble_noise(uv,96,seed+71u,footprint),marble_noise(uv,96,seed+89u,footprint))-0.5);
+    let fp=footprint*(1.0+structure.z*3.0);
+    let cloud=marble_fbm(q,4,seed+97u,5u,fp);let small=marble_fbm(q,15,seed+131u,3u,fp);
+    let flow=marble_fbm(uv,2,seed+17u,3u,footprint);
+    let phase=dot(uv,shape.xy)+shape.z*(flow-0.5)+0.015*(small-0.5);
+    let bands=0.5+0.5*sin(6.28318530718*phase);let folded=0.5+0.5*sin(6.28318530718*(phase*3.0+small*0.7));
+    var value=smoothstep(0.22,0.76,cloud+0.17*(bands-0.5));value=mix(value,smoothstep(0.1,0.9,bands)*0.65+folded*0.35,structure.w);
+    let strata=0.5+0.5*sin(6.28318530718*(phase*32.0+small*2.4))*(1.0-smoothstep(0.25,0.75,fp*64.0));let patches=marble_fbm(uv,27,seed+173u,5u,footprint);
+    value=pow(clamp(value+0.6*(patches-0.5)+structure.w*0.22*(strata-0.5),0.0,1.0),light.w);
+    var color=mix(dark.xyz,light.xyz,value);
+    let primary=marble_cell(q,i32(structure.x),seed+211u);let secondary=marble_cell(q,10,seed+307u);let hairline=marble_cell(q,47,seed+401u);
+    let aa=min(fp*structure.x*0.5,0.15);let width_variation=smoothstep(0.2,0.8,small);let width=structure.y*(0.15+2.8*width_variation*width_variation);
+    let network_width=width*mix(1.0,0.12,finish.x);
+    let network=1.0-smoothstep(max(0.0,network_width*0.85-aa),network_width*1.05+aa,primary.x);
+    let main_width=structure.y*(0.65+0.7*small);let line=abs(sin(3.14159265359*phase));let main=1.0-smoothstep(max(0.0,main_width*0.9-footprint),main_width*1.05+footprint,line);
+    let fine=(1.0-smoothstep(0.003-fp*5.0,0.013+fp*5.0,secondary.x))*smoothstep(0.32,0.72,cloud+0.25*small);
+    let hair=(1.0-smoothstep(0.001-fp*23.5,0.006+fp*23.5,hairline.x))*smoothstep(0.42,0.7,small)*0.65;
+    let fine_fade=1.0-smoothstep(0.001,0.012,fp);
+    let white=max(max(network*mix(1.0,0.65,finish.x),main*finish.x),max(fine,hair)*finish.y*fine_fade)*calcite.w;
+    color*=(1.0+finish.z*2.0*(patches-0.5))*mix(1.0,0.35+(secondary.y*0.35+hairline.y*0.65)*1.2,details.x);
+    var quartz=mix(calcite.xyz*0.45+light.xyz*0.1,calcite.xyz,smoothstep(0.15,0.85,marble_fbm(uv,40,seed+487u,3u,footprint)));
+    quartz=mix(quartz,calcite.xyz,main*0.65);
+    color=mix(color,light.xyz,details.x*smoothstep(0.77,0.94,hairline.y)*0.45);
+    color=mix(color,quartz,white);
+    let gw=shape.w*(0.15+2.8*width_variation*width_variation);
+    let gold_network_width=gw*mix(1.0,0.12,details.z);
+    var gold=(1.0-smoothstep(max(0.0,gold_network_width*0.85-aa),gold_network_width*1.05+aa,primary.x))*gilding.w;
+    let flow_width=shape.w*(0.65+0.7*small);
+    let flow_gold=1.0-smoothstep(max(0.0,flow_width*0.85-footprint),flow_width*1.05+footprint,line);
+    gold=max(gold,flow_gold*details.z*gilding.w);
+    gold=max(gold,(1.0-smoothstep(0.002-fp*5.0,0.009+fp*5.0,secondary.x))*smoothstep(0.34,0.8,cloud)*gilding.w*0.8*fine_fade);
+    if finish.x>0.0 {
+        let halo=(1.0-smoothstep(main_width*1.05,main_width*1.25+footprint,line))*(1.0-main)*smoothstep(0.38,0.62,small);
+        gold=max(gold,halo*gilding.w);
+    }
+    let grain=marble_grain(uv,i32(details.y),seed+503u,footprint);
+    let gold_color=mix(gilding.xyz*0.45,gilding.xyz,smoothstep(0.15,0.85,grain));
+    color=mix(color,gold_color,gold);
+    let flecks=smoothstep(0.6,0.94,grain)*finish.z*0.22*(1.0-white)*(1.0-gold);
+    color=mix(color,mix(light.xyz,calcite.xyz,0.25),flecks);
+    color=clamp(color,vec3<f32>(0.0),vec3<f32>(2.0));
+    let roughness=clamp(mix(dark.w+0.025*(grain-0.5),0.27+0.05*grain,gold),0.2,1.0);
+    return SurfaceSample(vec4<f32>(color,roughness),vec4<f32>(gold*finish.w,0.5+0.015*(grain-0.5)+0.035*white+0.015*gold,1.0,1.0),vec4<f32>(0.0));
+}
+
 fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
     if info.x==2u {
         let last=u32(log2(f32(info.z)));let lod=clamp(log2(max(1.0,footprint*f32(info.z))),0.0,f32(last));
@@ -352,9 +431,11 @@ fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
         return sample_mix(fixed_level(info,uv,level),fixed_level(info,uv,min(level+1u,last)),fract(lod));
     }
     var sample=sample_load(info.y+2u);let metadata=procedural_data.items[info.y+5u];let uv0=fract(uv);
+    let seed0=u32(metadata.x)|(u32(metadata.z)<<16u);
+    if metadata.w>0.5 {sample=marble_sample(info.y+6u,uv0,footprint,seed0);}
     for(var layer=0u;layer<8u;layer++) {
         if layer>=u32(metadata.y) {break;}
-        let at=info.y+6u+6u*layer;let f=procedural_data.items[at];let settings=procedural_data.items[at+1u];let mask=procedural_data.items[at+2u];
+        let at=info.y+6u+8u*u32(metadata.w)+6u*layer;let f=procedural_data.items[at];let settings=procedural_data.items[at+1u];let mask=procedural_data.items[at+2u];
         let seed=(u32(metadata.x)|(u32(metadata.z)<<16u))+(u32(f.w)|(u32(settings.z)<<16u));var q=uv0;
         if settings.y>0.0 {q+=settings.y*(vec2<f32>(periodic_noise(uv0,vec2<i32>(2),seed+11u),periodic_noise(uv0,vec2<i32>(2),seed+23u))-0.5);}
         var value=0.0;var total=0.0;var weight=0.5;var n=vec2<i32>(f.yz);
@@ -559,6 +640,9 @@ fn surface_opacity(rest: vec3<f32>, material: SurfaceMaterial) -> f32 {
     let uv=recipe_uv(rest,domain);
     let dx=recipe_uv(dpdx(rest),domain);let dy=recipe_uv(dpdy(rest),domain);
     var opacity = material.surface.y;
+    // Opaque is validated to full coverage. Derivatives above remain quad-uniform;
+    // skip a second mineral evaluation in the color pass and all opaque shadows.
+    if material.surface.x==0.0 {return opacity;}
     if material.procedural.x>0u {opacity*=recipe_sample(material.procedural,uv,max(length(dx),length(dy))).response.z;}
     if material.coverage.frequency.w > 0.5 {
         let field = pattern_field(p, footprint, material.coverage.control, material.coverage.response);

@@ -938,7 +938,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 123;
+pub const REPLAY_VERSION: u32 = 125;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1247,6 +1247,11 @@ impl Engine {
                         || matches!(&edit, crate::meshes::Edit::PutAsset { asset } if asset.material.procedural.is_some())
                     {
                         scene.version = scene.version.max(112);
+                    }
+                    if matches!(&edit,crate::meshes::Edit::SetMaterial {material,..} if material.procedural.as_ref().is_some_and(|p|p.recipe.marble.is_some()))
+                        || matches!(&edit,crate::meshes::Edit::PutAsset {asset} if asset.material.procedural.as_ref().is_some_and(|p|p.recipe.marble.is_some()))
+                    {
+                        scene.version = scene.version.max(crate::materials::marble::SCENE_VERSION);
                     }
                     scene.plants.apply_mesh(edit, &mut scene.meshes)?;
                 }

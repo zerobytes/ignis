@@ -128,6 +128,16 @@ impl Preset {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    Marble {
+        asset: String,
+        family: super::marble::Family,
+        #[serde(default)]
+        seed: Option<u32>,
+        #[serde(default)]
+        unique_instances: bool,
+        #[serde(default)]
+        execution: Execution,
+    },
     BakeDisplacement {
         instance: String,
         id: String,
@@ -166,12 +176,6 @@ pub enum Operation {
         asset: Option<String>,
     },
 }
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct File {
-    version: u16,
-    material: Material,
-}
 pub fn material(recipe: Recipe, execution: Execution) -> Result<Material> {
     let p = Procedural::runtime(recipe);
     p.validate()?;
@@ -192,31 +196,14 @@ pub fn material(recipe: Recipe, execution: Execution) -> Result<Material> {
     Ok(m)
 }
 pub fn encode(material: &Material) -> Result<Vec<u8>> {
-    material.validate()?;
-    let bytes = serde_json::to_vec(&File {
-        version: VERSION,
-        material: material.clone(),
-    })
-    .map_err(|e| invalid(e.to_string()))?;
-    if bytes.len() > MAX_FILE_BYTES {
-        return Err(invalid("Material file exceeds32MiB"));
-    }
-    Ok(bytes)
+    super::asset_file::encode(material)
 }
 pub fn decode(bytes: &[u8]) -> Result<Material> {
-    if bytes.len() > MAX_FILE_BYTES {
-        return Err(invalid("Material file exceeds32MiB"));
-    }
-    let f: File = serde_json::from_slice(bytes).map_err(|e| invalid(e.to_string()))?;
-    if f.version != VERSION {
-        return Err(invalid("Unsupported material asset version"));
-    }
-    f.material.validate()?;
-    Ok(f.material)
+    super::asset_file::decode(bytes)
 }
 pub fn inspect(m: &Material) -> serde_json::Value {
     if let Some(p) = &m.procedural {
-        serde_json::json!({"format":VERSION,"execution":if p.fixed.is_some(){"fixed"}else{"runtime"},"recipe":p.recipe,"resolution":p.fixed.as_ref().map(|f|f.resolution),"sample_bytes":p.fixed.as_ref().map_or(0,|f|f.samples.len()*std::mem::size_of::<Sample>()),"surface":m.surface,"world_changed":false})
+        serde_json::json!({"format":VERSION,"library_format":2,"execution":if p.fixed.is_some(){"fixed"}else{"runtime"},"recipe":p.recipe,"resolution":p.fixed.as_ref().map(|f|f.resolution),"sample_bytes":p.fixed.as_ref().map_or(0,|f|f.samples.len()*std::mem::size_of::<Sample>()),"surface":m.surface,"world_changed":false})
     } else {
         serde_json::json!({"execution":"legacy","material":m,"world_changed":false})
     }

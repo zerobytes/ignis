@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 113;
+pub const SCENE_VERSION: u32 = 115;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -626,6 +626,35 @@ impl Scene {
             return Err(invalid(
                 "Environment/direct intensity require scene version76",
             ));
+        }
+        if self.version < crate::materials::marble::SCENE_VERSION {
+            let marble = |a: &crate::meshes::Asset| {
+                a.material
+                    .procedural
+                    .as_ref()
+                    .is_some_and(|p| p.recipe.marble.is_some())
+            };
+            if self.meshes.assets.iter().any(marble)
+                || self.plants.entries.iter().any(|e| {
+                    marble(&e.source)
+                        || e.assembly.as_ref().is_some_and(|a| {
+                            marble(&a.context) || a.context_grafts.iter().any(|g| marble(&g.source))
+                        })
+                })
+                || self
+                    .particles
+                    .sources
+                    .iter()
+                    .flat_map(|s| &s.emitters)
+                    .any(|s| {
+                        s.material
+                            .procedural
+                            .as_ref()
+                            .is_some_and(|p| p.recipe.marble.is_some())
+                    })
+            {
+                return Err(invalid("Marble programs require scene115"));
+            }
         }
         if self.version < 112 {
             let procedural = |a: &crate::meshes::Asset| a.material.procedural.is_some();
