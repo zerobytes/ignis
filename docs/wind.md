@@ -206,9 +206,13 @@ the current verifier report is `artifacts/wind/verification.json`.
 
 ```sh
 python3 scripts/demo_wind.py --vortex
-target/release/ignis --root . --scene examples/wind-vortex.scene.json --continuous
+python3 scripts/open_wind.py
 python3 scripts/verify_wind_vortex.py
 ```
+
+On macOS, the launcher uses a separate **Ignis Wind** application identity,
+with a symlink to the current executable, so other editor/demo windows can
+remain open. It creates no binary copy. P starts the simulation.
 
 This separate recipe uses a stationary vertical curl vortex, with 40 m support
 radius, 30 m half-height and 12 m/s peak tangential speed. A mean upward flow
