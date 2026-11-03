@@ -366,6 +366,7 @@ pub struct Renderer {
     transparent_pipeline: wgpu::RenderPipeline,
     transparency: crate::render_transparency::Transparency,
     particles: crate::render_particles::Gpu,
+    surface_field: Option<crate::surface_field::Gpu>,
     depth_layout: wgpu::BindGroupLayout,
     shadow_pipeline: wgpu::RenderPipeline,
     shadow_bind_group: wgpu::BindGroup,
@@ -928,7 +929,7 @@ impl Renderer {
         });
         let particles = crate::render_particles::Gpu::new(&device, &pipeline_layout, &shader);
         let outline = crate::render_outline::Outline::new(&device, format);
-        Ok(Self {
+        let mut renderer = Self {
             environment,
             material_buffer,
             procedural_buffer,
@@ -938,6 +939,7 @@ impl Renderer {
             transparent_pipeline,
             transparency: Default::default(),
             particles,
+            surface_field: None,
             depth_layout,
             shadow_pipeline,
             shadow_bind_group,
@@ -979,11 +981,41 @@ impl Renderer {
             vertex_buffer,
             vertex_capacity,
             depth: None,
-        })
+        };
+        // Explicit laboratory sidecar applies equally to viewport and MCP captures.
+        if let Some(path) = std::env::var_os("IGNIS_HORIZON_FIELD") {
+            let field = crate::surface_field::Pack::read(std::io::BufReader::new(
+                std::fs::File::open(path)?,
+            ))?;
+            renderer.set_surface_field(Some(std::sync::Arc::new(field)))?;
+        }
+        Ok(renderer)
     }
     /// Current sprite allocation and upload counters.
     pub fn particle_diagnostics(&self) -> serde_json::Value {
         self.particles.inspect()
+    }
+    /// Diagnostic field installation; does not mutate Scene, physics, or replay.
+    pub fn set_surface_field(
+        &mut self,
+        field: Option<std::sync::Arc<crate::surface_field::Pack>>,
+    ) -> Result<()> {
+        self.surface_field = field
+            .map(|p| {
+                crate::surface_field::Gpu::new(
+                    &self.device,
+                    &self.queue,
+                    &self.shadow_layout,
+                    &self.depth_layout,
+                    self.format,
+                    p,
+                )
+            })
+            .transpose()?;
+        Ok(())
+    }
+    pub fn surface_field_info(&self) -> serde_json::Value {
+        serde_json::to_value(self.surface_field.as_ref().map(|g| &g.stats)).unwrap()
     }
     /// Experimental sampled-coverage packet. Installing it does not enable it.
     /// No Scene/physics/replay state changes; a failed installation preserves the old packet.
@@ -1659,6 +1691,13 @@ impl Renderer {
         );
         let composed_view = self.transparency.background().unwrap_or(view);
         let scene_view = self.atmosphere_edges.source().unwrap_or(composed_view);
+        if let Some(field) = &mut self.surface_field {
+            anyhow::ensure!(
+                !reverse,
+                "Diagnostic surface field does not support planetary reverse depth"
+            );
+            field.prepare(&self.queue, &scene.camera, width, height, &scene.light);
+        }
         let mut encoder = self.device.create_command_encoder(&Default::default());
         self.instanced.encode_occlusion(
             &mut encoder,
@@ -1697,6 +1736,9 @@ impl Renderer {
                 &self.distant_buffer,
                 &self.distant_index_buffer,
             );
+            if let Some(field) = &self.surface_field {
+                field.draw(&mut pass, &self.shadow_bind_group, true);
+            }
         }
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -1749,6 +1791,9 @@ impl Renderer {
                 &self.distant_buffer,
                 &self.distant_index_buffer,
             );
+            if let Some(field) = &self.surface_field {
+                field.draw(&mut pass, &self.bind_group, false);
+            }
             if let Some(gpu) = &self.collective
                 && !reverse
             {

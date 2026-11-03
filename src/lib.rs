@@ -179,3 +179,4 @@ pub mod collective_lod;
 pub mod particles;
 
 mod render_particles;
+pub mod surface_field;
