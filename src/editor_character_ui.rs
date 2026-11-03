@@ -18,7 +18,7 @@ impl Default for State {
         Self {
             key: None,
             draft: Default::default(),
-            source_path: "artifacts/character-base/human-jaw.ignis-character".into(),
+            source_path: "artifacts/character-base/human-face.ignis-character".into(),
             prefix: "female".into(),
             preset_path: "artifacts/character-base/female.ignis-character-config".into(),
             confirm_regenerate: false,
@@ -70,7 +70,11 @@ fn face_properties(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<Comm
             ui.label("Base da asa do nariz:");
             for (label, side) in [("E", "L"), ("D", "R")] {
                 if ui.small_button(label).clicked() {
-                    view.group = Some("Rosto".into());
+                    view.group = editor
+                        .handles
+                        .iter()
+                        .find(|h| h.name == format!("nose_alar_base_{side}"))
+                        .and_then(|h| h.group.clone());
                     view.selected = Some(format!("nose_alar_base_{side}"));
                     view.enabled = true;
                     view_changed = true;

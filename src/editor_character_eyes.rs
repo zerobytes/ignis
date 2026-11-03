@@ -1,5 +1,8 @@
 //! Eye authoring is a view over the same bounded Configuration used by MCP.
-use crate::meshes::character::{Configuration, Source, eyes::CONTROLS};
+use crate::meshes::character::{
+    Configuration, Source,
+    eyes::{CONTROLS, FIT_CONTROLS},
+};
 
 pub(super) fn controls(
     ui: &mut egui::Ui,
@@ -15,6 +18,28 @@ pub(super) fn controls(
     let eye = &source.eyes[*selected];
     let key = |name: &str| format!("{}_{}", eye.prefix, name);
     let before = config.parameters.clone();
+    if eye.fit.is_some() {
+        egui::CollapsingHeader::new("Olhos · globo e encaixe").default_open(true).show(ui, |ui| {
+            ui.checkbox(linked, "Editar os dois olhos juntos");
+            ui.horizontal(|ui| {for (i, _) in source.eyes.iter().enumerate() {
+                ui.selectable_value(selected, i, if i == 0 { "Esquerdo" } else { "Direito" });
+            }});
+            ui.small("A profundidade move o globo e acompanha a borda das pálpebras. Zero mantém o encaixe natural. Valores positivos recuam o olho.");
+            for &(name, label, _, _, _) in FIT_CONTROLS {
+                let p=source.parameters.iter().find(|p|p.name==key(name)).unwrap();
+                let (min,max,default)=(p.minimum,p.maximum,p.default);
+                let value = config.parameters.entry(key(name)).or_insert(default);
+                ui.label(label);
+                ui.horizontal(|ui| {
+                    if name == "globe_depth" {
+                        let mut mm = *value * 1000.;
+                        if ui.add(egui::Slider::new(&mut mm, min*1000. ..=max*1000.).suffix(" mm").max_decimals(2)).changed() { *value = mm / 1000.; }
+                    } else { ui.add(egui::Slider::new(value, min..=max)); }
+                    if ui.small_button("↺").clicked() { *value = default; }
+                });
+            }
+        });
+    }
     egui::CollapsingHeader::new("Olhos · íris").default_open(true).show(ui, |ui| {
         ui.checkbox(linked,"Editar os dois olhos juntos");
         ui.horizontal(|ui| {
@@ -70,7 +95,15 @@ pub(super) fn controls(
             if other.prefix == eye.prefix {
                 continue;
             }
-            for &(name, _, _, _, _) in CONTROLS {
+            for &(name, _, _, _, _) in
+                CONTROLS
+                    .iter()
+                    .chain(if eye.fit.is_some() && other.fit.is_some() {
+                        FIT_CONTROLS
+                    } else {
+                        &[]
+                    })
+            {
                 let own = key(name);
                 if config.parameters.get(&own) != before.get(&own) {
                     config.parameters.insert(

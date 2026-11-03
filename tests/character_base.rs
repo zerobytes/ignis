@@ -1126,6 +1126,11 @@ fn source5_additional_handles_keep_legacy_limits_and_parameter_budget() {
     s.version = 5;
     assert!(s.parameters.len() <= MAX_PARAMETERS);
     assert!(s.validate().is_err());
+    s.version = 8;
+    s.validate().unwrap();
+    s.version = 7;
+    assert!(s.validate().is_err());
+    s.version = 5;
     s.handles.pop();
     s.validate().unwrap();
     assert_eq!(decode(&serde_json::to_vec(&s).unwrap()).unwrap(), s);
@@ -1459,4 +1464,204 @@ fn ocular_source_contract_cache_rigid_transport_and_durability() {
             .into(),
         )
         .unwrap();
+}
+
+#[test]
+fn source8_contact_transport_legacy_equivalence_and_metadata_guards() {
+    use glam::{Mat4, Vec3};
+    let mut s = source();
+    for &(name, _, min, max, default) in eyes::CONTROLS.iter().chain(eyes::FIT_CONTROLS) {
+        s.parameters.push(Parameter {
+            name: format!("ocular_{name}"),
+            minimum: min,
+            maximum: max,
+            default: if name == "quality" { 0. } else { default },
+        });
+    }
+    for name in ["sclera", "iris", "cornea"] {
+        let mut p = s.parts[0].clone();
+        p.name = name.into();
+        p.socket = Some(255);
+        let mut sums = [0.; meshes::MAX_BONES];
+        sums[255] = 1.;
+        p.weights = vec![meshes::Weight::from_sums(&sums).unwrap(); 3];
+        s.parts.push(p);
+    }
+    let mut eye = Eye::new(
+        "sclera".into(),
+        "iris".into(),
+        "cornea".into(),
+        Anchor { vertices: vec![0] },
+        "ocular".into(),
+        0.012,
+    );
+    eye.fit = Some(eyes::EyeFit {
+        part: "skin".into(),
+        rim: (0..16).collect(),
+        lid: (0..32)
+            .map(|vertex| WarpWeight {
+                vertex,
+                weight: if vertex < 16 { 1. } else { 0.5 },
+            })
+            .collect(),
+    });
+    s.eyes.push(eye);
+    s.parameters
+        .iter_mut()
+        .find(|p| p.name == "ocular_globe_depth")
+        .unwrap()
+        .minimum = -0.003;
+    for ring in 0..2 {
+        for i in 0..16 {
+            let a = std::f32::consts::TAU * i as f32 / 16.;
+            let scale = 1. + ring as f32 * 0.5;
+            s.positions.push([
+                0.003 + 0.016 * scale * a.cos(),
+                0.002 + 0.006 * scale * a.sin(),
+                -0.01,
+            ]);
+        }
+    }
+    s.positions.push([0.1, 0., 0.]);
+    let skin = &mut s.parts[0];
+    skin.vertices = (3..36).collect();
+    skin.weights = vec![skin.weights[0].clone(); 33];
+    skin.triangles.clear();
+    for i in 0..16 {
+        let n = (i + 1) % 16;
+        skin.triangles.extend([[i, 16 + i, 16 + n], [i, 16 + n, n]]);
+    }
+    s.validate().unwrap();
+    let mut bad = s.clone();
+    bad.version = 7;
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.eyes[0].fit.as_mut().unwrap().lid[0].vertex = 99999;
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.eyes[0].fit.as_mut().unwrap().rim[1] = 0;
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.eyes[0].fit.as_mut().unwrap().rim.swap(1, 5);
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.parts[0].weights.truncate(1);
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.eyes[0].fit.as_mut().unwrap().lid[0].weight = 0.5;
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.joints[255].parent = Some(0);
+    bad.joints.push(Joint {
+        name: "child".into(),
+        parent: Some(255),
+        head: Anchor { vertices: vec![0] },
+        tail: Anchor { vertices: vec![1] },
+    });
+    assert!(bad.validate().is_err());
+    let config = Configuration::default();
+    let (a, _) = s.compile(&config, &placement()).unwrap();
+    let body = a.asset("test_skin").unwrap();
+    let rig = body.rig.as_ref().unwrap();
+    let center = Vec3::from(rig.bones[255].translation);
+    assert!((center.x - 0.003).abs() < 1e-6 && (center.y - 0.002).abs() < 1e-6);
+    assert_eq!(
+        body.geometry.positions,
+        s.parts[0]
+            .vertices
+            .iter()
+            .map(|&i| s.positions[i as usize])
+            .collect::<Vec<_>>()
+    );
+    let sclera = &a.asset("test_sclera").unwrap().geometry;
+    // Every rim sample is covered in projection by the closed white surface.
+    for p in &body.geometry.positions[..16] {
+        assert!(sclera.triangles.iter().any(|t| {
+            let [a, b, c] = t.map(|i| Vec3::from(sclera.positions[i as usize]).truncate());
+            let point = Vec3::from(*p).truncate();
+            let cross = |u: glam::Vec2, v: glam::Vec2| u.x * v.y - u.y * v.x;
+            let d = cross(b - a, c - a);
+            if d.abs() < 1e-12 {
+                return false;
+            }
+            let u = cross(point - a, c - a) / d;
+            let v = cross(b - a, point - a) / d;
+            u >= -1e-5 && v >= -1e-5 && u + v <= 1.00001
+        }));
+    }
+    assert_eq!(body.geometry.positions[32], [0.1, 0., 0.]);
+    let mut depth = config.clone();
+    depth.parameters.insert("ocular_globe_depth".into(), 0.003);
+    let (b, _) = s.compile(&depth, &placement()).unwrap();
+    for id in ["test_sclera", "test_iris", "test_cornea"] {
+        for (p, q) in a
+            .asset(id)
+            .unwrap()
+            .geometry
+            .positions
+            .iter()
+            .zip(&b.asset(id).unwrap().geometry.positions)
+        {
+            assert!((q[2] - p[2] - 0.003).abs() < 2e-6);
+            assert_eq!(p[0], q[0]);
+            assert_eq!(p[1], q[1]);
+        }
+    }
+    assert_eq!(
+        a.asset("test_iris").unwrap().material,
+        b.asset("test_iris").unwrap().material
+    );
+    let mut legacy = s.clone();
+    legacy.version = 7;
+    legacy.eyes[0].fit = None;
+    let mut disabled = config.clone();
+    disabled.parameters.insert("ocular_socket_fit".into(), 0.);
+    assert_eq!(
+        s.compile(&disabled, &placement()).unwrap().0,
+        legacy.compile(&config, &placement()).unwrap().0
+    );
+    s.parameters.push(Parameter {
+        name: "pitch".into(),
+        minimum: -1.,
+        maximum: 1.,
+        default: 0.,
+    });
+    s.warps.push(Warp {
+        name: "pitch".into(),
+        parameter: "pitch".into(),
+        origin: Anchor { vertices: vec![0] },
+        axis: [1., 0., 0.],
+        angle_degrees: 30.,
+        weights: (0..s.positions.len() as u32)
+            .map(|vertex| WarpWeight { vertex, weight: 1. })
+            .collect(),
+        rigid_sockets: vec![255],
+    });
+    let mut rotated = config;
+    rotated.parameters.insert("pitch".into(), 1.);
+    let (r, _) = s.compile(&rotated, &placement()).unwrap();
+    let rotation = Mat4::from_rotation_x(30f32.to_radians());
+    for id in ["test_skin", "test_sclera", "test_iris", "test_cornea"] {
+        for (p, q) in a
+            .asset(id)
+            .unwrap()
+            .geometry
+            .positions
+            .iter()
+            .zip(&r.asset(id).unwrap().geometry.positions)
+        {
+            assert!((rotation.transform_point3((*p).into()) - Vec3::from(*q)).length() < 3e-6);
+        }
+    }
+    let template = s.targets[0].clone();
+    s.targets.clear();
+    for i in 0..513 {
+        let mut t = template.clone();
+        t.name = format!("target_{i}");
+        s.targets.push(t);
+    }
+    s.validate().unwrap();
+    s.eyes[0].fit = None;
+    s.version = 7;
+    assert!(s.validate().is_err());
 }

@@ -58,7 +58,13 @@ impl Source {
         parameters: &BTreeMap<&String, &Parameter>,
         mut work: usize,
     ) -> Result<()> {
-        let handle_budget = if self.version >= 5 { 80 } else { 64 };
+        let handle_budget = if self.version >= 8 {
+            128
+        } else if self.version >= 5 {
+            80
+        } else {
+            64
+        };
         if self.handles.len() > handle_budget || self.warps.len() > 16 {
             return Err(invalid(format!(
                 "Character handles/warps exceed{handle_budget}/16 source budget"

@@ -9,6 +9,8 @@ use std::{
     f32::consts::{PI, TAU},
     sync::Mutex,
 };
+mod fitting;
+pub use fitting::{EyeFit, FIT_CONTROLS};
 
 /// Name, label, minimum, maximum, default. The configuration is shared by MCP/UI.
 pub const CONTROLS: &[(&str, &str, f32, f32, f32)] = &[
@@ -52,6 +54,8 @@ pub struct Eye {
     /// Parameter names are `<prefix>_<control>`.
     pub prefix: String,
     pub radius: f32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fit: Option<EyeFit>,
     #[serde(skip)]
     cache: Arc<Mutex<Option<Cache>>>,
 }
@@ -68,6 +72,7 @@ impl PartialEq for Eye {
             && self.center == b.center
             && self.prefix == b.prefix
             && self.radius == b.radius
+            && self.fit == b.fit
     }
 }
 impl Eye {
@@ -86,6 +91,7 @@ impl Eye {
             center,
             prefix,
             radius,
+            fit: None,
             cache: Default::default(),
         }
     }
@@ -178,6 +184,7 @@ impl Source {
                 }
             }
         }
+        self.validate_eye_fits(params)?;
         Ok(())
     }
     pub(super) fn apply_eye(
@@ -186,6 +193,16 @@ impl Source {
         values: &BTreeMap<String, f32>,
         socket: Option<Mat4>,
         asset: &mut Asset,
+    ) -> Result<Option<[f32; 3]>> {
+        self.apply_eye_shape(part, values, socket, asset, None)
+    }
+    fn apply_eye_shape(
+        &self,
+        part: &Part,
+        values: &BTreeMap<String, f32>,
+        socket: Option<Mat4>,
+        asset: &mut Asset,
+        shape: Option<(Vec3, f32)>,
     ) -> Result<Option<[f32; 3]>> {
         let Some(eye) = self
             .eyes
@@ -199,15 +216,15 @@ impl Source {
             .map(|c| values[&format!("{}_{}", eye.prefix, c.0)])
             .collect();
         let r = v[8];
-        let z = -(eye.radius * eye.radius - r * r).sqrt();
-        let center = eye.center.at(&self.positions);
+        let (center, radius) = shape.unwrap_or((eye.center.at(&self.positions), eye.radius));
+        let z = -(radius * radius - r * r).sqrt();
         let iris = part.name == eye.iris;
         let sclera = part.name == eye.sclera;
         let mut g = if sclera {
             // Open limbus, closed rear pole: the iris can be recessed without z fighting.
             lathe(24, 80, false, |t| {
-                let theta = (r / eye.radius).asin() + (PI - (r / eye.radius).asin()) * t;
-                [eye.radius * theta.sin(), -eye.radius * theta.cos()]
+                let theta = (r / radius).asin() + (PI - (r / radius).asin()) * t;
+                [radius * theta.sin(), -radius * theta.cos()]
             })
         } else {
             lathe(12, 80, true, |t| {

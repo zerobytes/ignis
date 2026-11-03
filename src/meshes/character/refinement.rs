@@ -234,6 +234,41 @@ impl Plan {
     }
 }
 impl Source {
+    pub(super) fn refined_vertex_count(&self, part: &Part) -> Result<usize> {
+        self.refinements
+            .iter()
+            .find(|r| r.part == part.name)
+            .map_or(Ok(part.vertices.len()), |r| {
+                Ok(r.plan(part)?.stencils.len())
+            })
+    }
+    pub(super) fn validate_contact_rim(&self, part: &Part, rim: &[u32]) -> Result<()> {
+        let mut missing: BTreeSet<_> = rim
+            .iter()
+            .zip(rim.iter().cycle().skip(1))
+            .map(|(&a, &b)| (a.min(b), a.max(b)))
+            .collect();
+        let plan = self
+            .refinements
+            .iter()
+            .find(|r| r.part == part.name)
+            .map(|r| r.plan(part))
+            .transpose()?;
+        let triangles = plan
+            .as_ref()
+            .map_or(part.triangles.as_slice(), |p| p.triangles.as_slice());
+        for t in triangles {
+            for (a, b) in [(t[0], t[1]), (t[1], t[2]), (t[2], t[0])] {
+                missing.remove(&(a.min(b), a.max(b)));
+            }
+        }
+        if !missing.is_empty() {
+            return Err(invalid(
+                "Eyelid contact rim must be a closed mesh edge loop",
+            ));
+        }
+        Ok(())
+    }
     pub(super) fn validate_refinements(&self) -> Result<()> {
         if self.version < 4 && !self.refinements.is_empty() {
             return Err(invalid("Polygon refinement requires character source4"));

@@ -19,7 +19,7 @@ pub use refinement::Refinement;
 pub mod eyes;
 pub use eyes::Eye;
 
-pub const VERSION: u16 = 7;
+pub const VERSION: u16 = 8;
 pub const MAX_PARAMETERS: usize = 512;
 pub const MAX_BYTES: usize = 96 * 1024 * 1024;
 pub const LEGACY_MAX_BYTES: usize = 64 * 1024 * 1024;
@@ -155,7 +155,7 @@ impl Source {
                 }
             || self.version == 1 && (!self.handles.is_empty() || !self.warps.is_empty())
             || self.version < 3 && !self.surfaces.is_empty()
-            || self.targets.len() > 512
+            || self.targets.len() > if self.version >= 8 { 1024 } else { 512 }
             || self.joints.is_empty()
             || self.joints.len() > super::MAX_BONES
             || self.parts.is_empty()
@@ -231,7 +231,6 @@ impl Source {
         }
         self.validate_controls(&parameters, deltas)?;
         self.validate_surfaces(&parameters)?;
-        self.validate_eyes(&parameters)?;
         names.clear();
         for (i, j) in self.joints.iter().enumerate() {
             super::id(&j.name)?;
@@ -288,6 +287,7 @@ impl Source {
             .validate()?;
         }
         self.validate_refinements()?;
+        self.validate_eyes(&parameters)?;
         Ok(())
     }
     fn values(&self, configuration: &Configuration) -> Result<BTreeMap<String, f32>> {
@@ -411,6 +411,7 @@ impl Source {
         let (bones, bind) = self.bind(&positions)?;
         let (_, base_bind) = self.bind(&self.positions)?;
         let mut document = Document::default();
+        let mut sockets = BTreeMap::new();
         for part in &self.parts {
             let id = format!("{}_{}", placement.prefix, part.name);
             let socket = part.socket.map(|j| {
@@ -423,6 +424,9 @@ impl Source {
                 fitted * base_bind[j as usize].inverse()
             });
             let mut asset = self.asset(part, id.clone(), &positions, bones.clone(), socket)?;
+            if let (Some(joint), Some(matrix)) = (part.socket, socket) {
+                sockets.insert(joint, matrix);
+            }
             self.apply_surface(part, &values, &mut asset);
             self.refine(part, &mut asset)?;
             let eye_color = self.apply_eye(part, &values, socket, &mut asset)?;
@@ -438,6 +442,7 @@ impl Source {
                 attachment: None,
             });
         }
+        self.fit_eyes(&values, placement, &sockets, &mut document)?;
         if !self.eyes.is_empty()
             && document
                 .assets
