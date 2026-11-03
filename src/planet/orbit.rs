@@ -34,6 +34,10 @@ pub struct Settings {
     pub atmosphere_optimization: bool,
     /// GPU submission grouping, preserving source tiles and their sample grid.
     pub render_group_size: usize,
+    /// Diagnostic oracle: false retains the original full sampling on seam changes.
+    pub reuse_vertex_samples: bool,
+    /// Diagnostic oracle for the former expanded CPU frame.
+    pub canonical_cpu_stream: bool,
     pub atmosphere_height_meters: f64,
     /// Vertical optical depth of a homogeneous shell, not scattering/cloud simulation.
     pub atmosphere_optical_depth: Option<f64>,
@@ -52,6 +56,8 @@ impl Default for Settings {
             tile_subdivisions: N as u16,
             atmosphere_optimization: true,
             render_group_size: 8,
+            reuse_vertex_samples: true,
+            canonical_cpu_stream: true,
             atmosphere_height_meters: 8000.,
             atmosphere_optical_depth: None,
             space_color: [0.001, 0.002, 0.004],
@@ -457,8 +463,9 @@ impl Ord for Priority {
 }
 struct Resource {
     coordinates: Option<Arc<Vec<crate::meshes::SplitPosition>>>,
-    #[cfg(test)]
     keys: Vec<Key>,
+    normal_levels: Vec<u8>,
+    sample_hits: usize,
     asset: Asset,
     normals: Arc<Vec<[f32; 3]>>,
     cast_error: f64,
@@ -472,6 +479,8 @@ struct Group {
     material: crate::materials::Material,
 }
 pub(crate) struct Atlas {
+    last_update_ms: f64,
+    reused_samples: u64,
     groups: Vec<Group>,
     source: Source,
     scene_air: crate::atmosphere::Atmosphere,
@@ -533,6 +542,8 @@ impl Atlas {
         let view = View::new(doc, anchor, &settings, eye, outer, fraction, &source)?;
         let body = Arc::new(topology::body(doc, anchor, size, color)?);
         let mut a = Self {
+            last_update_ms: 0.,
+            reused_samples: 0,
             source,
             groups: vec![],
             scene_air,
@@ -566,6 +577,21 @@ impl Atlas {
         Ok(a)
     }
     pub fn update(
+        &mut self,
+        doc: &Document,
+        config: &super::runtime::Config,
+        anchor: Anchor,
+        eye: f64,
+        fraction: f64,
+    ) -> Result<()> {
+        let started = std::time::Instant::now();
+        let result = self.update_inner(doc, config, anchor, eye, fraction);
+        if result.is_ok() {
+            self.last_update_ms = started.elapsed().as_secs_f64() * 1000.;
+        }
+        result
+    }
+    fn update_inner(
         &mut self,
         doc: &Document,
         config: &super::runtime::Config,
@@ -665,6 +691,8 @@ impl Atlas {
         let mut staged = BTreeMap::new();
         let mut born = 0;
         let mut count = 0;
+        let mut reused_samples = 0;
+        let previous: BTreeMap<_, _> = self.resources.iter().map(|(k, r)| (k.tile, r)).collect();
         for tile in leaves {
             let key = ResourceKey {
                 tile,
@@ -675,13 +703,19 @@ impl Atlas {
                 r.clone()
             } else {
                 born += 1;
-                Arc::new(topology::resource(
+                let resource = topology::resource_reusing(
                     doc,
                     config,
                     &key,
                     &registry,
                     self.max_level,
-                )?)
+                    self.settings
+                        .reuse_vertex_samples
+                        .then(|| previous.get(&tile).map(|r| r.as_ref()))
+                        .flatten(),
+                )?;
+                reused_samples += resource.sample_hits as u64;
+                Arc::new(resource)
             };
             count += resource.asset.geometry.positions.len();
             if count > 2_000_000 {
@@ -745,6 +779,7 @@ impl Atlas {
         self.planned_settings = self.settings.clone();
         self.show_body = show_body;
         self.resources = staged;
+        self.reused_samples += reused_samples;
         self.view = view;
         self.anchor = anchor;
         self.maximum_error = self
@@ -848,12 +883,19 @@ impl Atlas {
         serde_json::json!({"active":true,"session_only":true,"settings":self.settings,"eye_position":self.view.position,"camera_altitude_meters":self.view.altitude,
             "planet_center_view_meters":self.view.center.to_array(),"render_origin":"camera","render_units":"meters","clip":self.view.clip,"resident_tiles":self.resources.len(),"vertices":self.resources.values().map(|r|r.asset.geometry.positions.len()).sum::<usize>(),
             "triangles":self.resources.values().map(|r|r.asset.geometry.triangles.len()).sum::<usize>(),"geometry_builds":self.builds,"residence_plans":self.plans,"retired_tiles":self.retired,
+            "last_update_ms":self.last_update_ms,"reused_vertex_samples":self.reused_samples,
             "max_source_cast_error_meters":self.resources.values().map(|r|r.cast_error).fold(0.,f64::max),"maximum_geometric_bound_pixels":self.maximum_error,"quality_limited":self.limited,
             "all_six_faces_covered":true,"conforming_edges":true,"shared_high_low_coordinates":true,"depth_contract":"reverse_z_finite","physical_grid_level":self.max_level+self.source.grid.ilog2() as u8,
             "atmosphere_model":"homogeneous_finite_shell","effective_density_per_meter":self.optical_depth()/self.settings.atmosphere_height_meters,"effective_optical_depth":self.optical_depth(),"effective_tile_budget":self.tile_budget(),"finite_atmospheric_materials":self.cheap_materials,"render_groups":self.groups.len(),"group_builds":self.group_builds,"legacy_atmospheric_selector":false,"gpu_occlusion":"fallback_custom_projection"})
     }
     pub fn apply(&self, frame: &mut crate::render::RenderFrame) {
-        frame.meshes.update(&self.meshes, 0);
+        if self.settings.canonical_cpu_stream {
+            frame
+                .meshes
+                .update_planet_canonical(&self.meshes, &self.normals, &self.coordinates);
+        } else {
+            frame.meshes.update(&self.meshes, 0);
+        }
         frame
             .meshes
             .apply_smooth_normals(&self.normals)

@@ -47,6 +47,7 @@ struct Resource {
     normals: Arc<Vec<[f32; 3]>>,
 }
 pub(crate) struct World {
+    last_prepare_ms: f64,
     pub config: Config,
     pub anchor: Anchor,
     pub actor_pose: Pose,
@@ -176,6 +177,7 @@ impl World {
         let initial_up = anchor.basis.y_axis;
         let initial_forward = -anchor.basis.z_axis;
         let mut out = Self {
+            last_prepare_ms: 0.,
             config,
             anchor,
             actor_pose,
@@ -277,6 +279,14 @@ impl World {
         })
     }
     pub fn prepare(&mut self, force: bool) -> Result<bool> {
+        let started = std::time::Instant::now();
+        let result = self.prepare_inner(force);
+        if result.is_ok() {
+            self.last_prepare_ms = started.elapsed().as_secs_f64() * 1000.;
+        }
+        result
+    }
+    fn prepare_inner(&mut self, force: bool) -> Result<bool> {
         let r = self.config.document.radius() + self.actor_pose.altitude_meters;
         let unit = DVec3::from(self.actor_pose.direction);
         let old_unit = DVec3::from(self.planned_at.direction);
@@ -477,6 +487,7 @@ impl World {
         serde_json::json!({"active":true,"session_only":true,"pose":self.actor_pose,"position":position,"actor":self.config.actor,
             "diameter_meters":self.config.document.diameter_meters,"source_id":self.config.document.id,"source_revision":self.config.document.revision,
             "visual_radius_meters":self.visual_radius,"visual_tiles":self.visual.len(),"physical_tiles":self.physical.len(),
+            "last_prepare_ms":self.last_prepare_ms,
             "rebases":self.rebases,"tile_births":self.births,"tile_retirements":self.retirements,"actual_path_meters":self.distance,
             "angular_path_radians":self.angular_path,"distance_from_spawn_meters":self.config.document.radius()*unit.cross(self.initial_up).length().atan2(unit.dot(self.initial_up)),
             "initial_meridian_progress_radians":self.meridian_progress,

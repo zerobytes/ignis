@@ -726,9 +726,34 @@ impl Gpu {
                 self.geometry.remove(&key);
             }
             if let std::collections::btree_map::Entry::Vacant(entry) = self.geometry.entry(key) {
+                let corner_count = asset.geometry.triangles.len() * 3;
+                let direct_planet = planet.is_some()
+                    && asset.geometry.positions.len() * 48 + asset.geometry.triangles.len() * 6
+                        < corner_count * 48
+                    && planet_compact
+                    && indexed
+                    && representations.normals.is_some()
+                    && asset.geometry.positions.len() * 48
+                        <= device.limits().max_buffer_size as usize
+                    && (corner_count
+                        * if asset.geometry.positions.len() <= 65536 {
+                            2
+                        } else {
+                            4
+                        })
+                    .next_multiple_of(4)
+                        <= device.limits().max_buffer_size as usize;
+                let canonical_vertices;
                 let lod_vertices: Vec<crate::render::Vertex>;
                 let mut compiled_indices = None;
-                let source_vertices = if let Some(level) = level.filter(|_| color.is_none()) {
+                let source_vertices = if frame.meshes.canonical_planet && planet.is_some() {
+                    if direct_planet {
+                        &[][..]
+                    } else {
+                        canonical_vertices = frame.meshes.expanded_planet_asset(draw.asset);
+                        canonical_vertices.as_slice()
+                    }
+                } else if let Some(level) = level.filter(|_| color.is_none()) {
                     let asset = &frame.meshes.source.assets[draw.asset];
                     let pack = frame
                         .mesh_lods
@@ -772,30 +797,14 @@ impl Gpu {
                         .iter()
                         .all(|v| v.color == [1.; 3] && v.material as usize == draw.asset + 1);
                 let minimal = compact && minimal_material;
-                let direct_planet = asset.geometry.positions.len() * 48
-                    + asset.geometry.triangles.len() * 6
-                    < source_vertices.len() * 48
-                    && planet_compact
-                    && indexed
-                    && representations.normals.is_some()
-                    && asset.geometry.positions.len() * 48
-                        <= device.limits().max_buffer_size as usize
-                    && (asset.geometry.triangles.len()
-                        * 3
-                        * if asset.geometry.positions.len() <= 65536 {
-                            2
-                        } else {
-                            4
-                        })
-                    .next_multiple_of(4)
-                        <= device.limits().max_buffer_size as usize;
                 let planet_data: Vec<PlanetVertex>;
                 let planet_compact_data: Vec<PlanetCompactVertex>;
                 let minimal_data: Vec<MinimalVertex>;
                 let compact_data: Vec<CompactVertex>;
                 let bytes = if let Some(p) = planet {
                     anyhow::ensure!(
-                        source_vertices.len() == asset.geometry.triangles.len() * 3,
+                        direct_planet
+                            || source_vertices.len() == asset.geometry.triangles.len() * 3,
                         "Planet payload requires the full canonical triangle stream"
                     );
                     if direct_planet {

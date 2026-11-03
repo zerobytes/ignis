@@ -394,6 +394,7 @@ fn planet_orbit_gpu_material_layout_motion_resize() {
     e.execute(
         Command::SetPlanetView {
             view: Some(Settings {
+                distance_meters: 4.,
                 tilt_degrees: -35.,
                 max_tiles: 48,
                 atmosphere_optical_depth: Some(0.),
@@ -441,6 +442,18 @@ fn planet_orbit_gpu_material_layout_motion_resize() {
         frame.meshes.apply_render_placements(&placements).unwrap();
         let mut changed = false;
         for (width, height, light) in [(640, 400, [0., -1., 0.]), (701, 439, [0.4, -0.6, 0.2])] {
+            frame.meshes.update(&doc, 0);
+            frame
+                .meshes
+                .apply_smooth_normals(
+                    &normals
+                        .iter()
+                        .map(|n| n.clone().unwrap())
+                        .collect::<Vec<_>>(),
+                )
+                .unwrap();
+            frame.meshes.apply_planet_coordinates(&coords).unwrap();
+            frame.meshes.apply_render_placements(&placements).unwrap();
             frame.light.direction = light;
             frame.camera.target = [if width == 640 { 0. } else { 0.01 }, 0., -1.];
             gpu.set_geometry_indexing(false);
@@ -458,6 +471,20 @@ fn planet_orbit_gpu_material_layout_motion_resize() {
                 changed = prior.as_ref().is_some_and(|p| *p != expected);
                 prior = Some(expected.clone());
             }
+            frame.meshes.update_planet_canonical(
+                &doc,
+                &normals
+                    .iter()
+                    .map(|n| n.clone().unwrap())
+                    .collect::<Vec<_>>(),
+                &coords,
+            );
+            frame.meshes.apply_render_placements(&placements).unwrap();
+            assert_eq!(
+                expected,
+                pixels(&gpu.capture(&frame, width, height).unwrap()),
+                "canonical CPU fallback changed pixels in {case}/{width}"
+            );
             gpu.set_geometry_indexing(true);
             gpu.set_compact_vertices(true);
             for _ in 0..2 {

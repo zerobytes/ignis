@@ -108,13 +108,35 @@ struct Builder<'a> {
     normals: Vec<[f32; 3]>,
     coordinates: Vec<[f32; 3]>,
     high_low: Vec<crate::meshes::SplitPosition>,
-    indices: BTreeMap<Key, u32>,
+    // Indices are assigned only by deterministic lattice traversal, never by
+    // map iteration. Randomized lookup does not change the emitted stream.
+    indices: std::collections::HashMap<Key, u32>,
     cast_error: f64,
+    previous: Option<&'a Resource>,
+    old_indices: std::collections::HashMap<Key, usize>,
+    normal_levels: Vec<u8>,
+    sample_hits: usize,
 }
 impl Builder<'_> {
     fn vertex(&mut self, k: Key, level: u8) -> u32 {
         if let Some(&i) = self.indices.get(&k) {
             return i;
+        }
+        if let Some(old) = self.previous
+            && let Some(&at) = self.old_indices.get(&k)
+            && old.normal_levels[at] == level
+        {
+            let index = self.positions.len() as u32;
+            self.indices.insert(k, index);
+            self.positions.push(old.asset.geometry.positions[at]);
+            self.normals.push(old.normals[at]);
+            self.coordinates
+                .push(old.asset.geometry.material_coordinates.as_ref().unwrap()[at]);
+            self.high_low.push(old.coordinates.as_ref().unwrap()[at]);
+            self.normal_levels.push(level);
+            self.cast_error = self.cast_error.max(old.cast_error);
+            self.sample_hits += 1;
+            return index;
         }
         let d = DVec3::new(k[0] as f64, k[1] as f64, k[2] as f64).normalize();
         let h = self.sampler.height(d);
@@ -138,6 +160,7 @@ impl Builder<'_> {
             d * (1. + h / self.doc.radius()),
         ));
         self.coordinates.push((d * 4096.).as_vec3().to_array());
+        self.normal_levels.push(level);
         index
     }
 }
@@ -151,12 +174,23 @@ fn normal(s: &Sampler<'_>, r: f64, d: DVec3, step: f64) -> DVec3 {
     };
     (d - r / (r + s.height(d)) * (a * gradient(a) + b * gradient(b))).normalize()
 }
+#[cfg(test)]
 pub(super) fn resource(
     doc: &Document,
     config: &super::super::runtime::Config,
     k: &ResourceKey,
     registry: &Registry,
     max: u8,
+) -> Result<Resource> {
+    resource_reusing(doc, config, k, registry, max, None)
+}
+pub(super) fn resource_reusing<'a>(
+    doc: &'a Document,
+    config: &super::super::runtime::Config,
+    k: &ResourceKey,
+    registry: &Registry,
+    max: u8,
+    previous: Option<&'a Resource>,
 ) -> Result<Resource> {
     // Bound the seven height evaluations per vertex before allocating/cooking.
     // A fine boundary may add many vertices to an otherwise coarse cell.
@@ -194,6 +228,12 @@ pub(super) fn resource(
         high_low: vec![],
         indices: Default::default(),
         cast_error: 0.,
+        previous,
+        old_indices: previous
+            .map(|r| r.keys.iter().enumerate().map(|(i, k)| (*k, i)).collect())
+            .unwrap_or_default(),
+        normal_levels: vec![],
+        sample_hits: 0,
     };
     let mut triangles = Vec::with_capacity((n * n * 2) as usize);
     let mut polygon = Vec::with_capacity(8);
@@ -259,7 +299,6 @@ pub(super) fn resource(
     material.validate()?;
     Ok(Resource {
         coordinates: Some(Arc::new(b.high_low)),
-        #[cfg(test)]
         keys: {
             let mut v = vec![[0; 3]; b.indices.len()];
             for (k, i) in b.indices {
@@ -267,6 +306,8 @@ pub(super) fn resource(
             }
             v
         },
+        normal_levels: b.normal_levels,
+        sample_hits: b.sample_hits,
         asset: Asset {
             id: format!("orbit_{}", t.label()),
             geometry: Arc::new(geometry),
@@ -331,8 +372,9 @@ pub(super) fn body(
     let _ = doc;
     Ok(Resource {
         coordinates: None,
-        #[cfg(test)]
         keys: vec![],
+        normal_levels: vec![],
+        sample_hits: 0,
         asset: Asset {
             id: "orbit_avatar".into(),
             geometry: Arc::new(g),

@@ -1483,6 +1483,7 @@ fn next_frame_generation() -> u64 {
 }
 #[derive(Default)]
 pub struct Frame {
+    pub(crate) canonical_planet: bool,
     /// Changes only when authored source/masks change, independent of avatar tails.
     pub static_generation: u64,
     pub(crate) generation: u64,
@@ -1506,6 +1507,188 @@ pub struct Frame {
     legacy_unique_static: bool,
 }
 impl Frame {
+    /// Static planetary streams are already canonical. Keep indexed source arrays
+    /// instead of expanding every terrain corner again on each catalog change.
+    pub(crate) fn update_planet_canonical(
+        &mut self,
+        document: &Document,
+        normals: &[Arc<Vec<[f32; 3]>>],
+        coordinates: &[Option<Arc<Vec<SplitPosition>>>],
+    ) {
+        // Preserve the material library's per-instance derivation policy. The
+        // canonical terrain path has one material slot per asset; unique recipes
+        // keep the existing expanded frame until that policy is shared here.
+        if document.assets.iter().any(|a| {
+            a.material
+                .procedural
+                .as_ref()
+                .is_some_and(|p| p.fixed.is_none() && p.recipe.unique_instances)
+        }) {
+            self.update(document, 0);
+            return;
+        }
+        assert_eq!(document.assets.len(), normals.len());
+        assert_eq!(document.assets.len(), coordinates.len());
+        let unchanged = self.canonical_planet
+            && self.source.instances == document.instances
+            && self.source.assets.len() == document.assets.len()
+            && self
+                .source
+                .assets
+                .iter()
+                .zip(&document.assets)
+                .all(|(a, b)| {
+                    a.id == b.id
+                        && Arc::ptr_eq(&a.geometry, &b.geometry)
+                        && a.material == b.material
+                })
+            && self
+                .normal_overrides
+                .iter()
+                .zip(normals)
+                .all(|(a, b)| a.as_ref().is_some_and(|a| Arc::ptr_eq(a, b)))
+            && self.normal_overrides.len() == normals.len()
+            && self.planet_coordinates.len() == coordinates.len()
+            && self
+                .planet_coordinates
+                .iter()
+                .zip(coordinates)
+                .all(|(a, b)| match (a, b) {
+                    (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+                    (None, None) => true,
+                    _ => false,
+                });
+        if unchanged {
+            return;
+        }
+        for (slot, asset) in document.assets.iter().enumerate() {
+            assert!(
+                asset.rig.is_none() && asset.clips.is_empty() && asset.shading == Shading::Smooth
+            );
+            assert_eq!(normals[slot].len(), asset.geometry.positions.len());
+            if !self
+                .normal_overrides
+                .iter()
+                .flatten()
+                .any(|n| Arc::ptr_eq(n, &normals[slot]))
+            {
+                assert!(normals[slot].iter().all(|n| Vec3::from(*n).is_finite()
+                    && (Vec3::from(*n).length_squared() - 1.).abs() <= 0.001));
+            }
+            if let Some(c) = &coordinates[slot] {
+                assert_eq!(c.len(), asset.geometry.positions.len());
+                if !self
+                    .planet_coordinates
+                    .iter()
+                    .flatten()
+                    .any(|old| Arc::ptr_eq(old, c))
+                {
+                    assert!(
+                        c.iter().all(
+                            |p| Vec3::from(p.high).is_finite() && Vec3::from(p.low).is_finite()
+                        )
+                    );
+                }
+            }
+        }
+        let lookup: std::collections::HashMap<_, _> = document
+            .assets
+            .iter()
+            .enumerate()
+            .map(|(i, a)| (a.id.as_str(), i))
+            .collect();
+        self.shared_vertices.clear();
+        self.draws.clear();
+        for instance in &document.instances {
+            assert!(instance.playback.is_none() && instance.attachment.is_none());
+            let slot = lookup[instance.asset.as_str()];
+            let asset = &document.assets[slot];
+            let range = if coordinates[slot].is_some() {
+                // A logical corner range; the renderer reads the indexed source.
+                0..asset.geometry.triangles.len() * 3
+            } else {
+                let start = self.shared_vertices.len();
+                self.shared_vertices.extend(Self::expand_canonical_asset(
+                    asset,
+                    &normals[slot],
+                    slot,
+                ));
+                start..self.shared_vertices.len()
+            };
+            self.draws.push(crate::distant::selection::Draw {
+                instance: instance.id.clone(),
+                asset: slot,
+                material: (slot + 1) as u32,
+                range,
+                world: transform(instance.position, instance.rotation)
+                    * Mat4::from_scale(Vec3::splat(instance.scale)),
+                color: instance.color,
+                shared: true,
+                repeated: false,
+                eligible: true,
+            });
+        }
+        if self.shared_vertices.capacity() > self.shared_vertices.len().max(4096) * 4 {
+            self.shared_vertices.shrink_to_fit();
+        }
+        self.vertices.clear();
+        self.base_vertices = 0;
+        self.omitted_avatars = 0;
+        self.drawn_avatars.clear();
+        self.consumed.clear();
+        self.material_instances.clear();
+        self.materials = std::iter::once(Default::default())
+            .chain(document.assets.iter().map(|a| a.material.clone()))
+            .collect();
+        self.source.clone_from(document);
+        self.normal_overrides = normals.iter().cloned().map(Some).collect();
+        self.planet_coordinates = coordinates.to_vec();
+        self.tick = Some(0);
+        self.canonical_planet = true;
+        self.generation = next_frame_generation();
+        self.geometry_generation = self.generation;
+        self.static_generation = self.generation;
+    }
+    fn expand_canonical_asset(
+        asset: &Asset,
+        normals: &[[f32; 3]],
+        slot: usize,
+    ) -> Vec<crate::render::Vertex> {
+        let weights =
+            crate::mesh_projection::weights(&asset.geometry).expect("validated canonical geometry");
+        let rest = asset
+            .geometry
+            .material_coordinates
+            .as_ref()
+            .unwrap_or(&asset.geometry.positions);
+        asset
+            .geometry
+            .triangles
+            .iter()
+            .flatten()
+            .map(|&i| {
+                let i = i as usize;
+                crate::render::Vertex {
+                    // Match the legacy evaluator, including signed-zero bits.
+                    position: Mat4::IDENTITY
+                        .transform_point3(asset.geometry.positions[i].into())
+                        .to_array(),
+                    normal: normals[i],
+                    color: [1.; 3],
+                    rest_position: rest[i],
+                    material: (slot + 1) as u32,
+                    material_projection_weights: weights[i],
+                }
+            })
+            .collect()
+    }
+    pub(crate) fn expanded_planet_asset(&self, slot: usize) -> Vec<crate::render::Vertex> {
+        Self::expand_canonical_asset(
+            &self.source.assets[slot],
+            self.normal_overrides[slot].as_ref().unwrap(),
+            slot,
+        )
+    }
     /// Diagnostic oracle for the previous single-instance upload path. This
     /// changes derived render data only, never the document or physics.
     pub fn set_unique_static_residency(&mut self, enabled: bool) {
@@ -1533,18 +1716,38 @@ impl Frame {
     ) -> impl Iterator<Item = [f32; 3]> + '_ {
         let shared = draw.shared;
         let world = draw.world;
-        let vertices = if shared {
+        let canonical = self.canonical_planet
+            && self
+                .planet_coordinates
+                .get(draw.asset)
+                .is_some_and(Option::is_some);
+        let direct = if canonical {
+            self.source.assets[draw.asset].geometry.positions.as_slice()
+        } else {
+            &[]
+        };
+        let vertices = if canonical {
+            &[][..]
+        } else if shared {
             &self.shared_vertices
         } else {
             &self.vertices
         };
-        vertices[draw.range.clone()].iter().map(move |v| {
-            if shared {
-                world.transform_point3(v.position.into()).to_array()
-            } else {
-                v.position
-            }
-        })
+        direct
+            .iter()
+            .copied()
+            .chain(
+                vertices[if canonical { 0..0 } else { draw.range.clone() }]
+                    .iter()
+                    .map(|v| v.position),
+            )
+            .map(move |position| {
+                if shared {
+                    world.transform_point3(position.into()).to_array()
+                } else {
+                    position
+                }
+            })
     }
     pub fn update(&mut self, document: &Document, tick: u64) {
         self.update_filtered(document, tick, std::iter::empty());
@@ -1555,6 +1758,11 @@ impl Frame {
         tick: u64,
         consumed: impl Iterator<Item = &'a str> + Clone,
     ) {
+        let leaving_canonical = self.canonical_planet;
+        if leaving_canonical {
+            self.canonical_planet = false;
+            self.tick = None;
+        }
         if self.vertices.len() != self.base_vertices {
             self.generation = next_frame_generation();
         }
@@ -1625,12 +1833,13 @@ impl Frame {
             }
             return;
         }
-        let changed = self
-            .source
-            .assets
-            .iter()
-            .zip(&document.assets)
-            .any(|(a, b)| !a.material.resources_match(&b.material))
+        let changed = leaving_canonical
+            || self
+                .source
+                .assets
+                .iter()
+                .zip(&document.assets)
+                .any(|(a, b)| !a.material.resources_match(&b.material))
             || self.source != *document;
         if self.tick == Some(effective_tick) && !changed && !mask_changed {
             return;
@@ -1736,6 +1945,18 @@ impl Frame {
                 "Planet coordinate overrides must match immutable source vertices",
             ));
         }
+        if self.canonical_planet {
+            let source = self.source.clone();
+            let normals: Vec<_> = self
+                .normal_overrides
+                .iter()
+                .map(|n| n.clone().unwrap())
+                .collect();
+            let placements: Vec<_> = self.draws.iter().map(|d| d.world).collect();
+            self.update_planet_canonical(&source, &normals, coordinates);
+            self.apply_render_placements(&placements)?;
+            return Ok(());
+        }
         self.planet_coordinates = coordinates.to_vec();
         self.generation = next_frame_generation();
         self.geometry_generation = self.generation;
@@ -1809,6 +2030,14 @@ impl Frame {
             return Err(invalid(
                 "Derived normals require matching unit normals for shared static assets",
             ));
+        }
+        if self.canonical_planet {
+            let source = self.source.clone();
+            let coordinates = self.planet_coordinates.clone();
+            let placements: Vec<_> = self.draws.iter().map(|d| d.world).collect();
+            self.update_planet_canonical(&source, normals, &coordinates);
+            self.apply_render_placements(&placements)?;
+            return Ok(());
         }
         let mut done = vec![false; normals.len()];
         for draw in &self.draws {

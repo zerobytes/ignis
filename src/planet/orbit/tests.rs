@@ -167,6 +167,58 @@ fn planet_orbit_conforming_closed_surface_across_levels_and_cube_corners() {
 }
 
 #[test]
+fn planet_orbit_reuses_samples_without_changing_stitched_payload() {
+    let mut c = config();
+    c.document.operations.push(Relief::Raise {
+        direction: [1., 1., 0.],
+        angular_radius_degrees: 60.,
+        height_meters: 1000.,
+    });
+    let mut leaves: BTreeSet<_> = FACES
+        .into_iter()
+        .map(|face| Tile {
+            face,
+            level: 0,
+            xy: [0, 0],
+        })
+        .collect();
+    let tile = Tile {
+        face: Face::PositiveY,
+        level: 0,
+        xy: [0, 0],
+    };
+    let registry = topology::Registry::new(&leaves, 3, N);
+    let key = ResourceKey {
+        tile,
+        grid: N,
+        signature: registry.signature(tile),
+    };
+    let old = topology::resource(&c.document, &c, &key, &registry, 3).unwrap();
+    let neighbor = Tile {
+        face: Face::PositiveX,
+        level: 0,
+        xy: [0, 0],
+    };
+    leaves.remove(&neighbor);
+    leaves.extend(neighbor.children());
+    let registry = topology::Registry::new(&leaves, 3, N);
+    let key = ResourceKey {
+        tile,
+        grid: N,
+        signature: registry.signature(tile),
+    };
+    let fresh = topology::resource(&c.document, &c, &key, &registry, 3).unwrap();
+    let reused =
+        topology::resource_reusing(&c.document, &c, &key, &registry, 3, Some(&old)).unwrap();
+    assert!(reused.sample_hits > 900);
+    assert_eq!(fresh.asset.geometry, reused.asset.geometry);
+    assert_eq!(fresh.normals, reused.normals);
+    assert_eq!(fresh.coordinates, reused.coordinates);
+    assert_eq!(fresh.keys, reused.keys);
+    assert_eq!(fresh.normal_levels, reused.normal_levels);
+}
+
+#[test]
 fn planet_orbit_clip_and_basis_are_finite_at_surface_globe_and_astronomical_zoom() {
     let c = config();
     for direction in [[0., 1., 0.], [0., -1., 0.], [1., 0., 0.], [0., 0., 1.]] {
@@ -506,6 +558,113 @@ fn planet_orbit_submission_groups_retain_unchanged_payloads() {
             .values()
             .map(|r| r.asset.geometry.triangles.len())
             .sum::<usize>()
+    );
+}
+
+#[test]
+fn planet_orbit_canonical_cpu_frame_preserves_payload_and_restores_expansion() {
+    let c = config();
+    let a = atlas(
+        &c,
+        Settings {
+            distance_meters: 4.,
+            max_tiles: 48,
+            ..Default::default()
+        },
+    );
+    let mut reference = crate::meshes::Frame::default();
+    reference.update(&a.meshes, 0);
+    reference.apply_smooth_normals(&a.normals).unwrap();
+    reference.apply_planet_coordinates(&a.coordinates).unwrap();
+    let mut current = crate::meshes::Frame::default();
+    current.update_planet_canonical(&a.meshes, &a.normals, &a.coordinates);
+    assert!(current.canonical_planet);
+    assert_eq!(current.triangle_count(), reference.triangle_count());
+    assert!(current.resident_vertex_count() * 10 < reference.resident_vertex_count());
+    for (new, old) in current.draws.iter().zip(&reference.draws) {
+        assert_eq!(new.instance, old.instance);
+        assert_eq!(new.asset, old.asset);
+        assert_eq!(new.range.len(), old.range.len());
+        assert_eq!(new.world, old.world);
+        assert_eq!(new.color, old.color);
+        let expanded = current.expanded_planet_asset(new.asset);
+        assert!(
+            bytemuck::cast_slice::<_, u8>(&expanded)
+                == bytemuck::cast_slice::<_, u8>(&reference.shared_vertices[old.range.clone()]),
+            "expanded payload differs for asset {}",
+            new.asset
+        );
+    }
+    let generation = current.geometry_generation;
+    current.update_planet_canonical(&a.meshes, &a.normals, &a.coordinates);
+    assert_eq!(
+        current.geometry_generation, generation,
+        "warm source must remain cached"
+    );
+    let mut edited = a.meshes.clone();
+    edited.assets[0].material.reflectance = Some(crate::materials::Reflectance {
+        roughness: 0.7,
+        f0: 0.04,
+        metallic: 0.,
+    });
+    current.update_planet_canonical(&edited, &a.normals, &a.coordinates);
+    assert_ne!(current.geometry_generation, generation);
+    assert_eq!(current.materials[1], edited.assets[0].material);
+    current.apply_render_placements(&a.placements).unwrap();
+    let mut changed_normals = a.normals.clone();
+    let n = &mut Arc::make_mut(&mut changed_normals[0])[0];
+    *n = n.map(|x| -x);
+    current.apply_smooth_normals(&changed_normals).unwrap();
+    assert!(Arc::ptr_eq(
+        current.normal_overrides[0].as_ref().unwrap(),
+        &changed_normals[0]
+    ));
+    let mut changed_coordinates = a.coordinates.clone();
+    Arc::make_mut(changed_coordinates[0].as_mut().unwrap())[0].low[0] += 1e-10;
+    current
+        .apply_planet_coordinates(&changed_coordinates)
+        .unwrap();
+    assert!(Arc::ptr_eq(
+        current.planet_coordinates[0].as_ref().unwrap(),
+        changed_coordinates[0].as_ref().unwrap()
+    ));
+    assert_eq!(
+        current.draws.iter().map(|d| d.world).collect::<Vec<_>>(),
+        a.placements
+    );
+    current.update(&a.meshes, 0);
+    current.apply_smooth_normals(&a.normals).unwrap();
+    current.apply_planet_coordinates(&a.coordinates).unwrap();
+    assert!(!current.canonical_planet);
+    assert_eq!(
+        bytemuck::cast_slice::<_, u8>(&current.shared_vertices),
+        bytemuck::cast_slice::<_, u8>(&reference.shared_vertices)
+    );
+    current.update_planet_canonical(&a.meshes, &a.normals, &a.coordinates);
+    current.update(&crate::meshes::Document::default(), 0);
+    assert!(current.draws.is_empty());
+    assert_eq!(current.triangle_count(), 0);
+    assert_eq!(current.materials.len(), 1);
+    edited.assets[0].material.procedural = Some(Arc::new(
+        crate::materials::recipe::Procedural::runtime(crate::materials::recipe::Recipe {
+            unique_instances: true,
+            ..Default::default()
+        }),
+    ));
+    current.update_planet_canonical(&edited, &a.normals, &a.coordinates);
+    assert!(
+        !current.canonical_planet,
+        "unique material recipes retain their derivation policy"
+    );
+    let draw = current.draws.iter().find(|d| d.asset == 0).unwrap();
+    assert!(draw.material as usize > edited.assets.len());
+    assert!(
+        !current.materials[draw.material as usize]
+            .procedural
+            .as_ref()
+            .unwrap()
+            .recipe
+            .unique_instances
     );
 }
 
