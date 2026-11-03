@@ -6,6 +6,25 @@ analisar as ferramentas necessárias, preservando esta cena, e coordenar a
 instabilidade com o Horizon. Este documento é uma proposta de engenharia;
 nenhuma das capacidades futuras abaixo é declarada implementada.
 
+## Diretriz arquitetural confirmada
+
+Guilherme reforçou nesta revisão: plano e esfera devem oferecer as mesmas
+ferramentas, receitas, edição, parâmetros e geração; só a geometria do domínio muda.
+A separação atual entre Terrain e Planet é estado legado a migrar, não a arquitetura
+alvo. Não criar um catálogo planetário menor ou portar cada ferramenta duas vezes.
+
+Uma fonte/programa comum recebe um domínio de superfície, responsável por posição,
+vertical/normal local, distância e direção métricas, vizinhança, área e condições
+de fronteira. A esfera fecha a superfície e muda esses cálculos; o plano fornece
+seu referencial plano. Relevo, máscaras, curvas, erosão e hidrologia usam o mesmo
+contrato. Distâncias e alturas são em metros. Mesma ferramenta não promete uma
+realização global numericamente idêntica em domínios geometricamente distintos.
+
+Receitas criativas externas serão convertidas para essa fonte comum. O estudo
+[terrain-generators-study.md](terrain-generators-study.md) registra candidatos,
+licenças/versionamento, formas de reuso e limites verificados. Nenhuma dependência
+ou receita externa foi integrada nesta etapa.
+
 ## Diagnóstico e evidência atual
 
 No print há predominância de encostas compridas e arredondadas, silhuetas de
