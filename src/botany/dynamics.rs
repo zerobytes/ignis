@@ -13,6 +13,8 @@ const MAX_PAIRS: usize = 100000;
 pub struct Settings {
     pub gravity: [f64; 3],
     pub wind: [f64; 3],
+    #[serde(default)]
+    pub use_scene_wind: bool,
     pub ground: Option<f64>,
     pub age: f64,
     pub growth_rate: f64,
@@ -27,6 +29,7 @@ impl Default for Settings {
         Self {
             gravity: [0., -9.81, 0.],
             wind: [0.; 3],
+            use_scene_wind: false,
             ground: Some(0.),
             age: 100.,
             growth_rate: 0.,
@@ -114,6 +117,8 @@ pub struct Session {
     pub recipe: Recipe,
     pub compiled: Arc<Compiled>,
     pub settings: Settings,
+    wind_field: Option<(Arc<crate::wind::CompiledField>, f64)>,
+    wind_sample_work: usize,
     pub playing: bool,
     pub tick: u64,
     nodes: Vec<Node>,
@@ -191,6 +196,8 @@ impl Session {
             recipe,
             compiled: Arc::new(compiled),
             settings,
+            wind_field: None,
+            wind_sample_work: 0,
             playing: false,
             tick: 0,
             nodes: vec![],
@@ -659,6 +666,19 @@ impl Session {
         *self = candidate;
         Ok(())
     }
+    pub fn set_wind_field(&mut self, field: &crate::wind::Field, time_offset: f64) -> Result<()> {
+        if self.nodes.len() * field.sample_work() > crate::wind::MAX_WORK
+            || !time_offset.is_finite()
+        {
+            return Err(invalid("Botanical spatial wind sample budget/time"));
+        }
+        self.wind_field = Some((
+            Arc::new(crate::wind::CompiledField::new(field)?),
+            time_offset,
+        ));
+        self.wind_sample_work = field.sample_work();
+        Ok(())
+    }
     pub fn step(&mut self, ticks: u32) -> Result<()> {
         if !(1..=3600).contains(&ticks) {
             return Err(invalid("Botanical stepping requires1..3600 ticks"));
@@ -676,12 +696,21 @@ impl Session {
             self.update_rest(true)?;
             self.rebuild()?;
         }
+        if self.wind_field.is_some()
+            && self.nodes.len() * self.wind_sample_work > crate::wind::MAX_WORK
+        {
+            return Err(invalid("Botanical spatial wind sample budget"));
+        }
         let momentum_before = self
             .nodes
             .iter()
             .map(|n| n.velocity * n.mass)
             .sum::<DVec3>();
         let previous: Vec<_> = self.nodes.iter().map(|n| n.position).collect();
+        let spatial_wind = self
+            .wind_field
+            .as_ref()
+            .map(|(field, offset)| field.at_time(*offset + self.tick as f64 / 120.));
         for n in &mut self.nodes {
             if n.mass <= 1e-18 {
                 continue;
@@ -690,10 +719,18 @@ impl Session {
                 n.position = n.rest;
                 continue;
             }
-            let wind = DVec3::from_array(self.settings.wind);
-            let relative = wind - n.velocity;
-            let drag = relative * (relative.length() * 0.04); // Effective bounded area/mass acceleration.
-            n.velocity += (DVec3::from_array(self.settings.gravity) + drag) * dt;
+            let mut wind = DVec3::from_array(self.settings.wind);
+            if let Some(field) = &spatial_wind {
+                wind += field.sample(n.position);
+                n.velocity += DVec3::from_array(self.settings.gravity) * dt;
+                let relative = wind - n.velocity;
+                let factor = 2. / (1. + (1. + 4. * dt * 0.04 * relative.length()).sqrt());
+                n.velocity = wind - relative * factor;
+            } else {
+                let relative = wind - n.velocity;
+                let drag = relative * (relative.length() * 0.04); // Legacy effective area/mass acceleration.
+                n.velocity += (DVec3::from_array(self.settings.gravity) + drag) * dt;
+            }
             n.position += n.velocity * dt;
         }
         let predicted_momentum = self

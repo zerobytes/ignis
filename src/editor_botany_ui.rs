@@ -160,6 +160,7 @@ pub(super) fn properties(
             ui.add(egui::Slider::new(&mut state.physics.age,0. ..=20.).text("Fase de expansão do ensaio"));
             ui.add(egui::Slider::new(&mut state.physics.growth_rate,0. ..=2.).text("Expansão do ensaio / s"));
             ui.horizontal(|ui|{ui.label("Vento");for x in &mut state.physics.wind{ui.add(egui::DragValue::new(x).speed(0.1).range(-30. ..=30.));}});
+            ui.checkbox(&mut state.physics.use_scene_wind,"Usar campo de vento da cena");
             ui.checkbox(&mut state.physics.self_contact,"Contato entre órgãos");ui.checkbox(&mut state.physics.leaf_contact,"Incluir lâminas no contato");
             let mut action=None;
             ui.horizontal_wrapped(|ui|{

@@ -4,6 +4,10 @@ use crate::model::{Result, invalid};
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Saved {
+    #[serde(default)]
+    wind_handles: Vec<RigidBodyHandle>,
+    #[serde(default)]
+    wind: Vec<super::wind::Primary>,
     world: crate::runtime_world::RuntimeWorld,
     actors: crate::targeting::Catalog,
     abilities: crate::abilities::SavedRuntime,
@@ -47,6 +51,8 @@ pub(crate) struct Saved {
 impl Simulation {
     pub(crate) fn checkpoint(&self) -> Saved {
         Saved {
+            wind_handles: self.wind_handles(),
+            wind: self.wind_primaries(),
             world: self.scene.clone(),
             actors: self.actors.clone(),
             abilities: self.abilities.checkpoint(),
@@ -127,6 +133,9 @@ impl Simulation {
         out.broad = data.broad;
         out.narrow = data.narrow;
         out.bodies = data.bodies;
+        for (b, h) in out.wind.bodies.iter_mut().zip(data.wind_handles) {
+            b.handle = h;
+        }
         out.colliders = data.colliders;
         out.surface_bodies = data.surface_bodies;
         out.impulse = data.impulse;
@@ -233,9 +242,16 @@ impl Saved {
                 return Err(invalid());
             }
         }
+        let aero_colliders = super::wind::validate_saved_handles(
+            author,
+            &self.wind_handles,
+            &self.wind,
+            &self.bodies,
+            &self.colliders,
+        )?;
         let surfaces = crate::surfaces::prepare(defs);
         if self.surface_bodies.len() != surfaces.len()
-            || self.bodies.len() != self.handles.len() + surfaces.len()
+            || self.bodies.len() != self.handles.len() + surfaces.len() + self.wind_handles.len()
         {
             return Err(invalid());
         }
@@ -270,7 +286,8 @@ impl Saved {
         for (h, c) in self.colliders.iter() {
             if c.parent().is_none_or(|b| self.bodies.get(b).is_none())
                 || (self.names.get(&h).is_none_or(|i| *i >= contacts)
-                    && !surface_colliders.contains(&h))
+                    && !surface_colliders.contains(&h)
+                    && !aero_colliders.contains(&h))
             {
                 return Err(invalid());
             }

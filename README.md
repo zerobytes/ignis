@@ -49,6 +49,7 @@ an agent. The public source includes the systems below.
 | **[Ignis Horizon rendering](docs/features.md#ignis-horizon-rendering)** | Native lighting and shadows, shared geometry, GPU visibility/occlusion, residency and atmosphere-aware distant representations. |
 | **[Materials and surface detail](docs/features.md#materials-and-surface-detail)** | Procedural color, roughness, bump and triplanar detail; dielectric/metal response; cutout, translucency, additive surfaces and thin glass. |
 | **[Particles and VFX](docs/features.md#particles-and-vfx)** | Reusable seeded effects, analytic motion and life curves, GPU instanced translucent/additive sprites, shared MCP/editor authoring and preview. |
+| **[Spatial wind and free meshes](docs/wind.md)** | Seeded currents, gusts and curl vortices; rigid thin-surface aerodynamics, torque and convex contacts in ordinary offline scenes. |
 | **[Worlds, terrain and planets](docs/features.md#worlds-terrain-and-planets)** | Editable terrain and ridges, landforms and cavities, terrain collision, global coordinates, plus experimental planetary walking and surface-to-globe tile LOD. |
 | **[Procedural botany](docs/features.md#procedural-botany)** | Trees, palms, grass and shrubs built from organs and curves; branching, age/vigor, roots, buttresses and collars. Separate deformation/growth/pruning laboratory. |
 | **[Parametric characters](docs/features.md#parametric-characters)** | Body proportions, posture, local face/ear/lip/nose controls, symmetric 3D handles and source-preserving regeneration. |

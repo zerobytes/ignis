@@ -3,6 +3,7 @@ mod checkpoint;
 mod planet;
 mod player_view;
 mod portable;
+pub(crate) mod wind;
 use crate::model::{BodyKind, FIXED_DT, Scene};
 pub(crate) use checkpoint::Saved as SavedSimulation;
 pub(crate) use portable::Saved as PortableSimulation;
@@ -48,6 +49,7 @@ fn player_input(legacy: Input, controls: &[Option<Input>], actor: usize, players
 }
 
 pub struct Simulation {
+    pub(crate) wind: wind::Runtime,
     pub(crate) planet: Option<Box<crate::planet::runtime::World>>,
     pub(crate) physical_surfaces: Vec<crate::surfaces::Surface>,
     surface_bodies: BTreeMap<String, RigidBodyHandle>,
@@ -123,6 +125,7 @@ impl Simulation {
         let interactions = crate::interactions::Runtime::new(scene, &actors);
         let routines = crate::npc_routines::Runtime::new(scene, &interactions);
         let mut s = Self {
+            wind: Default::default(),
             planet: None,
             physical_surfaces: crate::surfaces::prepare(scene),
             surface_bodies: BTreeMap::new(),
@@ -233,6 +236,7 @@ impl Simulation {
             }
         }
         s.insert_surfaces();
+        s.insert_aerodynamics();
         for point in 0..s.interactions.points.len() {
             if !s.interactions.document.points[point].mutable {
                 continue;
@@ -1809,23 +1813,38 @@ impl Simulation {
             .interrupt_movement(&self.scene, &self.actors, self.tick);
         self.move_ground_characters();
         let positions = &position_snapshot;
-        self.pipeline.step(
-            &vector![0., -9.81, 0.],
-            &IntegrationParameters {
-                dt: FIXED_DT,
-                ..Default::default()
-            },
-            &mut self.islands,
-            &mut self.broad,
-            &mut self.narrow,
-            &mut self.bodies,
-            &mut self.colliders,
-            &mut self.impulse,
-            &mut self.multibody,
-            &mut self.ccd,
-            &(),
-            &(),
-        );
+        let substeps = if self.wind.bodies.is_empty() {
+            1
+        } else {
+            self.scene.wind.substeps
+        };
+        self.prepare_wind_kinematics(substeps);
+        for substep in 0..substeps {
+            if !self.wind.bodies.is_empty() {
+                self.advance_wind_kinematics(substep, substeps);
+                self.apply_aerodynamics(
+                    (self.tick as f64 + f64::from(substep) / f64::from(substeps)) / 60.,
+                    f64::from(FIXED_DT) / f64::from(substeps),
+                );
+            }
+            self.pipeline.step(
+                &vector![0., -9.81, 0.],
+                &IntegrationParameters {
+                    dt: FIXED_DT / f32::from(substeps),
+                    ..Default::default()
+                },
+                &mut self.islands,
+                &mut self.broad,
+                &mut self.narrow,
+                &mut self.bodies,
+                &mut self.colliders,
+                &mut self.impulse,
+                &mut self.multibody,
+                &mut self.ccd,
+                &(),
+                &(),
+            );
+        }
         self.tick += 1;
         for (a, &index) in self.actors.actors.iter().enumerate() {
             if !positions.contains_key(&self.scene.entities[index as usize].id) {

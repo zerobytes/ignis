@@ -43,6 +43,7 @@ pub mod targeting;
 mod transaction;
 pub mod trigger;
 pub mod vitality;
+pub mod wind;
 pub mod window;
 
 pub mod objectives;

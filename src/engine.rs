@@ -52,6 +52,9 @@ pub const MAX_SCENE_EDITS: usize = 512;
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum SceneEdit {
+    SetWind {
+        document: std::sync::Arc<crate::wind::Document>,
+    },
     SetParticles {
         document: std::sync::Arc<crate::particles::Document>,
     },
@@ -125,6 +128,9 @@ fn default_session_capacity() -> usize {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Wind {
+        operation: Box<crate::wind::Operation>,
+    },
     Particles {
         operation: Box<crate::particles::Operation>,
     },
@@ -938,11 +944,13 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 125;
+pub const REPLAY_VERSION: u32 = 126;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Replay {
+    #[serde(default)]
+    pub expected_wind: Vec<crate::wind::BodyState>,
     #[serde(
         default,
         with = "crate::checkpoint::baseline",
@@ -1001,6 +1009,9 @@ struct Selected {
     id: String,
     index: u16,
 }
+
+#[path = "engine_wind.rs"]
+mod wind;
 
 #[path = "engine_particles.rs"]
 mod particles;
@@ -1202,6 +1213,11 @@ impl Engine {
         let mut changed_meshes = std::collections::BTreeSet::new();
         for (index, edit) in edits.enumerate() {
             match edit {
+                SceneEdit::SetWind { document } => {
+                    document.validate()?;
+                    scene.version = scene.version.max(crate::wind::SCENE_VERSION);
+                    scene.wind = document;
+                }
                 SceneEdit::SetBotany { recipes } => {
                     scene.version = SCENE_VERSION;
                     scene.botany = recipes;
@@ -1617,9 +1633,9 @@ impl Engine {
             .as_ref()
             .map_or(meshes, |w| &w.meshes);
         let scene = self.simulation.definitions();
-        frame.meshes.update_filtered(
+        frame.meshes.update_aerodynamic(
             meshes,
-            self.simulation.tick,
+            &self.simulation,
             self.scene
                 .plants
                 .connections
@@ -2137,7 +2153,7 @@ impl Engine {
         json!({"tick":self.simulation.tick,"npcs":npcs})
     }
     pub fn snapshot(&self) -> Value {
-        json!({"execution":self.inspect_execution(),"revision":self.revision,"selection":self.selected_id(),"mesh_selection":self.mesh_selection,"debug_view":self.debug_view,"view_revision":self.view_revision,"tick":self.simulation.tick,"fixed_dt":FIXED_DT,"playing":self.playing,"input":self.input,"controls":self.inspect_controls(),"player_motion":(self.simulation.player_count()<=1).then(||self.simulation.movement_profile(self.input.mode)),"scene":self.scene,"runtime_positions":self.simulation.positions(),"contacts":self.simulation.contacts(),"navigation":self.simulation.navigation,"passages":self.simulation.passages,"mobility":self.simulation.mobility.states,"character_controllers":self.simulation.character_controllers,"npcs":self.npc_snapshot(),"history":{"undo":self.undo.len(),"redo":self.redo.len()},"recorded_ticks":self.inputs.len(),"footsteps":self.simulation.footsteps.states,"patrols":self.simulation.patrols,"triggers":self.simulation.triggers.inspect(),"generated_footsteps":self.simulation.footsteps.total_emitted,"recorded_noises":self.noises.len(),"pending_noises":self.noises.len()-self.consumed_noises,"abilities":self.inspect_abilities(),"vitality":self.simulation.vitality.inspect(self.simulation.definitions(),&self.simulation.actors),"population":self.inspect_population(),"generators":self.inspect_generators(),"interactions":self.simulation.interactions.state,"presentation":self.simulation.presentation,"build_id":env!("IGNIS_BUILD_ID")})
+        json!({"execution":self.inspect_execution(),"revision":self.revision,"selection":self.selected_id(),"mesh_selection":self.mesh_selection,"debug_view":self.debug_view,"view_revision":self.view_revision,"tick":self.simulation.tick,"fixed_dt":FIXED_DT,"playing":self.playing,"input":self.input,"controls":self.inspect_controls(),"player_motion":(self.simulation.player_count()<=1).then(||self.simulation.movement_profile(self.input.mode)),"scene":self.scene,"runtime_wind":self.simulation.wind_primaries(),"runtime_positions":self.simulation.positions(),"contacts":self.simulation.contacts(),"navigation":self.simulation.navigation,"passages":self.simulation.passages,"mobility":self.simulation.mobility.states,"character_controllers":self.simulation.character_controllers,"npcs":self.npc_snapshot(),"history":{"undo":self.undo.len(),"redo":self.redo.len()},"recorded_ticks":self.inputs.len(),"footsteps":self.simulation.footsteps.states,"patrols":self.simulation.patrols,"triggers":self.simulation.triggers.inspect(),"generated_footsteps":self.simulation.footsteps.total_emitted,"recorded_noises":self.noises.len(),"pending_noises":self.noises.len()-self.consumed_noises,"abilities":self.inspect_abilities(),"vitality":self.simulation.vitality.inspect(self.simulation.definitions(),&self.simulation.actors),"population":self.inspect_population(),"generators":self.inspect_generators(),"interactions":self.simulation.interactions.state,"presentation":self.simulation.presentation,"build_id":env!("IGNIS_BUILD_ID")})
     }
     pub fn replay(&self) -> Replay {
         Replay {
@@ -2160,6 +2176,7 @@ impl Engine {
             expected_population: self.simulation.population.clone(),
             expected_interactions: self.simulation.interactions.state.clone(),
             expected_generators: self.simulation.generators.clone(),
+            expected_wind: self.simulation.wind_primaries(),
             expected_meshes: self.scene.meshes.poses(self.simulation.tick),
             expected_instances: self.simulation.actors.instance_snapshot(),
             expected_abilities: self.simulation.abilities.state.clone(),
@@ -2432,11 +2449,12 @@ impl Engine {
         let actual = simulation.positions();
         let generators_matched = simulation.generators == replay.expected_generators;
         let population_matched = simulation.population == replay.expected_population;
+        let wind_matched = simulation.wind_primaries() == replay.expected_wind;
         let meshes_matched = self.scene.meshes.poses(simulation.tick) == replay.expected_meshes;
         let instances_matched = simulation.actors.instance_snapshot() == replay.expected_instances;
         let controls_matched = self.controls.state == replay.expected_controls;
         let interactions_matched = simulation.interactions.state == replay.expected_interactions;
-        json!({"character_controllers_matched":simulation.character_controllers==replay.expected_character_controllers,"controls_matched":controls_matched,"meshes_matched":meshes_matched,"generators_matched":generators_matched,"population_matched":population_matched,"instances_matched":instances_matched,"vitality_matched":simulation.vitality.state==replay.expected_vitality,"abilities_matched":simulation.abilities.state==replay.expected_abilities,"interactions_matched":interactions_matched,"presentation_matched":simulation.presentation==replay.expected_presentation,"matched":simulation.presentation==replay.expected_presentation && interactions_matched && simulation.character_controllers==replay.expected_character_controllers && controls_matched && meshes_matched && generators_matched && population_matched && instances_matched && simulation.vitality.state==replay.expected_vitality && simulation.abilities.state==replay.expected_abilities && actual==replay.expected_positions && simulation.mobility.states==replay.expected_mobility && simulation.passages==replay.expected_passages && simulation.navigation==replay.expected_navigation && simulation.npcs==replay.expected_npcs && simulation.footsteps==replay.expected_footsteps && simulation.patrols==replay.expected_patrols && simulation.triggers.state==replay.expected_triggers,"mobility_matched":simulation.mobility.states==replay.expected_mobility,"passages_matched":simulation.passages==replay.expected_passages,"triggers_matched":simulation.triggers.state==replay.expected_triggers,"patrols_matched":simulation.patrols==replay.expected_patrols,"footsteps_matched":simulation.footsteps==replay.expected_footsteps,"npcs_matched":simulation.npcs==replay.expected_npcs,"navigation_matched":simulation.navigation==replay.expected_navigation,"ticks":simulation.tick,"actual_positions":actual,"expected_positions":replay.expected_positions,"recorded_platform":replay.platform,"current_platform":format!("{}-{}",std::env::consts::OS,std::env::consts::ARCH)})
+        json!({"wind_matched":wind_matched,"character_controllers_matched":simulation.character_controllers==replay.expected_character_controllers,"controls_matched":controls_matched,"meshes_matched":meshes_matched,"generators_matched":generators_matched,"population_matched":population_matched,"instances_matched":instances_matched,"vitality_matched":simulation.vitality.state==replay.expected_vitality,"abilities_matched":simulation.abilities.state==replay.expected_abilities,"interactions_matched":interactions_matched,"presentation_matched":simulation.presentation==replay.expected_presentation,"matched":wind_matched && simulation.presentation==replay.expected_presentation && interactions_matched && simulation.character_controllers==replay.expected_character_controllers && controls_matched && meshes_matched && generators_matched && population_matched && instances_matched && simulation.vitality.state==replay.expected_vitality && simulation.abilities.state==replay.expected_abilities && actual==replay.expected_positions && simulation.mobility.states==replay.expected_mobility && simulation.passages==replay.expected_passages && simulation.navigation==replay.expected_navigation && simulation.npcs==replay.expected_npcs && simulation.footsteps==replay.expected_footsteps && simulation.patrols==replay.expected_patrols && simulation.triggers.state==replay.expected_triggers,"mobility_matched":simulation.mobility.states==replay.expected_mobility,"passages_matched":simulation.passages==replay.expected_passages,"triggers_matched":simulation.triggers.state==replay.expected_triggers,"patrols_matched":simulation.patrols==replay.expected_patrols,"footsteps_matched":simulation.footsteps==replay.expected_footsteps,"npcs_matched":simulation.npcs==replay.expected_npcs,"navigation_matched":simulation.navigation==replay.expected_navigation,"ticks":simulation.tick,"actual_positions":actual,"expected_positions":replay.expected_positions,"recorded_platform":replay.platform,"current_platform":format!("{}-{}",std::env::consts::OS,std::env::consts::ARCH)})
     }
     fn inspect_instances(&self) -> Value {
         let entries: Vec<_> = self.simulation.definitions().entities.iter().enumerate().filter_map(|(i,e)| {
@@ -3004,6 +3022,9 @@ impl Engine {
     }
     pub fn execute(&mut self, request: Request) -> Result<Value> {
         self.guard(request.expected_revision)?;
+        if let Command::Wind { operation } = &request.command {
+            return self.wind_command(operation);
+        }
         if let Command::Particles { operation } = &request.command {
             return self.particles_command(operation);
         }
@@ -3079,6 +3100,11 @@ impl Engine {
                 return Ok(self.inspect_planet_view());
             }
             Command::SetPlanetRuntime { config } => {
+                if config.is_some() && !self.scene.wind.is_empty() {
+                    return Err(invalid(
+                        "Wind is not yet integrated with the planetary adapter",
+                    ));
+                }
                 if self.planet_view.is_some() {
                     return Err(invalid(
                         "Disable planet view before replacing its source runtime",
@@ -4364,6 +4390,7 @@ impl Engine {
             Command::SetCamera { camera } => {
                 self.apply_edits(std::iter::once(SceneEdit::SetCamera { camera }))?
             }
+            Command::Wind { .. } => unreachable!("wind command handled before dispatch"),
             Command::Particles { .. } => unreachable!("particle command handled before dispatch"),
             Command::SetLight { light } => {
                 self.apply_edits(std::iter::once(SceneEdit::SetLight { light }))?

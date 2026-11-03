@@ -68,6 +68,10 @@ sprite approximation. GPU simulation, collisions, soft depth intersections,
 ribbons, subemitters, fluid volumes and a Niagara-scale graph remain later work.
 The planetary adapter is explicitly unsupported. Mirrors are deferred.
 
+## Spatial wind and free aerodynamic meshes
+
+**Opt-in, ordinary offline scenes.** A deterministic spatial velocity field combines mean flow, temporal gusts, transverse seeded turbulence, shear currents and compact curl vortices/updrafts. Free mesh instances have explicit triangular aerodynamic surfaces, integrated mass/inertia, passive implicit drag, torque, rigid rotation and convex CCD contacts. The editor and MCP share authoring, sampling, inspection and source save/load; scene undo, replay and native/portable saves include the bodies. Botanical physics can opt into the same field. This is a quasi-steady thin-surface model with one-way coupling, not CFD, emergent weather, cloth or a planetary/network integration. [Contract and demo](wind.md).
+
 ## Worlds, terrain and planets
 
 Build editable planar landscapes and landforms, or explore the opt-in planetary runtime. Terrain generation, visual residency, physical collision and general world streaming have separate contracts.

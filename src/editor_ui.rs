@@ -32,6 +32,8 @@ mod modeling_ui;
 mod particles_ui;
 #[path = "editor_project_ui.rs"]
 mod project_ui;
+#[path = "editor_wind_ui.rs"]
+mod wind_ui;
 
 #[path = "editor_design_ui.rs"]
 mod design_ui;
@@ -44,6 +46,7 @@ struct DragTab {
 }
 #[derive(Default)]
 struct UiState {
+    wind: wind_ui::State,
     character: character_ui::State,
     botany: botany_ui::State,
     particles: particles_ui::State,
@@ -713,6 +716,14 @@ fn draw_editor(
                         }),
                     });
                 }
+                if design_ui::tab(ui, "Vento", service.wind_panel_open, false).clicked() {
+                    open_panel(service, commands, Panel::Properties);
+                    commands.push(Command::Wind {
+                        operation: Box::new(crate::wind::Operation::Open {
+                            open: !service.wind_panel_open,
+                        }),
+                    });
+                }
                 if design_ui::tab(ui, "Vegetação", service.botany.open, false).clicked() {
                     open_panel(service, commands, Panel::Properties);
                     commands.push(Command::Botany {
@@ -1376,6 +1387,10 @@ fn properties(
     commands: &mut Vec<Command>,
 ) {
     ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+    if service.wind_panel_open {
+        wind_ui::properties(ui, service, &mut state.wind, commands);
+        return;
+    }
     if service.particle_panel_open {
         particles_ui::properties(ui, service, &mut state.particles, commands);
         return;

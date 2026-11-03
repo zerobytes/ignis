@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 115;
+pub const SCENE_VERSION: u32 = 116;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -445,6 +445,8 @@ impl Default for RoomRecipe {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Scene {
+    #[serde(default, skip_serializing_if = "crate::wind::document_empty")]
+    pub wind: std::sync::Arc<crate::wind::Document>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub botany: Vec<crate::botany::Recipe>,
     /// Editor recipes link separately stored sources to their baked meshes.
@@ -573,6 +575,7 @@ impl Scene {
         }
         crate::character_editor::validate(self)?;
         crate::botany::validate_scene(self)?;
+        self.wind.validate_scene(self)?;
         if self.version < 105
             && self.meshes.assets.iter().any(|a| {
                 a.rig.as_ref().is_some_and(|r| {
@@ -1571,6 +1574,7 @@ impl RoomRecipe {
             particles: Default::default(),
             characters: Vec::new(),
             botany: Vec::new(),
+            wind: Default::default(),
             distant_meshes: Default::default(),
             plants: Default::default(),
             npc_templates: Vec::new(),

@@ -8,6 +8,7 @@ mod botany;
 mod characters;
 mod materials;
 mod particles;
+mod wind;
 use std::{
     io::{BufReader, BufWriter, Read, Write},
     path::{Component, Path, PathBuf},
@@ -35,6 +36,7 @@ pub struct Reply {
     pub png: Option<Vec<u8>>,
 }
 pub struct Service {
+    pub wind_panel_open: bool,
     pub botany: crate::botany::State,
     pub particle_panel_open: bool,
     pub character_editor: crate::character_editor::State,
@@ -258,6 +260,7 @@ impl Service {
             return Err(invalid("Project root must be a directory"));
         }
         Ok(Self {
+            wind_panel_open: false,
             character_editor: Default::default(),
             botany: Default::default(),
             particle_panel_open: false,
@@ -468,6 +471,12 @@ impl Service {
                 | Command::NewProjectScene { .. }
                 | Command::OpenProjectScene { .. }
         );
+        if matches!(
+            &request.command,
+            Command::Botany { .. } | Command::OpenCharacterPanel { .. } | Command::Particles { .. }
+        ) {
+            self.wind_panel_open = false;
+        }
         let clear_botany = (clear_mesh
             && !matches!(&request.command, Command::SelectEntity { .. }))
             || matches!(
@@ -476,7 +485,8 @@ impl Service {
             );
         let session_change = matches!(
             &request.command,
-            Command::Particles { .. }
+            Command::Wind { .. }
+                | Command::Particles { .. }
                 | Command::Botany { .. }
                 | Command::OpenCharacterPanel { .. }
                 | Command::SetCharacterHandleView { .. }
@@ -509,6 +519,7 @@ impl Service {
         let data = match &request.command {
             Command::Particles { operation } => self.particles_command(operation)?,
             Command::Material { operation } => self.material_command(operation)?,
+            Command::Wind { operation } => self.wind_command(operation)?,
             Command::Botany { operation } => self.botany_command(operation)?,
             Command::InspectCharacterSource { .. }
             | Command::PublishCharacter { .. }
@@ -794,6 +805,9 @@ impl Service {
                 return Ok(reply);
             }
             Command::StartMultiplayerHost { address, capacity } => {
+                if !self.engine.scene.wind.is_empty() {
+                    return Err(invalid("Wind/free aerodynamic bodies are not yet replicated"));
+                }
                 if self.network_client.is_some() {
                     return Err(invalid("Disconnect the remote client before hosting"));
                 }

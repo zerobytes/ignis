@@ -5,6 +5,8 @@ use rapier3d::na::{Quaternion, UnitQuaternion};
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Saved {
+    #[serde(default)]
+    wind: Vec<super::wind::Primary>,
     world: crate::runtime_world::RuntimeWorld,
     actors: crate::targeting::Catalog,
     abilities: crate::abilities::SavedRuntime,
@@ -106,6 +108,7 @@ impl Simulation {
             });
         }
         Ok(Saved {
+            wind: self.wind_primaries(),
             world: self.scene.clone(),
             actors: self.actors.clone(),
             abilities: self.abilities.checkpoint(),
@@ -248,6 +251,8 @@ impl Saved {
             }
         }
         out.insert_surfaces();
+        out.insert_aerodynamics();
+        out.restore_wind_primaries(self.wind)?;
         // Queries (including IK at prefix zero) must work before the first tick.
         // Publish bounds only; no simulation step, contacts or gameplay events.
         let params = IntegrationParameters {

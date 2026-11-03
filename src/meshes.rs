@@ -5,6 +5,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, sync::Arc};
 mod attachments;
+#[path = "meshes_wind.rs"]
+mod wind;
 use attachments::{Hierarchy, Prepared};
 mod extraction;
 pub use extraction::{ExtractionMode, Island, IslandTransform, Islands};
@@ -1268,7 +1270,7 @@ impl Document {
             &mut Vec<crate::render::Vertex>,
             &mut Vec<crate::distant::selection::Draw>,
         ),
-        (consumed, unique_static_residency): (&[String], bool),
+        (consumed, unique_static_residency, rigid_residency): (&[String], bool, &[String]),
     ) {
         let (out, shared_vertices, draws) = streams;
         let prepared = Prepared::new(self, hierarchy, tick);
@@ -1292,7 +1294,8 @@ impl Document {
             // used only once. Small unique draws retain the inexpensive legacy
             // path; this is a preparation heuristic, never an authoring limit.
             let shared = (counts[slot] > 1
-                || (unique_static_residency && asset.geometry.triangles.len() >= 1024))
+                || (unique_static_residency && asset.geometry.triangles.len() >= 1024)
+                || rigid_residency.contains(&i.id))
                 && asset.rig.is_none()
                 && asset.clips.is_empty()
                 && i.playback.is_none()
@@ -1483,6 +1486,9 @@ fn next_frame_generation() -> u64 {
 }
 #[derive(Default)]
 pub struct Frame {
+    wind_residency: Vec<String>,
+    wind_draws: Vec<usize>,
+    // Aerodynamic draw indices are checked against their instance IDs.
     pub(crate) canonical_planet: bool,
     /// Changes only when authored source/masks change, independent of avatar tails.
     pub static_generation: u64,
@@ -1871,7 +1877,11 @@ impl Frame {
                 &mut self.shared_vertices,
                 &mut self.draws,
             ),
-            (&self.consumed, !self.legacy_unique_static),
+            (
+                &self.consumed,
+                !self.legacy_unique_static,
+                &self.wind_residency,
+            ),
         );
         if changed {
             self.source.clone_from(document);

@@ -458,7 +458,15 @@ impl Service {
                 let mut session = if let A::Start { settings } = action {
                     let recipe = self.botanical_preserve(recipe, Policy::Preserve)?;
                     let compiled = bake::compile(&recipe)?;
-                    b::dynamics::Session::new(recipe, compiled, settings.clone())?
+                    let mut session =
+                        b::dynamics::Session::new(recipe, compiled, settings.clone())?;
+                    if settings.use_scene_wind {
+                        session.set_wind_field(
+                            &self.engine.scene.wind.field,
+                            self.engine.simulation.tick as f64 / 60.,
+                        )?;
+                    }
+                    session
                 } else {
                     self.botany
                         .physics

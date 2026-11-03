@@ -13,6 +13,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 # Dependency order matters: several scenarios load earlier authored examples.
 SCENARIOS = (
+    'wind',
     'planet',
     'planet_reference',
     'player_perspectives',

@@ -1,3 +1,21 @@
+## EAF-213 — spatial wind and rigid aerodynamic meshes
+
+Preflight, equations and model alternatives: [wind.md](wind.md). Final static
+review follows the same contract; timing evidence is recorded there separately.
+
+| Question | Result and evidence |
+|---|---|
+| 1. Frequency | `CompiledField::at_time` prepares temporal phases/events once per substep or query batch; only active aerodynamic bodies receive quadrature work. Empty scenes keep one physics step. |
+| 2. Allocation | Compiled surfaces, air scratch and handles are reused; field snapshots use fixed stack arrays. Rapier retains its own contact allocations. Inspection/save JSON is on demand. |
+| 3. Data | f64 field, mass/inertia and impulses; f32 Rapier contacts/state. Wind1 is explicit authoring; native handles are absent from portable primaries. No dependency added. |
+| 4. Repetition | One spatial field query per quadrature point, reused by both impulse sweeps. Resident geometry and cached draw indices avoid copying the scene or retessellating moving leaves. |
+| 5. Limits | 256 bodies, 4096 panels, 64 modes, 32 events and 4M weighted sample work. Admission rejects excess; no force clipping or visibility-based physics removal. Contact work is a separate cost. |
+| 6. GPU/I/O | Only rigid instance poses change during motion. No readback, filesystem or network in aerodynamic evaluation. Static object/geometry cache invariants have a dedicated regression. |
+| 7. Locks | Existing sequential simulation/contact world; no locks, worker jobs or shared random generator added to sampling. Seeded compilation is deterministic. |
+| 8. Invalidation | Authoring/undo/reset/load rebuild compiled state transactionally. Native saves restore backend and canonical state; portable saves rebuild the backend. No cached geometry owns live physics state. |
+| 9. Contract | Tests protect solenoidality/boundaries, exact mass/inertia, passive impulse/torque, timestep convergence, motion/contact, atomic edits, replay and native/portable restoration. MCP exercises the real executable and GPU captures. |
+| 10. Retained costs | Active aerodynamics substeps the entire shared contact world. One-way quasi-steady panel loads omit fluid feedback, wakes and mutual aerodynamic occlusion. Planet/network adapters refuse the component. No universal FPS claim. |
+
 ## EAF-204 — arbustos densos, abertos e floridos
 
 Contrato em [shrub-assets.md](shrub-assets.md).8famílias/24variações/42fontes,

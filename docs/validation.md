@@ -1,3 +1,12 @@
+## EAF-213 — spatial wind and free aerodynamic meshes
+
+[Model, numerical contract, timings and validation evidence](wind.md#validation-evidence-2026-11-03).
+Eight focused wind MCP groups plus laboratory/render regressions run headlessly;
+replay/native continuation exact in the tested build, portable primaries exact
+with the measured cold-contact continuation difference documented. CPU samples
+are workload measurements, not FPS claims. Human visual/native-input acceptance
+is pending; current executable and existing editor are kept separate.
+
 ## EAF-187 — base inferior das asas nasais e capacidade autoral
 
 [Contrato](character-nose.md). Fonte6 human-nose, SHA

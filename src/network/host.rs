@@ -25,6 +25,11 @@ pub struct Host {
 }
 impl Host {
     pub fn launch(engine: &mut Engine, address: SocketAddr, capacity: usize) -> Result<Self> {
+        if !engine.scene.wind.is_empty() {
+            return Err(invalid(
+                "Aerodynamic bodies and wind are not yet replicated",
+            ));
+        }
         let mut authority = Authority::new(engine, capacity)?;
         let content = Arc::new(super::content::Content::capture(engine, authority.world()));
         let backend = match Backend::launch(address, capacity, content) {

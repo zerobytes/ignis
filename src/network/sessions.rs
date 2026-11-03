@@ -72,6 +72,11 @@ pub struct Authority {
 }
 impl Authority {
     pub fn new(engine: &mut Engine, max_sessions: usize) -> Result<Self> {
+        if !engine.scene.wind.is_empty() {
+            return Err(invalid(
+                "Wind/free bodies are not yet part of the replicated authority",
+            ));
+        }
         if !(1..=crate::targeting::MAX_PLAYERS).contains(&max_sessions) {
             return Err(invalid("Invalid session capacity"));
         }
