@@ -139,3 +139,8 @@ cameras move its centre rather than claiming simultaneous kilometre-wide fine
 shadows. These are recorded limits, not evidence of Cycles parity or artistic
 acceptance. The separate renderer effort can use this maintained native scene
 as a larger visual and cost reference.
+
+The user's runtime test subsequently rejected the scene at approximately2FPS.
+CPU/GPU/shadow measurements and reproducible diagnostics are documented in
+[Botanical valley performance](botanical-valley-performance.md). The composition
+has not been optimized by that measurement task.
