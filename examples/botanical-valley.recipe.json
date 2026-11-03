@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "seed": 210731,
+  "size_meters": 1000,
+  "spacing_meters": 2,
+  "groundcover": 220000,
+  "detail_groundcover": 180000,
+  "tallgrass": 9000,
+  "shrubs": 680,
+  "colored_shrubs": 180,
+  "reference_shrubs": 120,
+  "trees": 108
+}
