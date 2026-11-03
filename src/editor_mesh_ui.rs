@@ -59,6 +59,7 @@ struct Marquee {
 struct Properties {
     material_displacement_id: String,
     marble_family: crate::materials::marble::Family,
+    rock_family: crate::materials::rock::Family,
     material_path: String,
     material_resolution: u16,
     object: String,
@@ -945,6 +946,7 @@ pub(super) fn properties(
         let object = owner.map_or_else(String::new, |o| o.id.clone());
         state.properties = Some(Properties {
             marble_family: Default::default(),
+            rock_family: Default::default(),
             material_displacement_id: format!(
                 "{}-relief",
                 asset.id.chars().take(24).collect::<String>()
@@ -2353,6 +2355,24 @@ fn material_recipe_ui(
                 }));
             }
         });
+        ui.horizontal(|ui| {
+            egui::ComboBox::from_id_salt("rock_family")
+                .selected_text(p.rock_family.label())
+                .show_ui(ui, |ui| {
+                    for family in crate::materials::rock::Family::ALL {
+                        ui.selectable_value(&mut p.rock_family, family, family.label());
+                    }
+                });
+            if ui.button("Gerar rocha").clicked() {
+                commands.push(command(Op::Rock {
+                    asset: asset.id.clone(),
+                    family: p.rock_family,
+                    seed: Some(4271),
+                    unique_instances: false,
+                    execution: Execution::Runtime,
+                }));
+            }
+        });
         ui.text_edit_singleline(&mut p.material_path);
         ui.horizontal(|ui| {
             if ui.button("Salvar material").clicked() {
@@ -2442,11 +2462,19 @@ fn material_recipe_ui(
             ui.selectable_value(&mut r.relief, Relief::Bump, "Bump");
             ui.selectable_value(&mut r.relief, Relief::Parallax, "Parallax");
         });
+        ui.horizontal(|ui| {
+            use crate::materials::recipe::NormalFilter;
+            ui.selectable_value(&mut r.normal_filter, NormalFilter::Screen, "Normais rápidas");
+            ui.selectable_value(&mut r.normal_filter, NormalFilter::Pixel, "Normais suaves")
+                .on_hover_text("Reduz o serrilhado em relevos fortes, com custo maior de GPU.");
+        });
         if r.relief == Relief::Parallax {
             ui.add(egui::Slider::new(&mut r.view_steps, 8..=48).text("Passos de profundidade"));
             ui.add(egui::Slider::new(&mut r.shadow_steps, 0..=24).text("Passos de sombra própria"));
         }
-        if let Some(m) = &mut r.marble {
+        if let Some(rock) = &mut r.rock {
+            ui.collapsing("Estrutura da rocha", |ui| { rock_ui(ui, rock); });
+        } else if let Some(m) = &mut r.marble {
             ui.collapsing("Estrutura do mármore", |ui| {
                 marble_ui(ui, m);
             });
@@ -2509,6 +2537,53 @@ fn material_recipe_ui(
         }
     });
 }
+fn rock_ui(ui: &mut egui::Ui, r: &mut crate::materials::rock::Rock) {
+    for (label, color) in [
+        ("Matriz escura", &mut r.dark),
+        ("Matriz clara", &mut r.light),
+        ("Oxidação", &mut r.oxide),
+        ("Inclusões minerais", &mut r.mineral),
+    ] {
+        design_ui::field(ui, label, |ui| {
+            design_ui::color(ui, color);
+        });
+    }
+    design_ui::field(ui, "Escala dos blocos", |ui| {
+        for v in &mut r.blocks {
+            ui.add(egui::DragValue::new(v).range(1..=32));
+        }
+    });
+    design_ui::field(ui, "Direção dos estratos", |ui| {
+        for v in &mut r.direction {
+            ui.add(egui::DragValue::new(v).range(-4..=4));
+        }
+    });
+    ui.add(egui::Slider::new(&mut r.joint_width, 0.002..=0.2).text("Largura das juntas"));
+    ui.add(egui::Slider::new(&mut r.layers, 2..=128).text("Camadas"));
+    ui.add(egui::Slider::new(&mut r.grain_frequency, 128..=2048).text("Escala do grão"));
+    ui.add(egui::Slider::new(&mut r.contrast, 0.5..=3.).text("Contraste mineral"));
+    ui.add(egui::Slider::new(&mut r.roughness, 0.2..=1.).text("Rugosidade"));
+    for (label, value) in [
+        ("Profundidade das juntas", &mut r.joint_depth),
+        ("Fraturas secundárias", &mut r.secondary_joints),
+        ("Planos angulares", &mut r.faceting),
+        ("Deformação", &mut r.warp),
+        ("Estratificação", &mut r.stratification),
+        ("Ondulação das camadas", &mut r.layer_warp),
+        ("Espessuras irregulares", &mut r.layer_disorder),
+        ("Grão mineral", &mut r.grain),
+        ("Oxidação", &mut r.oxidation),
+        ("Inclusões", &mut r.inclusions),
+        ("Cavidades", &mut r.pitting),
+        ("Desgaste das bordas", &mut r.weathering),
+        ("Erosão das camadas", &mut r.erosion),
+        ("Relevo fino", &mut r.detail_height),
+        ("Variação de rugosidade", &mut r.roughness_variation),
+    ] {
+        ui.add(egui::Slider::new(value, 0. ..=1.).text(label));
+    }
+}
+
 fn marble_ui(ui: &mut egui::Ui, m: &mut crate::materials::marble::Marble) {
     for (label, color) in [
         ("Matriz escura", &mut m.dark),

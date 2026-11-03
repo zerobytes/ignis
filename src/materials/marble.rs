@@ -511,7 +511,7 @@ fn filtered_noise(uv: [f32; 2], n: i32, seed: u32, fp: f32) -> f32 {
         0.5
     }
 }
-fn crystal_grain(uv: [f32; 2], n: i32, seed: u32, fp: f32) -> f32 {
+pub(super) fn crystal_grain(uv: [f32; 2], n: i32, seed: u32, fp: f32) -> f32 {
     let coverage = 1. - smooth(1., 3., fp * n as f32);
     if coverage <= 0. {
         return 0.5;
@@ -534,7 +534,7 @@ fn crystal_grain(uv: [f32; 2], n: i32, seed: u32, fp: f32) -> f32 {
     }
     mix(0.5, sum * 0.25, coverage)
 }
-fn fbm(uv: [f32; 2], n: i32, seed: u32, octaves: u8, fp: f32) -> f32 {
+pub(super) fn fbm(uv: [f32; 2], n: i32, seed: u32, octaves: u8, fp: f32) -> f32 {
     let mut value = 0.;
     let mut total = 0.;
     let mut weight = 0.5;

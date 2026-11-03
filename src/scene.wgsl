@@ -424,6 +424,49 @@ fn marble_sample(at:u32,uv:vec2<f32>,footprint:f32,seed:u32)->SurfaceSample {
     return SurfaceSample(vec4<f32>(color,roughness),vec4<f32>(gold*finish.w,0.5+0.015*(grain-0.5)+0.035*white+0.015*gold,1.0,1.0),vec4<f32>(0.0));
 }
 
+// Rock1 shares deterministic periodic noise with the mineral programs.
+fn rock_cell(uv:vec2<f32>,n:vec2<i32>,seed:u32)->vec4<f32> {
+    let p=uv*vec2<f32>(n);let base=vec2<i32>(floor(p));var first=100.0;var second=100.0;var a=vec2<f32>(0.0);var b=vec2<f32>(0.0);var id=0.0;
+    for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){
+        let c=base+vec2<i32>(x,y);let q=vec2<f32>(c)+0.15+0.7*vec2<f32>(periodic_hash(c,n,seed),periodic_hash(c,n,seed+11u));let d=dot(p-q,p-q);
+        if d<first {second=first;b=a;first=d;a=q;id=periodic_hash(c,n,seed+912u);}else if d<second {second=d;b=q;}
+    }}
+    return vec4<f32>(0.5*(second-first)/max(length(b-a),0.00001),id,p-a);
+}
+fn rock_sample(at:u32,uv:vec2<f32>,footprint:f32,seed:u32)->SurfaceSample {
+    let dark=procedural_data.items[at];let light=procedural_data.items[at+1u];let oxide=procedural_data.items[at+2u];let mineral=procedural_data.items[at+3u];
+    let blocks=procedural_data.items[at+4u];let finish=procedural_data.items[at+5u];let strata=procedural_data.items[at+6u];let shape=procedural_data.items[at+7u];let detail=procedural_data.items[at+8u];
+    let a=marble_fbm(uv,2,seed+31u,4u,footprint);let b=marble_fbm(uv,3,seed+71u,4u,footprint);
+    let q=vec2<f32>(uv.x+shape.x*uv.y,uv.y)+finish.x*(vec2<f32>(a,b)-0.5)+0.006*(vec2<f32>(marble_noise(uv,73,seed+89u,footprint),marble_noise(uv,73,seed+101u,footprint))-0.5);
+    let fp=footprint*(1.0+finish.x*3.0+abs(shape.x));let n=vec2<i32>(blocks.xy);
+    let primary=rock_cell(q,n,seed+151u);let secondary=rock_cell(q,n*vec2<i32>(3,2),seed+233u);
+    let coarse=marble_fbm(q,7,seed+317u,4u,fp);let small=marble_fbm(q,27,seed+389u,4u,fp);
+    let grain=marble_grain(uv,i32(finish.w),seed+431u,footprint);
+    let aa=min(fp*f32(max(n.x,n.y))*0.5,0.18);let width=blocks.z*(0.25+2.5*pow(smoothstep(0.2,0.8,small),2.0));
+    let main=1.0-smoothstep(max(0.0,width*0.45-aa),width+aa,primary.x);
+    let sub=(1.0-smoothstep(max(0.0,width*0.12-aa*2.0),width*0.4+aa*2.0,secondary.x))*smoothstep(0.27,0.7,coarse)*detail.z;
+    let joint=max(main,sub);let slope=fract(primary.y*vec2<f32>(17.0,43.0))-0.5;
+    let plane=0.62+0.3*(primary.y-0.5)+1.5*dot(primary.zw,slope);
+    let cut=0.9-0.75*abs(primary.z*0.7-primary.w*0.8+primary.y-0.5);
+    let bevel=smoothstep(width,width+0.12*shape.w+0.005,primary.x);
+    let face=mix(0.6,clamp(min(plane,cut),0.15,0.95),finish.y)*mix(1.0,0.7+0.3*bevel,shape.w);
+    let count=i32(strata.x);var phase=dot(uv,shape.xy)*strata.x+strata.z*strata.x*0.2*(a-0.5)+0.12*(small-0.5);
+    phase+=strata.w*1.6*(periodic_noise(vec2<f32>(phase/strata.x,0.37),vec2<i32>(max(count/3,1),1),seed+503u)-0.5);
+    let layer=i32(floor(phase));let t=fract(phase);let hardness=periodic_hash(vec2<i32>(layer,0),vec2<i32>(count,1),seed+547u);
+    let rise=smoothstep(0.015,0.08,t);let lip=1.0-smoothstep(0.68,0.98,t);let shelf=rise*lip;
+    let lamination=mix(0.5,abs(sin(3.14159265359*(phase*4.0+small*0.65))),1.0-smoothstep(0.25,0.75,footprint*strata.x*4.0*length(shape.xy)));
+    let layer_height=0.24+0.48*hardness+0.2*shelf-0.045*(1.0-lamination)-detail.w*0.2*(1.0-shelf);let pits=smoothstep(0.57,0.78,small)*shape.z;
+    let height=clamp(mix(face,layer_height,strata.y*0.9)-joint*blocks.w*0.5-pits*0.12+detail.y*((small-0.5)*0.75+(marble_noise(uv,96,seed+467u,footprint)-0.5)*0.08),0.02,0.98);
+    var value=mix(0.34+0.46*coarse+0.22*(primary.y-0.5),0.18+0.68*hardness+0.12*shelf,strata.y);
+    value=pow(clamp(value+finish.z*0.24*(grain-0.5)+0.35*(small-0.5)+strata.y*0.06*(lamination-0.5),0.0,1.0),light.w);
+    var color=mix(dark.xyz,light.xyz,value);let rust=mix(smoothstep(0.46,0.76,small)*(joint*0.65+smoothstep(0.68,0.83,coarse)*0.35),smoothstep(0.25,0.72,hardness)*(0.55+0.45*small),strata.y)*oxide.w;
+    color=mix(color,oxide.xyz,rust);let crystals=smoothstep(0.55,0.8,small)*smoothstep(0.59,0.86,grain)*mineral.w;
+    let seams=(1.0-smoothstep(0.008,0.035,t))*smoothstep(0.82,0.96,hardness)*strata.y*mineral.w;
+    color=mix(color,mineral.xyz,max(crystals,seams));
+    let roughness=clamp(dark.w+detail.x*(grain-0.5)+0.1*pits+0.06*joint,0.2,1.0);
+    let ao=clamp(1.0-0.5*joint*blocks.w-0.2*(1.0-shelf)*strata.y-0.12*pits,0.25,1.0);
+    return SurfaceSample(vec4<f32>(color,roughness),vec4<f32>(0.0,height,1.0,ao),vec4<f32>(0.0));
+}
 fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
     if info.x==2u {
         let last=u32(log2(f32(info.z)));let lod=clamp(log2(max(1.0,footprint*f32(info.z))),0.0,f32(last));
@@ -432,10 +475,12 @@ fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
     }
     var sample=sample_load(info.y+2u);let metadata=procedural_data.items[info.y+5u];let uv0=fract(uv);
     let seed0=u32(metadata.x)|(u32(metadata.z)<<16u);
-    if metadata.w>0.5 {sample=marble_sample(info.y+6u,uv0,footprint,seed0);}
+    var words=0u;
+    if metadata.w>1.5 {sample=rock_sample(info.y+6u,uv0,footprint,seed0);words=9u;}
+    else if metadata.w>0.5 {sample=marble_sample(info.y+6u,uv0,footprint,seed0);words=8u;}
     for(var layer=0u;layer<8u;layer++) {
         if layer>=u32(metadata.y) {break;}
-        let at=info.y+6u+8u*u32(metadata.w)+6u*layer;let f=procedural_data.items[at];let settings=procedural_data.items[at+1u];let mask=procedural_data.items[at+2u];
+        let at=info.y+6u+words+6u*layer;let f=procedural_data.items[at];let settings=procedural_data.items[at+1u];let mask=procedural_data.items[at+2u];
         let seed=(u32(metadata.x)|(u32(metadata.z)<<16u))+(u32(f.w)|(u32(settings.z)<<16u));var q=uv0;
         if settings.y>0.0 {q+=settings.y*(vec2<f32>(periodic_noise(uv0,vec2<i32>(2),seed+11u),periodic_noise(uv0,vec2<i32>(2),seed+23u))-0.5);}
         var value=0.0;var total=0.0;var weight=0.5;var n=vec2<i32>(f.yz);
@@ -453,7 +498,7 @@ fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
 fn recipe_uv(rest:vec3<f32>,domain:vec4<f32>)->vec2<f32> {
     return detail_coordinate(rest,domain.z)/domain.xy;
 }
-struct ReliefSample { sample:SurfaceSample, shadow:f32, };
+struct ReliefSample { sample:SurfaceSample, shadow:f32, uv:vec2<f32>, };
 fn recipe_relief(info:vec4<u32>,uv:vec2<f32>,footprint:f32,du:vec3<f32>,dv:vec3<f32>,normal:vec3<f32>,world:vec3<f32>)->ReliefSample {
     let domain=procedural_data.items[info.y];let relief=procedural_data.items[info.y+1u];
     var q=uv;var depth=0.0;var shadow=1.0;
@@ -482,7 +527,7 @@ fn recipe_relief(info:vec4<u32>,uv:vec2<f32>,footprint:f32,du:vec3<f32>,dv:vec3<
             }
         }
     }
-    return ReliefSample(recipe_sample(info,q,footprint),shadow);
+    return ReliefSample(recipe_sample(info,q,footprint),shadow,q);
 }
 
 struct ShadedSurface { color: vec3<f32>, normal: vec3<f32>, base: vec3<f32>, };
@@ -492,6 +537,7 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
     let py = dpdy(in.world);
     let geometric_normal = normalize(in.normal)*select(-1.0,1.0,front);
     var recipe_color=vec3<f32>(1.0);var recipe_height=0.0;var recipe_shadow=1.0;var recipe_ao=1.0;
+    var pixel_gradient=vec2<f32>(0.0);var pixel_normals=false;
     let rest_dx=dpdx(in.rest);let rest_dy=dpdy(in.rest);
     if material.procedural.x>0u {
         let info=material.procedural;let domain=procedural_data.items[info.y];
@@ -501,11 +547,19 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
         if abs(determinant)>1e-12 {du=(dx.x*r1+dy.x*r2)/determinant;dv=(dx.y*r1+dy.y*r2)/determinant;}
         let result=recipe_relief(info,uv,max(length(dx),length(dy)),du,dv,geometric_normal,in.world);
         recipe_color=result.sample.color.xyz;recipe_height=result.sample.response.y*procedural_data.items[info.y+1u].x;
+        let relief=procedural_data.items[info.y+1u];
+        if relief.w>0.5 && relief.x>0.0 {
+            let fp=max(length(dx),length(dy));
+            pixel_gradient=vec2<f32>(recipe_sample(info,result.uv+dx,fp).response.y-result.sample.response.y,
+                recipe_sample(info,result.uv+dy,fp).response.y-result.sample.response.y)*relief.x;
+            pixel_normals=true;
+        }
         recipe_shadow=result.shadow;recipe_ao=result.sample.response.w;
         material.low.w=result.sample.color.w;material.high.w=result.sample.response.x;material.response.w=0.04;
         material.response.x=result.sample.emission.w;material.emissive=vec4<f32>(result.sample.emission.xyz,0.0);
     }
-    let recipe_hx=dpdx(recipe_height);let recipe_hy=dpdy(recipe_height);
+    var recipe_hx=dpdx(recipe_height);var recipe_hy=dpdy(recipe_height);
+    if pixel_normals {recipe_hx=pixel_gradient.x;recipe_hy=pixel_gradient.y;}
     var tint = vec3<f32>(1.0);
     var hx = 0.0;
     var hy = 0.0;

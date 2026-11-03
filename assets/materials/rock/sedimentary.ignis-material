@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "material": {
+    "procedural": {
+      "version": 1,
+      "recipe": {
+        "rock": {
+          "version": 1,
+          "dark": [
+            0.029556833,
+            0.027320892,
+            0.020288562
+          ],
+          "light": [
+            0.47353154,
+            0.3515327,
+            0.23074007
+          ],
+          "oxide": [
+            0.5520115,
+            0.19461781,
+            0.057805434
+          ],
+          "mineral": [
+            0.7681513,
+            0.67954254,
+            0.46778384
+          ],
+          "roughness": 0.84,
+          "contrast": 1.25,
+          "blocks": [
+            3,
+            2
+          ],
+          "joint_width": 0.016,
+          "joint_depth": 0.6,
+          "warp": 0.15,
+          "faceting": 0.25,
+          "layers": 56,
+          "stratification": 1.0,
+          "layer_warp": 0.7,
+          "layer_disorder": 0.95,
+          "grain": 0.7,
+          "grain_frequency": 768,
+          "oxidation": 0.65,
+          "inclusions": 0.25,
+          "pitting": 0.25,
+          "weathering": 0.65,
+          "roughness_variation": 0.18,
+          "detail_height": 0.035,
+          "secondary_joints": 0.18,
+          "erosion": 0.8,
+          "direction": [
+            0,
+            1
+          ]
+        },
+        "normal_filter": "pixel",
+        "seed": 4271,
+        "unique_instances": false,
+        "plane": "xy",
+        "tile_size": [
+          1.0,
+          1.0
+        ],
+        "base": {
+          "color_roughness": [
+            1.0,
+            1.0,
+            1.0,
+            0.7
+          ],
+          "response": [
+            0.0,
+            0.5,
+            1.0,
+            1.0
+          ],
+          "emission": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "layers": [],
+        "height_m": 0.095,
+        "relief": "bump",
+        "view_steps": 16,
+        "shadow_steps": 8
+      }
+    },
+    "transmission": 0.0
+  }
+}

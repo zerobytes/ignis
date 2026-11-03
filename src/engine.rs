@@ -944,7 +944,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 126;
+pub const REPLAY_VERSION: u32 = 127;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1263,6 +1263,11 @@ impl Engine {
                         || matches!(&edit, crate::meshes::Edit::PutAsset { asset } if asset.material.procedural.is_some())
                     {
                         scene.version = scene.version.max(112);
+                    }
+                    if matches!(&edit,crate::meshes::Edit::SetMaterial {material,..} if material.procedural.as_ref().is_some_and(|p|p.recipe.requires_extended_surface()))
+                        || matches!(&edit,crate::meshes::Edit::PutAsset {asset} if asset.material.procedural.as_ref().is_some_and(|p|p.recipe.requires_extended_surface()))
+                    {
+                        scene.version = scene.version.max(crate::materials::rock::SCENE_VERSION);
                     }
                     if matches!(&edit,crate::meshes::Edit::SetMaterial {material,..} if material.procedural.as_ref().is_some_and(|p|p.recipe.marble.is_some()))
                         || matches!(&edit,crate::meshes::Edit::PutAsset {asset} if asset.material.procedural.as_ref().is_some_and(|p|p.recipe.marble.is_some()))

@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "material": {
+    "procedural": {
+      "version": 1,
+      "recipe": {
+        "rock": {
+          "version": 1,
+          "dark": [
+            0.082282715,
+            0.06124607,
+            0.039546236
+          ],
+          "light": [
+            0.5271152,
+            0.3813261,
+            0.20863685
+          ],
+          "oxide": [
+            0.48514998,
+            0.2050787,
+            0.06662595
+          ],
+          "mineral": [
+            0.6514057,
+            0.63759696,
+            0.5028866
+          ],
+          "roughness": 0.84,
+          "contrast": 1.25,
+          "blocks": [
+            3,
+            6
+          ],
+          "joint_width": 0.035,
+          "joint_depth": 0.85,
+          "warp": 0.12,
+          "faceting": 0.8,
+          "layers": 14,
+          "stratification": 0.08,
+          "layer_warp": 0.12,
+          "layer_disorder": 0.7,
+          "grain": 0.7,
+          "grain_frequency": 768,
+          "oxidation": 0.55,
+          "inclusions": 0.25,
+          "pitting": 0.25,
+          "weathering": 0.7,
+          "roughness_variation": 0.18,
+          "detail_height": 0.065,
+          "secondary_joints": 0.6,
+          "erosion": 0.6,
+          "direction": [
+            1,
+            2
+          ]
+        },
+        "normal_filter": "pixel",
+        "seed": 4271,
+        "unique_instances": false,
+        "plane": "xy",
+        "tile_size": [
+          1.0,
+          1.0
+        ],
+        "base": {
+          "color_roughness": [
+            1.0,
+            1.0,
+            1.0,
+            0.7
+          ],
+          "response": [
+            0.0,
+            0.5,
+            1.0,
+            1.0
+          ],
+          "emission": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "layers": [],
+        "height_m": 0.16,
+        "relief": "bump",
+        "view_steps": 16,
+        "shadow_steps": 8
+      }
+    },
+    "transmission": 0.0
+  }
+}

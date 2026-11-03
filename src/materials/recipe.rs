@@ -112,11 +112,25 @@ pub enum Relief {
     Bump,
     Parallax,
 }
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum NormalFilter {
+    #[default]
+    Screen,
+    Pixel,
+}
+fn screen_normals(filter: &NormalFilter) -> bool {
+    *filter == NormalFilter::Screen
+}
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Recipe {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub marble: Option<super::marble::Marble>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rock: Option<super::rock::Rock>,
+    #[serde(default, skip_serializing_if = "screen_normals")]
+    pub normal_filter: NormalFilter,
     pub seed: u32,
     /// Stable instance-ID variation is evaluated only in runtime mode.
     pub unique_instances: bool,
@@ -134,6 +148,8 @@ impl Default for Recipe {
     fn default() -> Self {
         Self {
             marble: None,
+            rock: None,
+            normal_filter: NormalFilter::Screen,
             seed: 1,
             unique_instances: false,
             plane: super::Plane::Xy,
@@ -174,6 +190,14 @@ impl Procedural {
         let r = &self.recipe;
         if let Some(m) = &r.marble {
             m.validate()?;
+        }
+        if let Some(rock) = &r.rock {
+            rock.validate()?;
+        }
+        if r.marble.is_some() && r.rock.is_some() {
+            return Err(invalid(
+                "A recipe can contain one mineral program; use ordered layers for overlays",
+            ));
         }
         if self.version != VERSION
             || r.layers.len() > MAX_LAYERS
@@ -414,12 +438,27 @@ fn field(uv: [f32; 2], n: [i32; 2], seed: u32, kind: Field, aa: f32) -> f32 {
     smooth(0.02 - aa, 0.12 + aa, second - first)
 }
 impl Recipe {
+    pub(crate) fn requires_extended_surface(&self) -> bool {
+        self.rock.is_some() || self.normal_filter != NormalFilter::Screen
+    }
+    fn program_words(&self) -> usize {
+        if self.rock.is_some() {
+            super::rock::WORDS
+        } else if self.marble.is_some() {
+            super::marble::WORDS
+        } else {
+            0
+        }
+    }
     pub fn evaluate(&self, uv: [f32; 2], footprint: f32) -> Sample {
         let uv = uv.map(|v| v - v.floor());
-        let mut sample = self
-            .marble
-            .as_ref()
-            .map_or(self.base, |m| m.evaluate(uv, footprint, self.seed));
+        let mut sample = if let Some(rock) = &self.rock {
+            rock.evaluate(uv, footprint, self.seed)
+        } else {
+            self.marble
+                .as_ref()
+                .map_or(self.base, |m| m.evaluate(uv, footprint, self.seed))
+        };
         for l in &self.layers {
             let seed = self.seed.wrapping_add(l.seed);
             let mut q = uv;
@@ -507,16 +546,12 @@ pub(crate) fn storage_bytes(source: &[super::Material]) -> u64 {
         if let Some(p) = &m.procedural
             && seen.insert(Arc::as_ptr(p) as usize)
         {
-            bytes = bytes.saturating_add(96).saturating_add(
-                p.fixed.as_ref().map_or(
-                    (p.recipe.layers.len() * 96
-                        + p.recipe
-                            .marble
-                            .as_ref()
-                            .map_or(0, |_| super::marble::WORDS * 16)) as u64,
+            bytes = bytes
+                .saturating_add(96)
+                .saturating_add(p.fixed.as_ref().map_or(
+                    (p.recipe.layers.len() * 96 + p.recipe.program_words() * 16) as u64,
                     |f| (f.samples.len() * 48) as u64,
-                ),
-            );
+                ));
         }
     }
     bytes.max(16)
@@ -546,21 +581,29 @@ pub(crate) fn pack(source: &[super::Material]) -> (Vec<super::GpuMaterial>, Vec<
                     r.height_m,
                     f32::from(r.view_steps),
                     f32::from(r.shadow_steps),
-                    0.,
+                    u8::from(r.normal_filter == NormalFilter::Pixel) as f32,
                 ]);
                 data.extend([r.base.color_roughness, r.base.response, r.base.emission]);
                 data.push([
                     f32::from((r.seed & 65535) as u16),
                     r.layers.len() as f32,
                     f32::from((r.seed >> 16) as u16),
-                    if r.marble.is_some() { 1. } else { 0. },
+                    if r.rock.is_some() {
+                        2.
+                    } else if r.marble.is_some() {
+                        1.
+                    } else {
+                        0.
+                    },
                 ]);
                 if let Some(f) = &p.fixed {
                     for s in f.samples.iter() {
                         data.extend([s.color_roughness, s.response, s.emission]);
                     }
                 } else {
-                    if let Some(m) = &r.marble {
+                    if let Some(rock) = &r.rock {
+                        data.extend(rock.packed());
+                    } else if let Some(m) = &r.marble {
                         data.extend(m.packed());
                     }
                     for l in &r.layers {

@@ -128,6 +128,16 @@ impl Preset {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    Rock {
+        asset: String,
+        family: super::rock::Family,
+        #[serde(default)]
+        seed: Option<u32>,
+        #[serde(default)]
+        unique_instances: bool,
+        #[serde(default)]
+        execution: Execution,
+    },
     Marble {
         asset: String,
         family: super::marble::Family,

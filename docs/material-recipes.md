@@ -64,7 +64,9 @@ Select a mesh instance in the editor, expand **Aparência → Biblioteca de
 materiais**, and choose Pedra, Madeira, Metal pintado or Cerâmica. Runtime recipes
 expose base channels, ordered layers/masks, seed, stable per-object variation,
 plane, tile scale, height and relief budgets. The marble family selector adds
-12 configurable mineral programs; see [procedural marble](marble-materials.md). The library path saves or loads an
+12 configurable mineral programs; see [procedural marble](marble-materials.md).
+The rock selector adds four configurable mountain-rock families; see
+[rock materials](rock-materials.md). The library path saves or loads an
 independent material. **Gerar asset fixo** precomputes the maps; **Editar receita
 em runtime** restores live evaluation from the retained recipe. **Gerar malha com
 relevo** creates a new static asset for the selected instance, with its own ID.
@@ -88,6 +90,13 @@ asset makes further regeneration possible. Tile scale follows the existing rest-
 contract: scaling an instance scales its pattern. Shader bump/parallax depth is
 in world metres. Geometry baking accounts for the selected instance scale; later
 rescaling that generated mesh naturally rescales its geometric relief.
+
+The optional `normal_filter` selects `screen` (the legacy default) or `pixel`.
+The latter computes relief differences separately per pixel, reducing 2x2 blocks
+on steep height transitions at the cost of two extra neighboring material reads.
+It also uses the shifted lookup coordinate with parallax. It changes neither
+silhouette nor collision. Rock presets choose it; other recipes retain their
+previous mode. The opt-in mode requires Scene117, as does the rock program.
 
 Recipe1 has at most eight layers. A sample contains three four-channel vectors:
 

@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 116;
+pub const SCENE_VERSION: u32 = 117;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -629,6 +629,35 @@ impl Scene {
             return Err(invalid(
                 "Environment/direct intensity require scene version76",
             ));
+        }
+        if self.version < crate::materials::rock::SCENE_VERSION {
+            let rock = |a: &crate::meshes::Asset| {
+                a.material
+                    .procedural
+                    .as_ref()
+                    .is_some_and(|p| p.recipe.requires_extended_surface())
+            };
+            if self.meshes.assets.iter().any(rock)
+                || self.plants.entries.iter().any(|e| {
+                    rock(&e.source)
+                        || e.assembly.as_ref().is_some_and(|a| {
+                            rock(&a.context) || a.context_grafts.iter().any(|g| rock(&g.source))
+                        })
+                })
+                || self
+                    .particles
+                    .sources
+                    .iter()
+                    .flat_map(|s| &s.emitters)
+                    .any(|s| {
+                        s.material
+                            .procedural
+                            .as_ref()
+                            .is_some_and(|p| p.recipe.requires_extended_surface())
+                    })
+            {
+                return Err(invalid("Rock programs and pixel normals require scene117"));
+            }
         }
         if self.version < crate::materials::marble::SCENE_VERSION {
             let marble = |a: &crate::meshes::Asset| {

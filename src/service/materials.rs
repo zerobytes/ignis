@@ -29,6 +29,21 @@ impl Service {
             Ok(report)
         };
         match op {
+            Op::Rock {
+                asset,
+                family,
+                seed,
+                unique_instances,
+                execution,
+            } => {
+                self.engine.scene.meshes.asset(asset)?;
+                let mut r = family.recipe();
+                if let Some(seed) = seed {
+                    r.seed = *seed;
+                }
+                r.unique_instances = *unique_instances;
+                apply(self, asset, library::material(r, *execution)?)
+            }
             Op::Marble {
                 asset,
                 family,
