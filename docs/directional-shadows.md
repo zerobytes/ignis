@@ -1,5 +1,27 @@
 # Sombras direcionais — EAF-80
 
+## Correção opcional do receptor — EAF-208
+
+`Light.shadow.receiver_plane_bias: true` corrige a profundidade de comparação
+de cada amostra PCF pela inclinação geométrica do receptor. O mesmo `set_light`
+do MCP e o painel Iluminação/Luz da cena expõem a opção. Ausência/false preserva
+o caminho anterior e omite o campo ao serializar. Scene111 exige o novo campo
+ativo; SetLight sobe a versão atomicamente, com undo. Replay121/conteúdo9;
+protocolo5/checkpoint3/PSV1 e fontes botânicas/personagens não mudam.
+
+Derivadas da posição projetada fornecem dz/du e dz/dv antes de sair do volume de
+luz. O PCF mantém nove comparações e compensa também a área interna do filtro
+de comparação. Jacobiano degenerado ou quase singular mantém o bias constante;
+a inclinação é limitada a 1% da profundidade por texel nos casos rasantes. É uma
+aproximação local plana: não elimina toda acne/descolamento em superfícies
+curvas, descontinuidades ou cobertura grosseira. O bias autoral ainda existe.
+
+Não adiciona targets, leituras de textura, vértices nem bytes no layout Globals:
+reutiliza o quarto componente do uniforme de sombra. Aritmética/derivadas têm
+custo próprio a medir. Não cria penumbra física, cascatas, oclusão ambiente ou GI.
+Diagnóstico, revisão estática, fontes e laboratório em
+[runtime-visual-quality.md](runtime-visual-quality.md).
+
 ## Contrato e avaliação anterior ao código
 
 O teste da árvore precisa distinguir volumes que apenas recebem cores de

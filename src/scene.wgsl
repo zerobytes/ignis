@@ -87,6 +87,26 @@ fn visibility(world: vec3<f32>) -> f32 {
     let p = globals.shadow_projection * vec4<f32>(world, 1.0);
     let ndc = p.xyz / p.w;
     let uv = vec2<f32>(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5);
+    var gradient = vec2<f32>(0.0);
+    var footprint_bias = 0.0;
+    if globals.shadow_settings.w > 0.5 {
+        // Differentiate geometry, not the bumped shading normal. Compute before
+        // the per-fragment light-volume branch, including quads at its boundary.
+        let dx = dpdx(vec3<f32>(uv, ndc.z));
+        let dy = dpdy(vec3<f32>(uv, ndc.z));
+        let determinant = dx.x*dy.y - dx.y*dy.x;
+        let scale = length(dx.xy)*length(dy.xy);
+        if abs(determinant) > max(1e-20, scale*1e-4) {
+            let slope = vec2<f32>(dx.z*dy.y-dy.z*dx.y, dx.x*dy.z-dy.x*dx.z) / determinant;
+            // Bound grazing amplification to 1% of light depth per texel. An
+            // ill-conditioned receiver uses the legacy constant bias instead.
+            let limit = 0.01 / globals.shadow_settings.z;
+            gradient = clamp(slope, vec2<f32>(-limit), vec2<f32>(limit));
+            // Hardware comparison filtering compares one reference with the
+            // four neighbouring depths: account for the remaining footprint.
+            footprint_bias = dot(abs(gradient), vec2<f32>(globals.shadow_settings.z));
+        }
+    }
     if any(uv < vec2<f32>(0.0)) || any(uv > vec2<f32>(1.0)) || ndc.z < 0.0 || ndc.z > 1.0 {
         return 1.0;
     }
@@ -94,7 +114,11 @@ fn visibility(world: vec3<f32>) -> f32 {
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
             let offset = vec2<f32>(f32(x), f32(y)) * globals.shadow_settings.z;
-            sum += textureSampleCompareLevel(shadow_map, shadow_sampler, uv + offset, ndc.z - globals.shadow_settings.y);
+            var reference = ndc.z - globals.shadow_settings.y;
+            if globals.shadow_settings.w > 0.5 {
+                reference += dot(gradient, offset) - footprint_bias;
+            }
+            sum += textureSampleCompareLevel(shadow_map, shadow_sampler, uv + offset, reference);
         }
     }
     return sum / 9.0;

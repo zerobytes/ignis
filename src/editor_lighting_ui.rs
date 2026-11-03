@@ -15,9 +15,16 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
             egui::ScrollArea::vertical()
                 .max_height(height)
                 .show(ui, |ui| {
+                    ui.heading("Luz da cena");
+                    ui.small("Iluminação salva com a cena e usada no jogo. Cores em RGB linear.");
+                    if service.editor.work_light.is_some() {
+                        ui.small("A luz de trabalho está ativa na viewport. Selecione Luz da cena abaixo para visualizar estes ajustes.");
+                    }
+                    let mut scene_light = service.engine.scene.light.clone();
+                    let source_changed = source_controls(ui, &mut scene_light);
+                    ui.separator();
                     ui.heading("Atmosfera da cena");
                     ui.small("Esmaecimento por distância, salvo com a cena e usado no jogo.");
-                    let mut scene_light = service.engine.scene.light.clone();
                     let mut atmosphere_enabled = scene_light.atmosphere.is_some();
                     let mut atmosphere = scene_light.atmosphere.unwrap_or_default();
                     let mut atmosphere_changed = ui.checkbox(&mut atmosphere_enabled, "Ativar atmosfera").changed();
@@ -82,7 +89,7 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                         }
                     });
                     ui.small(format!("{} malhas compiladas. Rigs, sombras e IBL mantêm a fonte neste recorte.",service.engine.scene.distant_meshes.len()));
-                    if atmosphere_changed {
+                    if atmosphere_changed || source_changed {
                         scene_light.atmosphere = atmosphere_enabled.then_some(atmosphere);
                         commands.push(Command::SetLight { light: scene_light });
                     }
@@ -134,7 +141,7 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                                     .target,
                                 extent: 16.,
                                 resolution: 1024,
-                                bias: 0.002,
+                                bias: 0.002, receiver_plane_bias: false,
                             });
                             changed = true;
                         }
@@ -185,6 +192,7 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                                     )
                                 })
                                 .changed();
+                                changed |= ui.checkbox(&mut shadow.receiver_plane_bias, "Corrigir inclinação do receptor").changed();
                             });
                         }
                     });
@@ -218,4 +226,76 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                     }
                 });
         });
+}
+
+/// Edits the existing MCP Light value; no parallel editor-only lighting model.
+fn source_controls(ui: &mut egui::Ui, light: &mut crate::model::Light) -> bool {
+    let mut changed = false;
+    ui.push_id("scene_light", |ui| {
+        egui::CollapsingHeader::new("Direção, intensidade e ambiente").show(ui, |ui| {
+            // Keep the authored vector until a direction control is edited.
+            let source = -Vec3::from(light.direction).normalize_or_zero();
+            let mut azimuth = source.x.atan2(source.z).to_degrees();
+            let mut elevation = source.y.clamp(-1., 1.).asin().to_degrees();
+            let a = design_ui::field(ui, "Direção", |ui| ui.add(egui::Slider::new(&mut azimuth, -180.0..=180.).suffix("°"))).changed();
+            let b = design_ui::field(ui, "Altura", |ui| ui.add(egui::Slider::new(&mut elevation, -90.0..=90.).suffix("°"))).changed();
+            if a || b {
+                let (az, el) = (azimuth.to_radians(), elevation.to_radians());
+                light.direction = [-az.sin()*el.cos(), -el.sin(), -az.cos()*el.cos()];
+                changed = true;
+            }
+            changed |= design_ui::field(ui, "Intensidade direta", |ui| ui.add(egui::Slider::new(&mut light.direct_intensity, 0.0..=4.))).changed();
+            changed |= design_ui::field(ui, "Ambiente uniforme", |ui| ui.add(egui::Slider::new(&mut light.ambient, 0.0..=1.))).changed();
+            ui.small("O ambiente uniforme ilumina também as cavidades; não representa luz indireta local.");
+            let mut enabled = light.environment.is_some();
+            let mut probe = light.environment.unwrap_or(crate::environment::Environment {
+                sky: [0.55, 0.65, 0.78], horizon: [0.58, 0.62, 0.57],
+                ground: [0.13, 0.16, 0.075], axis: [0., 1., 0.], intensity: 0.5,
+            });
+            let mut probe_changed = ui.checkbox(&mut enabled, "Ambiente IBL").changed();
+            ui.add_enabled_ui(enabled, |ui| {
+                probe_changed |= design_ui::field(ui, "Céu", |ui| design_ui::color(ui, &mut probe.sky)).changed();
+                probe_changed |= design_ui::field(ui, "Horizonte", |ui| design_ui::color(ui, &mut probe.horizon)).changed();
+                probe_changed |= design_ui::field(ui, "Solo", |ui| design_ui::color(ui, &mut probe.ground)).changed();
+                probe_changed |= design_ui::field(ui, "Intensidade IBL", |ui| ui.add(egui::Slider::new(&mut probe.intensity, 0.0..=4.))).changed();
+                let pole = Vec3::from(probe.axis).normalize_or_zero();
+                let mut az = pole.x.atan2(pole.z).to_degrees();
+                let mut el = pole.y.clamp(-1.,1.).asin().to_degrees();
+                let a = design_ui::field(ui, "Direção do céu", |ui| ui.add(egui::Slider::new(&mut az, -180.0..=180.).suffix("°"))).changed();
+                let b = design_ui::field(ui, "Altura do céu", |ui| ui.add(egui::Slider::new(&mut el, -90.0..=90.).suffix("°"))).changed();
+                if a || b {
+                    let (az,el) = (az.to_radians(),el.to_radians());
+                    probe.axis = [az.sin()*el.cos(),el.sin(),az.cos()*el.cos()];
+                    probe_changed = true;
+                }
+                ui.small("Probe distante: reflexão e preenchimento, sem oclusão da geometria local.");
+            });
+            if probe_changed { light.environment = enabled.then_some(probe); changed = true; }
+        });
+        egui::CollapsingHeader::new("Sombras da cena").show(ui, |ui| {
+            let mut enabled = light.shadow.is_some();
+            let mut shadow = light.shadow.clone().unwrap_or(DirectionalShadow {
+                center: [0.; 3], extent: 16., resolution: 1024, bias: 0.002, receiver_plane_bias: false,
+            });
+            let mut shadow_changed = ui.checkbox(&mut enabled, "Sombras direcionais").changed();
+            ui.add_enabled_ui(enabled, |ui| {
+                ui.label("Centro · m");
+                shadow_changed |= design_ui::vector(ui, &mut shadow.center, 0.1);
+                shadow_changed |= design_ui::field(ui, "Meia largura · m", |ui| ui.add(egui::Slider::new(&mut shadow.extent, 0.25..=256.).logarithmic(true))).changed();
+                design_ui::field(ui, "Resolução", |ui| {
+                    egui::ComboBox::from_id_salt("resolution").selected_text(format!("{} px", shadow.resolution)).show_ui(ui, |ui| {
+                        for res in [512,1024,2048] {
+                            shadow_changed |= ui.selectable_value(&mut shadow.resolution, res, format!("{res} px")).changed();
+                        }
+                    });
+                });
+                shadow_changed |= design_ui::field(ui, "Bias de profundidade", |ui| ui.add(design_ui::Scrub::new(&mut shadow.bias).range(0.0..=0.01).speed(0.00001).fixed_decimals(6))).changed();
+                shadow_changed |= ui.checkbox(&mut shadow.receiver_plane_bias, "Corrigir inclinação do receptor").changed();
+                ui.small(format!("Texel: {:.2} mm · bias na direção da luz: {:.2} mm", 2000.*shadow.extent/shadow.resolution as f32, 1000.*shadow.bias*(4.*shadow.extent-0.01)));
+                ui.small("Cobertura menor melhora o detalhe, mas objetos fora do volume deixam de receber sombra. O filtro atual é PCF 3×3.");
+            });
+            if shadow_changed { light.shadow = enabled.then_some(shadow); changed = true; }
+        });
+    });
+    changed
 }

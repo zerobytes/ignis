@@ -929,7 +929,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 120;
+pub const REPLAY_VERSION: u32 = 121;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1298,7 +1298,12 @@ impl Engine {
                     scene.distant_meshes = crate::distant::compile(&scene.meshes)?
                 }
                 SceneEdit::ClearDistantMeshes => scene.distant_meshes = Default::default(),
-                SceneEdit::SetLight { light } => scene.light = light,
+                SceneEdit::SetLight { light } => {
+                    if light.shadow.as_ref().is_some_and(|s| s.receiver_plane_bias) {
+                        scene.version = scene.version.max(111);
+                    }
+                    scene.light = light;
+                }
                 SceneEdit::SetFactionRelations { relations } => scene.faction_relations = relations,
                 SceneEdit::SetSpatialNetwork { network } => {
                     scene.spatial_network = network;

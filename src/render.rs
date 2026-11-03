@@ -1274,8 +1274,14 @@ impl Renderer {
                     .unwrap_or(Mat4::IDENTITY)
                     .to_cols_array_2d(),
                 light: [light[0], light[1], light[2], scene.light.ambient],
-                shadow_settings: shadow
-                    .map_or([0.; 4], |s| [1., s.bias, 1. / s.resolution as f32, 0.]),
+                shadow_settings: shadow.map_or([0.; 4], |s| {
+                    [
+                        1.,
+                        s.bias,
+                        1. / s.resolution as f32,
+                        f32::from(s.receiver_plane_bias),
+                    ]
+                }),
                 view_position: [
                     camera.position[0],
                     camera.position[1],

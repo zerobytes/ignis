@@ -183,6 +183,7 @@ pub fn studio_light() -> Option<crate::model::Light> {
             extent: 16.,
             resolution: 1024,
             bias: 0.002,
+            receiver_plane_bias: false,
         }),
     })
 }

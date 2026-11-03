@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 110;
+pub const SCENE_VERSION: u32 = 111;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -405,6 +405,9 @@ fn one() -> f32 {
 fn is_one(value: &f32) -> bool {
     *value == 1.
 }
+fn is_false(value: &bool) -> bool {
+    !*value
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -415,6 +418,9 @@ pub struct DirectionalShadow {
     pub resolution: u32,
     /// Comparison bias in normalized light depth.
     pub bias: f32,
+    /// Correct PCF comparison depth using the local geometric receiver plane.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub receiver_plane_bias: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
@@ -613,6 +619,17 @@ impl Scene {
         {
             return Err(invalid(
                 "Environment/direct intensity require scene version76",
+            ));
+        }
+        if self.version < 111
+            && self
+                .light
+                .shadow
+                .as_ref()
+                .is_some_and(|s| s.receiver_plane_bias)
+        {
+            return Err(invalid(
+                "Receiver-plane shadow bias requires scene version111",
             ));
         }
         if self.version < 110 {

@@ -310,6 +310,7 @@ fn shared_gpu_matches_expanded_geometry_materials_shadows_and_selection() {
                     extent: 12.,
                     resolution: 512,
                     bias: 0.001,
+                    receiver_plane_bias: false,
                 });
             }
             if mode == 2 {
@@ -399,6 +400,7 @@ fn visibility_preserves_pixels_across_views_shadows_resize_and_motion() {
                 extent: 12.,
                 resolution: 512,
                 bias: 0.001,
+                receiver_plane_bias: false,
             });
         }
         // Include static shared, unique, coplanar tie and extreme off-screen objects.
@@ -625,6 +627,7 @@ fn consumed_attributes_preserve_pixels_and_material_cache_transitions() {
                 extent: 12.,
                 resolution: 512,
                 bias: 0.001,
+                receiver_plane_bias: false,
             });
         }
         let a = original.capture(&frame, 640, 480).unwrap();
@@ -690,6 +693,7 @@ fn unique_static_residency_preserves_edits_transforms_and_shadows() {
                 extent: 8.,
                 resolution: 256,
                 bias: 0.0005,
+                receiver_plane_bias: false,
             });
         }
         let (w, h) = if mode == 5 { (480, 320) } else { (384, 384) };

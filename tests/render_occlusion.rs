@@ -104,6 +104,7 @@ fn occlusion_preserves_holes_order_motion_near_plane_resize_and_shadows() {
                     extent: 12.,
                     resolution: 512,
                     bias: 0.0005,
+                    receiver_plane_bias: false,
                 });
             }
             8 => {
