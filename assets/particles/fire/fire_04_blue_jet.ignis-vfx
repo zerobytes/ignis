@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "id": "fire_04_blue_jet",
+  "seed": 20,
+  "duration_ticks": 180,
+  "looping": true,
+  "fire": {
+    "kind": "blue_jet",
+    "intensity": 1.0,
+    "height": 2.4,
+    "width": 0.4,
+    "turbulence": 0.15,
+    "seed": 20
+  }
+}

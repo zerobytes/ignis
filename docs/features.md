@@ -62,6 +62,7 @@ Use one material system across authored meshes, architecture, vegetation and cha
 | --- | --- | --- |
 | Native cosmetic effects | Reuse versioned effect sources across placements; emit by rate/burst with seeded shapes, cones, lifetimes and motion/color/size modules. CPU analytic reconstruction supports seeking; the GPU draws instanced camera-facing sprites through shared translucent/additive materials. | [Particle foundation](particles.md) |
 | Authoring and preview | Use the Partículas editor panel or the same typed MCP operations to edit sources/placements, inspect population/budget diagnostics, freeze/seek preview, and load/save `.ignis-vfx` sources. Scene/replay/portable saves reconstruct from world time; public network visuals use replica time. | [Particle foundation](particles.md) |
+| Parametric fire | Six flame families with persistent intensity, nominal height/width, turbulence and seed. The editor and MCP generate the same recipe-bound source; fixed emission/opacity maps reuse shared materials. | [Fire families](particle-fire.md) |
 
 Scope: this first backend covers cosmetic sprites in ordinary scenes. Smoke is a
 sprite approximation. GPU simulation, collisions, soft depth intersections,

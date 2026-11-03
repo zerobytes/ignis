@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "id": "fire_01_candle",
+  "seed": 17,
+  "duration_ticks": 180,
+  "looping": true,
+  "fire": {
+    "kind": "candle",
+    "intensity": 1.0,
+    "height": 1.0,
+    "width": 0.22,
+    "turbulence": 0.12,
+    "seed": 17
+  }
+}

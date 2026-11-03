@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 117;
+pub const SCENE_VERSION: u32 = 118;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -567,6 +567,11 @@ impl Scene {
         // Visual assets are independent of per-template entity probes: validate once.
         self.meshes.validate()?;
         self.particles.validate()?;
+        if self.version < crate::particles::FIRE_SCENE_VERSION
+            && self.particles.sources.iter().any(|s| s.version >= 2)
+        {
+            return Err(invalid("Particle source2/fire requires scene118"));
+        }
         if self.version < crate::particles::SCENE_VERSION && !self.particles.is_empty() {
             return Err(invalid("Particle effects require scene113"));
         }

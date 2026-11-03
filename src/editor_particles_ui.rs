@@ -1,7 +1,10 @@
 use super::*;
+#[path = "editor_particle_fire_ui.rs"]
+mod fire_ui;
 use crate::particles::{Document, Operation as Op, Preset};
 #[derive(Default)]
 pub(super) struct State {
+    fire: fire_ui::State,
     revision: Option<u64>,
     draft: String,
     error: String,
@@ -27,6 +30,7 @@ pub(super) fn properties(
    let mut unique=id.to_owned();let mut n=1;while service.engine.scene.particles.sources.iter().any(|s|s.id==unique)||service.engine.scene.particles.instances.iter().any(|s|s.id==unique){unique=format!("{id}_{n}");n+=1;}
    if ui.button(name).clicked(){send(commands,Op::Preset{preset,id:unique});}
   }});
+  fire_ui::controls(ui,service,&mut state.fire,commands);
   ui.separator();ui.label(format!("{} fontes · {} instâncias",service.engine.scene.particles.sources.len(),service.engine.scene.particles.instances.len()));
   ui.collapsing("Tempo do preview",|ui|{
    ui.horizontal(|ui|{ui.label("Tick (60 Hz)");ui.add(egui::DragValue::new(&mut state.tick).range(0..=u64::MAX));});

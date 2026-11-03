@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "id": "fire_06_arcane",
+  "seed": 22,
+  "duration_ticks": 180,
+  "looping": true,
+  "fire": {
+    "kind": "arcane",
+    "intensity": 1.0,
+    "height": 2.2,
+    "width": 0.85,
+    "turbulence": 1.2,
+    "seed": 22
+  }
+}

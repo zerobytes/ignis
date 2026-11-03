@@ -1,3 +1,19 @@
+## EAF-219 — parametric fire
+
+Preflight and final contract: [particle-fire.md](particle-fire.md). Six families
+compile to existing native emitters and fixed emission/opacity materials.
+
+| Question | Result and evidence |
+|---|---|
+| Frequency | Bake at recipe creation/admission; cached immutable derivation proof validates serialization/edits without rebaking. Frame evaluation uses existing bounded recent births. |
+| Allocation/data | Source2 files carry only settings (9sources=2170B); 32×32 complete mip maps use1365×48B each. Material Arcs are shared by flame layers, never allocated per particle. |
+| Repetition | Same source/time reuses particle samples and GPU uploads; camera-only movement does not regenerate maps or trajectories. Source1 remains unchanged. |
+| Limits | Existing emitter/particle/material/IO limits retained; intensity0..3, height0.1..8m, width0.03..5m, turbulence0..2. Zero disables every effect layer. |
+| GPU/IO/locks | Existing80B sprite stream and OIT, no new shader/pass/thread/dependency or per-frame IO/readback/lock. Transparent overdraw and OIT targets remain actual costs. |
+| Invalidation | One atomic recipe edit preserves placement IDs and uses reset/undo. Decode rebuilds derived maps; detach explicitly preserves manual emitters and rejects destructive regeneration. |
+| Validation | 21directed release tests including native GPU; 6MCP groups with scene/portable/seek PNG equality. Source2/Scene118/replay128/content14 gates are explicit. |
+| Retained cost | CPU analytic evaluation, proof comparisons and native map admission are bounded costs. Tick240 gallery:1473sprites/1draw/117840active instance bytes,590544B fixed material storage,49280000B shared OIT images at1600×1100 on M4Pro/Metal. No FPS claim. |
+
 ## EAF-213 — spatial wind and rigid aerodynamic meshes
 
 Preflight, equations and model alternatives: [wind.md](wind.md). Final static

@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "id": "fire_03_torch",
+  "seed": 19,
+  "duration_ticks": 180,
+  "looping": true,
+  "fire": {
+    "kind": "torch",
+    "intensity": 1.0,
+    "height": 1.4,
+    "width": 0.35,
+    "turbulence": 0.4,
+    "seed": 19
+  }
+}

@@ -58,6 +58,45 @@ impl Engine {
                             enabled: true,
                         });
                     }
+                    Op::DetachFire { id } => {
+                        let source = document
+                            .sources
+                            .iter_mut()
+                            .find(|s| s.id == *id)
+                            .ok_or_else(|| invalid("Fire source not found"))?;
+                        if source.fire.is_none() {
+                            return Err(invalid("Source has no fire recipe to detach"));
+                        }
+                        Arc::make_mut(source).fire = None;
+                    }
+                    Op::Fire { id, settings } => {
+                        let source = Arc::new(Source::fire(id.clone(), *settings)?);
+                        source.validate()?;
+                        if let Some(s) = document.sources.iter_mut().find(|s| s.id == *id) {
+                            if s.fire.is_none() {
+                                return Err(invalid(
+                                    "Choose a new ID; this source has manually authored emitters",
+                                ));
+                            }
+                            *s = source;
+                        } else {
+                            document.sources.push(source);
+                            if document.instances.iter().any(|p| p.id == *id) {
+                                return Err(invalid("Fire placement ID is already in use"));
+                            }
+                            document.instances.push(Placement {
+                                id: id.clone(),
+                                source: id.clone(),
+                                seed: 0,
+                                position: origin(),
+                                rotation: [0., 0., 0., 1.],
+                                scale: 1.,
+                                tint: [1.; 4],
+                                start_tick: 0,
+                                enabled: true,
+                            });
+                        }
+                    }
                     Op::PutSource { source } => {
                         source.validate()?;
                         if let Some(s) = document.sources.iter_mut().find(|s| s.id == source.id) {

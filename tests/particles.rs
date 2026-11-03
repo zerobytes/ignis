@@ -33,6 +33,7 @@ fn document(e: Emitter, looping: bool) -> Arc<Document> {
             duration_ticks: 60,
             looping,
             emitters: vec![e],
+            fire: None,
         })],
         instances: vec![placement("instance", "fx")],
         ..Default::default()

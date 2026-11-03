@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "id": "fire_09_campfire",
+  "seed": 37,
+  "duration_ticks": 180,
+  "looping": true,
+  "fire": {
+    "kind": "campfire",
+    "intensity": 2.2,
+    "height": 1.8,
+    "width": 0.95,
+    "turbulence": 0.8,
+    "seed": 37
+  }
+}

@@ -108,6 +108,7 @@ struct Birth {
 }
 #[derive(Clone, Copy)]
 struct Coefficients {
+    offset: DVec3,
     acceleration: DVec3,
     drag: f64,
     rotation: DQuat,
@@ -119,10 +120,12 @@ struct Coefficients {
 }
 impl Coefficients {
     fn new(s: &Source, p: &Placement, e: &Emitter) -> Self {
+        let mut offset = DVec3::ZERO;
         let mut acceleration = DVec3::ZERO;
         let mut drag = 0.;
         for m in &e.modules {
             match m {
+                Module::Offset { value } => offset += DVec3::from(value.map(f64::from)),
                 Module::Acceleration { value } => acceleration += DVec3::from(value.map(f64::from)),
                 Module::Drag { coefficient } => drag += f64::from(*coefficient),
                 _ => {}
@@ -146,6 +149,7 @@ impl Coefficients {
         let side = axis.any_orthonormal_vector();
         let other = axis.cross(side);
         Self {
+            offset,
             acceleration,
             drag,
             rotation,
@@ -356,7 +360,7 @@ impl Frame {
                         + (c.side * angle.cos() + c.other * angle.sin()) * sine)
                         * range(e.speed, random(key, 8));
                     let (pos, vel) = trajectory(
-                        spawn.to_array(),
+                        (spawn + c.offset).to_array(),
                         initial.to_array(),
                         c.acceleration.to_array(),
                         c.drag,

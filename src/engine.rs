@@ -944,7 +944,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 127;
+pub const REPLAY_VERSION: u32 = 128;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1345,7 +1345,14 @@ impl Engine {
                 SceneEdit::ClearDistantMeshes => scene.distant_meshes = Default::default(),
                 SceneEdit::SetParticles { document } => {
                     document.validate()?;
-                    scene.version = scene.version.max(crate::particles::SCENE_VERSION);
+                    scene.version =
+                        scene
+                            .version
+                            .max(if document.sources.iter().any(|s| s.version >= 2) {
+                                crate::particles::FIRE_SCENE_VERSION
+                            } else {
+                                crate::particles::SCENE_VERSION
+                            });
                     scene.particles = document;
                 }
                 SceneEdit::SetLight { light } => {

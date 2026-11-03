@@ -164,3 +164,26 @@ instance bytes and 20,480 allocated instance bytes; warm same-time captures reta
 the upload count. Shared OIT targets use 28,672,000 logical bytes at that resolution.
 These are this small workload's counts, not a sustainable capacity or FPS claim.
 The user's running scene/window is preserved; validation uses isolated captures.
+
+## Parametric fire
+
+[Fire families](particle-fire.md) add candle, campfire, torch, blue jet, inferno and
+arcane sources with intensity, nominal height/width, turbulence and seed controls.
+Use the fire section of the Partículas panel, or the same typed operation:
+
+```json
+{"command":{"op":"particles","operation":{"kind":"fire","id":"campfire","settings":{"kind":"campfire","intensity":1.4,"height":2.0,"width":1.2,"turbulence":0.7,"seed":7}}}}
+```
+
+Source2 stores the compact recipe and regenerates immutable emission/opacity maps
+at admission. Source1 remains supported. `detach_fire` preserves the generated
+emitters for explicit manual editing; regeneration then refuses to overwrite them.
+This uses the existing material/sprite backend; no new rendering pass is added.
+The editor's Apply and run action pauses, publishes the edit and resumes world
+time, clearing any fixed particle preview. The ordinary authoring reset/undo
+contract applies. Nominal height/width are scales; the visible envelope also
+depends on life, movement, style and intensity.
+
+The editable gallery is [particle-fire.scene.json](../examples/particle-fire.scene.json).
+Run `python3 scripts/demo_particle_fire.py --open` to regenerate/verify and open it,
+or `--open-only` to open the current gallery. Existing human windows are preserved.

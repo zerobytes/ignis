@@ -8,6 +8,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, sync::Arc};
 mod evaluate;
+pub mod fire;
+pub const FIRE_SCENE_VERSION: u32 = 118;
 pub use evaluate::{Frame, Sample, Stats, trajectory};
 pub fn document_empty(d: &Arc<Document>) -> bool {
     d.is_empty()
@@ -86,17 +88,86 @@ impl Default for Document {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, Deserialize, JsonSchema, PartialEq)]
+#[serde(try_from = "SourceWire")]
+#[schemars(with = "SourceWire")]
 pub struct Source {
     pub version: u16,
     pub id: String,
     pub seed: u32,
-    #[serde(default = "period")]
     pub duration_ticks: u32,
-    #[serde(default = "yes")]
     pub looping: bool,
     pub emitters: Vec<Emitter>,
+    pub fire: Option<Arc<fire::Binding>>,
+}
+// Recipe-bound fire persists the compact recipe; native admission rebuilds maps.
+#[derive(Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct SourceWire {
+    version: u16,
+    id: String,
+    seed: u32,
+    #[serde(default = "period")]
+    duration_ticks: u32,
+    #[serde(default = "yes")]
+    looping: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    emitters: Option<Vec<Emitter>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    fire: Option<fire::Settings>,
+}
+impl TryFrom<SourceWire> for Source {
+    type Error = crate::model::Error;
+    fn try_from(w: SourceWire) -> Result<Self> {
+        let source = if let Some(settings) = w.fire {
+            let source = Self::fire(w.id, settings)?;
+            if w.seed != source.seed
+                || w.duration_ticks != source.duration_ticks
+                || w.looping != source.looping
+                || w.version != 2
+                || w.emitters.as_ref().is_some_and(|e| e != &source.emitters)
+            {
+                return Err(invalid(
+                    "Fire source recipe and serialized derivation disagree",
+                ));
+            }
+            source
+        } else {
+            Self {
+                version: w.version,
+                id: w.id,
+                seed: w.seed,
+                duration_ticks: w.duration_ticks,
+                looping: w.looping,
+                emitters: w
+                    .emitters
+                    .ok_or_else(|| invalid("Particle source requires emitters"))?,
+                fire: None,
+            }
+        };
+        source.validate()?;
+        Ok(source)
+    }
+}
+impl Serialize for Source {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        if self.fire.is_some() {
+            self.validate().map_err(serde::ser::Error::custom)?;
+        }
+        SourceWire {
+            version: self.version,
+            id: self.id.clone(),
+            seed: self.seed,
+            duration_ticks: self.duration_ticks,
+            looping: self.looping,
+            emitters: self.fire.is_none().then(|| self.emitters.clone()),
+            fire: self.fire.as_ref().map(|r| r.settings),
+        }
+        .serialize(serializer)
+    }
 }
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -148,6 +219,9 @@ pub struct SizeKey {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Module {
+    Offset {
+        value: [f32; 3],
+    },
     Acceleration {
         value: [f32; 3],
     },
@@ -263,7 +337,13 @@ impl Document {
 impl Source {
     pub fn validate(&self) -> Result<()> {
         id(&self.id)?;
-        if self.version != VERSION
+        if !(1..=2).contains(&self.version)
+            || (self.version == 1
+                && (self.fire.is_some()
+                    || self
+                        .emitters
+                        .iter()
+                        .any(|e| e.modules.iter().any(|m| matches!(m, Module::Offset { .. })))))
             || !(1..=36000).contains(&self.duration_ticks)
             || self.emitters.is_empty()
             || self.emitters.len() > 32
@@ -324,6 +404,7 @@ impl Source {
             let mut extent = f64::from(e.size[1]) * f64::from(e.aspect.max(1.));
             for m in &e.modules {
                 let valid = match m {
+                    Module::Offset { value } => finite_range(value, -10000., 10000.),
                     Module::Acceleration { value } => finite_range(value, -10000., 10000.),
                     Module::Drag { coefficient } => finite_range(&[*coefficient], 0., 64.),
                     Module::Wave {
@@ -355,6 +436,14 @@ impl Source {
                 ));
             }
         }
+        if let Some(recipe) = &self.fire {
+            recipe.settings.validate()?;
+            if !recipe.matches(self) {
+                return Err(invalid(
+                    "Fire recipe and derived emitters differ; apply fire settings or clear the recipe before manual emitter editing",
+                ));
+            }
+        }
         Ok(())
     }
 }
@@ -362,16 +451,45 @@ impl Source {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
     Inspect,
-    Preset { preset: Preset, id: String },
-    Replace { document: Arc<Document> },
-    PutSource { source: Arc<Source> },
-    RemoveSource { id: String },
-    PutInstance { instance: Placement },
-    RemoveInstance { id: String },
-    Preview { tick: Option<u64> },
-    Open { open: bool },
-    SaveSource { id: String, path: String },
-    LoadSource { path: String },
+    DetachFire {
+        id: String,
+    },
+    Fire {
+        id: String,
+        settings: fire::Settings,
+    },
+    Preset {
+        preset: Preset,
+        id: String,
+    },
+    Replace {
+        document: Arc<Document>,
+    },
+    PutSource {
+        source: Arc<Source>,
+    },
+    RemoveSource {
+        id: String,
+    },
+    PutInstance {
+        instance: Placement,
+    },
+    RemoveInstance {
+        id: String,
+    },
+    Preview {
+        tick: Option<u64>,
+    },
+    Open {
+        open: bool,
+    },
+    SaveSource {
+        id: String,
+        path: String,
+    },
+    LoadSource {
+        path: String,
+    },
 }
 impl Default for Emitter {
     fn default() -> Self {
@@ -514,6 +632,7 @@ impl Source {
             duration_ticks: 180,
             looping: true,
             emitters: vec![e],
+            fire: None,
         }
     }
 }

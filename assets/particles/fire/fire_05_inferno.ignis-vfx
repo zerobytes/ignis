@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "id": "fire_05_inferno",
+  "seed": 21,
+  "duration_ticks": 180,
+  "looping": true,
+  "fire": {
+    "kind": "inferno",
+    "intensity": 1.8,
+    "height": 2.6,
+    "width": 1.7,
+    "turbulence": 1.5,
+    "seed": 21
+  }
+}
