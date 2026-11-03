@@ -1,6 +1,6 @@
 # Emerald and Japanese procedural lawns
 
-EAF-216 adds two independent lawn families under `assets/botany/lawns/`.
+EAF-216 adds three independent lawn asset families under `assets/botany/lawns/`.
 The target is the user's paired photograph; the pre-construction analysis and
 feature list are in [lawns-analysis.md](references/botany/lawns-analysis.md).
 The supplied species labels are retained as reference labels, not confirmed
@@ -10,7 +10,7 @@ cultivar identifications. Metric dimensions are authored working dimensions.
 
 Each family has three deterministic variants. Each variant is split into mature
 and fresh green components for the existing native material pipeline, yielding
-12 editable Source/Recipe7 `.ignis-botany` files. Every blade has a curve, normal,
+18 editable Source/Recipe7 `.ignis-botany` files. Every blade has a curve, normal,
 pointed strip outline, folding and closed thickness. There are no image planes,
 photographic textures or hidden solid cushions.
 
@@ -18,12 +18,20 @@ photographic textures or hidden solid cushions.
 | --- | --- | ---: | ---: | ---: | ---: |
 | esmeralda |24cm square carpet|768|3.2mm|4.5cm|49,152|
 | japonesa |24cm placement pitch; radial cushion|2,048|0.9mm|9cm centre /3.5cm rim|131,072|
+| japonesa_tapete |24cm square fine carpet|2,048|0.9mm|4cm|131,072|
 
 Settings are in `scripts/lawn_assets.py:FAMILIES`. Actual sampled widths vary
 between 78% and 114% of the width setting. Heights also vary. Emerald blade origins
 fill all stratified rows of a square; azimuth and curvature vary independently.
 Japanese origins fill an ellipse, with radial height envelope
 `(1 - q*q)^0.72`, an upright centre and increasing outward reach at the rim.
+The additional `japonesa_tapete` preserves the Japanese blade width, fold,
+thickness and colours, while distributing roots over the complete square and
+using short paths without a radial height envelope. Its authored height is 4cm,
+with independent variation and modest lean. This is a flat art-directed option,
+not a separate species or a biological simulation of mowing. The original
+12 source files remain byte-identical.
+
 Radius, height, rim height, width, blade count and fresh-growth fraction can all
 be edited. Source curves remain editable independently after generation.
 
@@ -52,8 +60,8 @@ static meshes. Static copies retain their family/variant mapping in
 `artifacts/lawns/review.html` contains the shared-light comparison, three variants
 per family, close views, top/profile views and individual family patches. Each
 family patch has 49 modules on a 7×7 layout, spanning about 1.68m per side before
-blade overhang. The Japanese layout adds seeded offset, rotation, scale and
-height variation; emerald modules meet edge to edge. Ground roots are embedded
+blade overhang. The cushion layout adds seeded offset, rotation, scale and
+height variation; both carpet layouts meet edge to edge. Ground roots are embedded
 below the support plane, including the smallest scaled Japanese modules.
 
 Raw native images are 1800×1100 (family/variant images 1600×1100). Files suffixed
@@ -69,21 +77,39 @@ checked from the authored paths. Saving and reloading the profile scene produces
 a byte-identical native PNG. Machine-readable evidence is in `report.json` and
 `source-validation.json`; `command-schema.json` records the MCP schema used.
 
-The comparison contains 13 assets including the ground, 197 instances and 98 plant
-objects. Shared unique geometry totals 287,236 vertices /540,674 triangles;
-instancing those variants totals 8,830,978 triangles before view-dependent
+The three-way comparison contains 19 assets including the ground, 295 instances
+and 147 plant objects. Shared unique geometry totals 496,132 vertices /933,890
+triangles; instancing those variants totals 15,253,506 triangles before view-dependent
 selection. These are detailed authoring/close-view assets. Instancing shares
 geometry storage but does not remove their raster or shadow work. No frame-rate,
 1km coverage budget, automatic LOD, wind simulation or renderer improvement is
 claimed here. Large-area deployment needs a separate density/representation
 budget and runtime measurements.
 
-The procedural shapes now separate the wider even carpet from the fine rounded
-cushions. The Japanese patch is still more regularly spaced than the photographed
+The procedural shapes now separate the wider even carpet, the fine rounded
+cushions and the fine flat carpet. The comparison order is esmeralda, japonesa,
+japonesa_tapete from left to right. The Japanese patch is still more regularly spaced than the photographed
 garden; the native raster also aliases subpixel leaves. Colour and lighting are
 controlled review choices, not calibrated matches to either photo. Neither an
 exact photo reconstruction nor human artistic acceptance follows from topology
 and persistence checks. Previous botanical libraries, the world scene and the
 renderer are outside this change.
 
-Native validation build: `aarch64-apple-darwin|release|rustc 1.97.1 (8bab26f4f 2026-07-14)|9a78e1f299aba38d`. No engine build was created by this asset task.
+## Botanical clarification and flat option
+
+The user asked whether the pictured cushions were caused only by the ground.
+[Clemson Extension](https://hgic.clemson.edu/factsheet/zoysiagrass/) explicitly
+describes Zoysia tenuifolia as forming small clumps with a puffy appearance;
+[UC IPM](https://ipm.ucanr.edu/TOOLS/TURF/TURFSPECIES/zoysia.html) describes it
+as fine-leafed dwarf ground cover. These are compatible: it is a low grass,
+and the cushion habit can come from its growth. The reference alone does not
+reveal the soil profile beneath it. The extra flat option follows the user's
+requested appearance while preserving the cushion preset.
+
+Source checks compare the flat carpet centre and outer annulus: mean tip heights
+differ by less than 2% for the three shipped variants, versus the strong radial
+height difference in the cushion. The same-seed and alternate-seed checks cover
+all 18 sources; all 147 patch origins remain embedded below the support surface.
+Human artistic acceptance and large-area runtime performance remain separate.
+
+Native validation build: `aarch64-apple-darwin|release|rustc 1.97.1 (8bab26f4f 2026-07-14)|d8dec4c557b67a8c`. No engine build was created by this asset task.

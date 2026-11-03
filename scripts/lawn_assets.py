@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Editable native lawn modules: broad emerald carpet and fine Japanese cushions."""
+"""Editable lawn modules: emerald carpet, Japanese cushions and fine carpet."""
 import argparse
 import json
 import math
@@ -17,6 +17,10 @@ FAMILIES = [
          width=.0009, blades=2048, fresh_fraction=.08,
          green=[.070, .19, .025], accent=[.105, .25, .035]),
 ]
+# Preserve the same fine-leaf material and cross-section, while removing the
+# radial height envelope and fan-shaped distribution of the cushion preset.
+FAMILIES.append(dict(FAMILIES[1], id='japonesa_tapete', name='Grama japonesa em tapete',
+                     form='fine_carpet', height=.040))
 
 
 class LawnPlant(Plant):
@@ -29,16 +33,21 @@ class LawnPlant(Plant):
         stretch = r.uniform(.90, 1.10)
         phase = r.uniform(0, TAU)
         for index in range(count):
-            if f['form'] == 'carpet':
+            if f['form'] in ('carpet', 'fine_carpet'):
                 # A stratified square can cover neighbouring modules without a
                 # collection of isolated fountain-shaped tufts.
                 x = ((index % columns + r.uniform(.10, .90)) / columns - .5) * f['module_meters']
                 z = ((index // columns + r.uniform(.10, .90)) / rows - .5) * f['module_meters']
                 angle = phase + r.uniform(-math.pi, math.pi)
                 h = f['height'] * height_scale * r.uniform(.76, 1.14)
-                reach = r.uniform(.012, .034)
-                control_y, tip_y = h * 1.10, h * .87
-                fold, thickness = .14, .00012
+                if f['form'] == 'fine_carpet':
+                    reach = r.uniform(.006, .018)
+                    control_y, tip_y = h * .64, h
+                    fold, thickness = .24, .00007
+                else:
+                    reach = r.uniform(.012, .034)
+                    control_y, tip_y = h * 1.10, h * .87
+                    fold, thickness = .14, .00012
             else:
                 angle = r.uniform(0, TAU)
                 radius = f['radius'] * math.sqrt(r.random())

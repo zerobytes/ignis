@@ -19,7 +19,7 @@ from verify_lab import Client
 OUT = ROOT / 'artifacts/lawns'
 
 
-def configure_light(c, center=(0, 0, 0), extent=2.6):
+def configure_light(c, center=(0, 0, 0), extent=4):
     c.call('set_light', light=dict(direction=[.45, -.82, -.35], ambient=.40, direct_intensity=1.12,
         environment=dict(sky=[.52, .65, .83], horizon=[.64, .68, .57], ground=[.075, .10, .035], axis=[0, 1, 0], intensity=.50),
         shadow=dict(center=list(center), extent=extent, resolution=2048, bias=.001)))
@@ -30,7 +30,9 @@ def sward(compiled, templates, manifest, family=None, seed=216731):
     scene['meshes']['instances'][0]['color'] = [.055, .050, .025]
     rng = random.Random(seed)
     records = []
-    for f, center in [('esmeralda', -.99), ('japonesa', .99)]:
+    families = [f['id'] for f in manifest['families']]
+    for index, f in enumerate(families):
+        center = (index - (len(families) - 1) / 2) * 1.98
         if family and f != family:
             continue
         if family:
@@ -62,10 +64,12 @@ def main():
     args = p.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     manifest = json.loads((DEST / 'library.json').read_text())
+    families = [f['id'] for f in manifest['families']]
+    centers = {f: (i - (len(families) - 1) / 2) * 1.98 for i, f in enumerate(families)}
     expected, files = library(manifest['seed'], manifest['variants'])
     assert manifest == expected
     assert all(json.loads((DEST / name).read_text()) == value for name, value in files.items())
-    report = dict(components={}, captures=[])
+    report = dict(components={}, captures=[], family_order=families)
     c = Client(args.binary, log_path=OUT / 'native.log')
     try:
         c.request('initialize', dict(protocolVersion='2025-11-25', capabilities={}, clientInfo=dict(name='lawns', version='1')))
@@ -77,11 +81,12 @@ def main():
         for entry in manifest['entries']:
             for part in entry['components']:
                 recipe = copy.deepcopy(files[part['path']])
-                recipe['settings']['position'] = [(entry['variant'] - (manifest['variants'] - 1) / 2) * .36, -.025, -.25 if entry['family'] == 'esmeralda' else .25]
+                recipe['settings']['position'] = [(entry['variant'] - (manifest['variants'] - 1) / 2) * .36, -.025,
+                    (families.index(entry['family']) - (len(families) - 1) / 2) * .45]
                 result = publish_recipe(c, recipe, OUT / 'publication.ignis-botany')
                 report['components'][part['prefix']] = result['compiled']
         c.call('save_scene', path=relative(OUT / 'authoring.scene.json'))
-        c.call('set_camera', camera=dict(position=[.9, .8, 1.1], target=[0, .01, 0], fov_degrees=45))
+        c.call('set_camera', camera=dict(position=[1.1, 1.0, 1.5], target=[0, .01, 0], fov_degrees=45))
         c.call('capture', path=relative(OUT / 'variants.png'), width=1600, height=1100)
         compiled = json.loads((OUT / 'authoring.scene.json').read_text())
         assets = [a for a in compiled['meshes']['assets'] if a['id'] != 'gc_ground' and len(a['geometry']['triangles']) > 1]
@@ -106,11 +111,14 @@ def main():
         atomic_json(OUT / 'placements.json', records)
         c.call('load_scene', path=relative(OUT / 'comparison.candidate.scene.json'))
         configure_light(c)
-        views = dict(comparison=dict(position=[2.2, 1.7, 2.9], target=[0, .02, 0], fov_degrees=42),
-            top=dict(position=[0, 3.4, 1.3], target=[0, 0, 0], fov_degrees=61),
-            esmeralda_close=dict(position=[-.76, .20, .45], target=[-.99, .015, .02], fov_degrees=46),
-            japonesa_close=dict(position=[1.28, .28, .48], target=[.99, .025, .02], fov_degrees=46),
-            profile=dict(position=[.2, .13, 3.4], target=[0, .015, 0], fov_degrees=53))
+        views = dict(comparison=dict(position=[0, 2.8, 4.8], target=[0, .02, 0], fov_degrees=43),
+            top=dict(position=[0, 5.0, 1.0], target=[0, 0, 0], fov_degrees=61),
+            profile=dict(position=[0, .13, 4.8], target=[0, .015, 0], fov_degrees=53))
+        for family in families:
+            cushion = family == 'japonesa'
+            cx = centers[family]
+            views[family + '_close'] = dict(position=[cx + .29, .28 if cushion else .20, .48],
+                target=[cx, .025 if cushion else .015, .02], fov_degrees=46)
         for name, camera in views.items():
             c.call('set_camera', camera=camera)
             if name == 'comparison':
@@ -119,6 +127,8 @@ def main():
             metadata = c.call('capture', path=relative(OUT / (name + '.png')), width=1800, height=1100)
             report['captures'].append(dict(name=name, camera=camera, capture_wall_seconds=time.monotonic() - started, metadata=metadata))
             print('captured', name, flush=True)
+        c.call('set_camera', camera=views['profile'])
+        c.call('capture', path=relative(OUT / 'profile.png'), width=1800, height=1100)
         c.call('save_scene', path=relative(OUT / 'roundtrip.scene.json'))
         c.call('load_scene', path=relative(OUT / 'roundtrip.scene.json'))
         c.call('capture', path=relative(OUT / 'roundtrip.png'), width=1800, height=1100)
@@ -127,7 +137,7 @@ def main():
         # Still-image spatial supersampling is explicit and separate from the
         # unfiltered native captures. It does not enable runtime antialiasing.
         report['presentation_previews'] = {}
-        for name in ['comparison', 'esmeralda_close', 'japonesa_close']:
+        for name in ['comparison', *(f + '_close' for f in families)]:
             c.call('set_camera', camera=views[name])
             source = OUT / (name + '-ssaa.png')
             metadata = c.call('capture', path=relative(source), width=2048, height=1252)
@@ -135,7 +145,7 @@ def main():
             subprocess.run(['sips', '-z', '626', '1024', str(source), '--out', str(output)], check=True, capture_output=True)
             report['presentation_previews'][name] = dict(source=source.name, preview=output.name,
                 method='native 2048x1252 raster downsampled to 1024x626 with sips', metadata=metadata)
-        for family in ['esmeralda', 'japonesa']:
+        for family in families:
             scene, _ = sward(compiled, templates, manifest, family)
             atomic_json(OUT / (family + '.candidate.scene.json'), scene)
             c.call('load_scene', path=relative(OUT / (family + '.candidate.scene.json')))
@@ -148,8 +158,8 @@ def main():
         report['source_sha256'] = source_fingerprint(DEST, manifest)
         atomic_json(OUT / 'report.json', report)
         atomic_json(OUT / 'views.json', views)
-        cards = ''.join(f'<figure><a href="{n}.png"><img src="{n}.png"></a><figcaption>{html.escape(n)}</figcaption></figure>' for n in ['comparison-preview', 'variants', *views, 'esmeralda_close-preview', 'japonesa_close-preview', 'esmeralda', 'japonesa'])
-        (OUT / 'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Gramas esmeralda e japonesa</title><style>body{background:#152019;color:#eee;font:16px system-ui;margin:24px}img{width:100%;max-width:1300px}figure{margin:24px 0}</style><h1>Esmeralda e japonesa</h1><p>Esmeralda à esquerda; japonesa à direita. Capturas nativas Ignis.</p>' + cards)
+        cards = ''.join(f'<figure><a href="{n}.png"><img src="{n}.png"></a><figcaption>{html.escape(n)}</figcaption></figure>' for n in ['comparison-preview', 'variants', *views, *(f + '_close-preview' for f in families), *families])
+        (OUT / 'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Gramas esmeralda e japonesa</title><style>body{background:#152019;color:#eee;font:16px system-ui;margin:24px}img{width:100%;max-width:1300px}figure{margin:24px 0}</style><h1>Esmeralda e japonesa</h1><p>Da esquerda para a direita: esmeralda, japonesa em almofadas, japonesa em tapete. Capturas nativas Ignis; arquivos preview usam redução de resolução explícita.</p>' + cards)
         print(json.dumps(dict(stats=report['stats'], variants=report['variants'], build=report['build_id'])), flush=True)
         for candidate in OUT.glob('*.candidate.scene.json'):
             candidate.unlink()

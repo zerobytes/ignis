@@ -131,3 +131,31 @@ use native2048×1252 rendering downsampled to1024×626, not a runtime AA feature
 The full native library passes directed-edge closure/orientation, and the profile
 PNG is byte-identical after native save/load. See [lawn-assets.md](../../lawn-assets.md)
 for reproduction, exact geometry costs and the large-area performance boundary.
+
+
+## Follow-up: a fine Japanese carpet without cushions
+
+The user questioned whether the mounds represented the ground and requested a
+third option with the same fine leaves but no mounds. This is an explicit design
+variant, not a new observation from the photograph. Clemson Extension's
+[species description](https://hgic.clemson.edu/factsheet/zoysiagrass/) confirms
+that Z.tenuifolia itself can form small puffy clumps. The photo does not establish
+the terrain hidden below its leaves; it does not require a shrub or raised soil.
+
+New family `japonesa_tapete`, three variants, shares the Japanese width0.9mm,
+fold0.24, thickness0.07mm and material populations. It uses a stratified square,
+authored height4cm and short independently oriented paths. No radial envelope or
+centre fan is used. Original12 source files remain byte-identical.
+
+| ID / requirement | Construction and evidence | Result |
+| --- | --- | --- |
+| F1 / fine Japanese leaves |Same cross-section/material controls; `japonesa_tapete_close.png`|Implemented and visually reviewed: finer than emerald, pointed and dense.|
+| F2 / flat continuous habit |Uniform square distribution without radial height; `comparison.png`, family view|Implemented: a continuous low carpet, with local blade variation but no rounded cushion skyline.|
+| F3 / procedural reusable option |Three additional variants/six native files; canonical regeneration checks|Same seed exact, different seed changes all sources; all previous12 sources unchanged.|
+| F4 / native usability |Full comparison/close views, closure and save/load checks|Native meshes closed/oriented; profile PNG byte-exact after reload. No performance or artistic acceptance inferred.|
+
+Centre/outer-annulus mean tip-height ratios in the flat preset are within2% of1,
+confirming the absence of a designed radial dome in the shipped variants. The
+three-way comparison is ordered emerald / Japanese cushions / Japanese carpet.
+The carpet preview retains the explicit still-image supersampling noted above;
+raw captures are retained. Ground attachment is checked for all147 placements.
