@@ -1335,7 +1335,13 @@ impl Renderer {
                     ]
                 }),
                 planet_eye_high: scene.planet_air.map_or([0.; 4], |p| {
-                    [p.eye.high[0], p.eye.high[1], p.eye.high[2], 0.]
+                    [
+                        p.eye.high[0],
+                        p.eye.high[1],
+                        p.eye.high[2],
+                        (crate::atmosphere::transport::correction_limit(p.radius, p.altitude)
+                            / p.radius) as f32,
+                    ]
                 }),
                 planet_eye_low: scene
                     .planet_air

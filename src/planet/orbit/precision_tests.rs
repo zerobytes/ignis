@@ -225,7 +225,7 @@ fn planet_orbit_gpu_precision_contracts() {
                         tilt_degrees: tilt,
                         viewport: [640, 400],
                         max_tiles,
-                        atmosphere_optical_depth: 0.,
+                        atmosphere_optical_depth: Some(0.),
                         space_color: [0.; 3],
                         ..Default::default()
                     }),
@@ -385,4 +385,91 @@ fn planet_orbit_gpu_precision_contracts() {
         "legacy pipeline was not restored"
     );
     std::fs::write("artifacts/planet-zoom/precision.json",serde_json::to_vec_pretty(&serde_json::json!({"build_id":env!("IGNIS_BUILD_ID"),"seams":seams,"depths":depths,"override_cache_a_b_none_a":true,"legacy_same_frame_renderer_restored":true,"adapter":gpu.info()})).unwrap()).unwrap();
+}
+
+#[test]
+#[ignore = "requires native GPU; explicit planetary material/layout acceptance"]
+fn planet_orbit_gpu_material_layout_motion_resize() {
+    let mut e = engine_at(DVec3::Y);
+    e.execute(
+        Command::SetPlanetView {
+            view: Some(Settings {
+                tilt_degrees: -35.,
+                max_tiles: 48,
+                atmosphere_optical_depth: Some(0.),
+                atmosphere_optimization: false,
+                ..Default::default()
+            }),
+        }
+        .into(),
+    )
+    .unwrap();
+    let mut frame = e.render_frame();
+    let source = frame.meshes.source.clone();
+    let normals = frame.meshes.normal_overrides.clone();
+    let coords = frame.meshes.planet_coordinates.clone();
+    let placements: Vec<_> = frame.meshes.draws.iter().map(|d| d.world).collect();
+    let gpu_instance = wgpu::Instance::default();
+    let mut gpu = pollster::block_on(Renderer::new(&gpu_instance, None)).unwrap();
+    let pattern = serde_json::json!({"frequency":[2,3,4],"low":[0.01,0.02,0.03],"high":[0.8,1,0.9],"bump":0.01,"warp":0.3,"octaves":3,"seed":71,"contrast":1.2});
+    let mut prior = None;
+    for (case, material) in [
+        ("plain", serde_json::json!({})),
+        ("noise", serde_json::json!({"pattern":pattern})),
+        (
+            "detail",
+            serde_json::json!({"pattern":pattern,"detail":{"plane":"xz","tint":[0.1,0.3,0.9],"opacity":1,"bump":0.02,"triplanar":{"sharpness":4},"segments":[{"start":[-1,-1],"end":[1,1],"widths":[0.5,0.5]}]}}),
+        ),
+        ("restored", serde_json::json!({})),
+    ] {
+        let mut doc = source.clone();
+        for a in &mut doc.assets {
+            a.material = serde_json::from_value(material.clone()).unwrap();
+            a.material.validate().unwrap();
+        }
+        frame.meshes.update(&doc, 0);
+        frame
+            .meshes
+            .apply_smooth_normals(
+                &normals
+                    .iter()
+                    .map(|n| n.clone().unwrap())
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap();
+        frame.meshes.apply_planet_coordinates(&coords).unwrap();
+        frame.meshes.apply_render_placements(&placements).unwrap();
+        let mut changed = false;
+        for (width, height, light) in [(640, 400, [0., -1., 0.]), (701, 439, [0.4, -0.6, 0.2])] {
+            frame.light.direction = light;
+            frame.camera.target = [if width == 640 { 0. } else { 0.01 }, 0., -1.];
+            gpu.set_geometry_indexing(false);
+            gpu.set_compact_vertices(false);
+            let expected = pixels(&gpu.capture(&frame, width, height).unwrap());
+            assert!(
+                expected
+                    .iter()
+                    .filter(|p| p.iter().any(|&c| c > 10))
+                    .count()
+                    > 1000,
+                "fixture must have visible material/lighting"
+            );
+            if width == 640 {
+                changed = prior.as_ref().is_some_and(|p| *p != expected);
+                prior = Some(expected.clone());
+            }
+            gpu.set_geometry_indexing(true);
+            gpu.set_compact_vertices(true);
+            for _ in 0..2 {
+                assert_eq!(
+                    expected,
+                    pixels(&gpu.capture(&frame, width, height).unwrap()),
+                    "layout/index raster changed in {case}/{width}"
+                );
+            }
+        }
+        if case != "plain" {
+            assert!(changed, "material change must be visible: {case}");
+        }
+    }
 }

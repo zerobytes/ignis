@@ -4,6 +4,7 @@ pub(super) struct Registry {
     lines: BTreeMap<Line, BTreeSet<i64>>,
     levels: BTreeMap<Key, u8>,
     max: u8,
+    n: u32,
 }
 fn line(a: Key, b: Key) -> Line {
     let axis = (0..3).find(|i| a[*i] != b[*i]).unwrap();
@@ -28,38 +29,39 @@ fn on_line(l: Line, v: i64) -> Key {
     }
     key
 }
-fn key(t: Tile, x: u32, y: u32, max: u8) -> Key {
+fn key(t: Tile, x: u32, y: u32, max: u8, n: u32) -> Key {
     let shift = max - t.level;
-    let denom = i64::from(N) << max;
+    let denom = i64::from(n) << max;
     t.face.key(
-        ((2 * (i64::from(t.xy[0]) * i64::from(N) + i64::from(x))) << shift) - denom,
-        ((2 * (i64::from(t.xy[1]) * i64::from(N) + i64::from(y))) << shift) - denom,
+        ((2 * (i64::from(t.xy[0]) * i64::from(n) + i64::from(x))) << shift) - denom,
+        ((2 * (i64::from(t.xy[1]) * i64::from(n) + i64::from(y))) << shift) - denom,
         denom,
     )
 }
-fn corners(t: Tile, max: u8) -> [Key; 4] {
+fn corners(t: Tile, max: u8, n: u32) -> [Key; 4] {
     [
-        key(t, 0, 0, max),
-        key(t, N, 0, max),
-        key(t, N, N, max),
-        key(t, 0, N, max),
+        key(t, 0, 0, max, n),
+        key(t, n, 0, max, n),
+        key(t, n, n, max, n),
+        key(t, 0, n, max, n),
     ]
 }
 impl Registry {
-    pub fn new(leaves: &BTreeSet<Tile>, max: u8) -> Self {
+    pub fn new(leaves: &BTreeSet<Tile>, max: u8, n: u32) -> Self {
         let mut r = Self {
             lines: Default::default(),
             levels: Default::default(),
             max,
+            n,
         };
         for &t in leaves {
-            let c = corners(t, max);
+            let c = corners(t, max, n);
             for e in 0..4 {
                 let a = c[e];
                 let b = c[(e + 1) % 4];
                 let l = line(a, b);
-                for n in 0..=N {
-                    let v = a[l.0] + (b[l.0] - a[l.0]) * i64::from(n) / i64::from(N);
+                for i in 0..=n {
+                    let v = a[l.0] + (b[l.0] - a[l.0]) * i64::from(i) / i64::from(n);
                     let k = on_line(l, v);
                     r.lines.entry(l).or_default().insert(v);
                     r.levels
@@ -85,7 +87,7 @@ impl Registry {
         points
     }
     pub fn signature(&self, t: Tile) -> Vec<(Key, u8)> {
-        let c = corners(t, self.max);
+        let c = corners(t, self.max, self.n);
         let mut out = vec![];
         for e in 0..4 {
             for p in self.between(c[e], c[(e + 1) % 4]) {
@@ -101,6 +103,7 @@ struct Builder<'a> {
     anchor: Anchor,
     unit: f64,
     max: u8,
+    n: u32,
     positions: Vec<[f32; 3]>,
     normals: Vec<[f32; 3]>,
     coordinates: Vec<[f32; 3]>,
@@ -124,7 +127,7 @@ impl Builder<'_> {
         let step = if level == self.max {
             finest
         } else {
-            finest.max(self.doc.radius() / (f64::from(N) * (1u64 << level) as f64))
+            finest.max(self.doc.radius() / (f64::from(self.n) * (1u64 << level) as f64))
         };
         let normal = normal(&self.sampler, self.doc.radius(), d, step);
         let index = self.positions.len() as u32;
@@ -157,7 +160,8 @@ pub(super) fn resource(
 ) -> Result<Resource> {
     // Bound the seven height evaluations per vertex before allocating/cooking.
     // A fine boundary may add many vertices to an otherwise coarse cell.
-    doc.budget((((N + 1) * (N + 1)) as usize + k.signature.len()) * 7)?;
+    let n = k.grid;
+    doc.budget((((n + 1) * (n + 1)) as usize + k.signature.len()) * 7)?;
     let t = k.tile;
     let direction = t.direction([0.5, 0.5]);
     let sampler = Sampler::new(doc)?;
@@ -183,6 +187,7 @@ pub(super) fn resource(
         anchor,
         unit,
         max,
+        n,
         positions: vec![],
         normals: vec![],
         coordinates: vec![],
@@ -190,23 +195,23 @@ pub(super) fn resource(
         indices: Default::default(),
         cast_error: 0.,
     };
-    let mut triangles = Vec::with_capacity((N * N * 2) as usize);
+    let mut triangles = Vec::with_capacity((n * n * 2) as usize);
     let mut polygon = Vec::with_capacity(8);
     let mut vertices = Vec::with_capacity(8);
-    for y in 0..N {
-        for x in 0..N {
+    for y in 0..n {
+        for x in 0..n {
             let c = [
-                key(t, x, y, max),
-                key(t, x + 1, y, max),
-                key(t, x + 1, y + 1, max),
-                key(t, x, y + 1, max),
+                key(t, x, y, max, n),
+                key(t, x + 1, y, max, n),
+                key(t, x + 1, y + 1, max, n),
+                key(t, x, y + 1, max, n),
             ];
             polygon.clear();
             for e in 0..4 {
                 let boundary = match e {
                     0 => y == 0,
-                    1 => x + 1 == N,
-                    2 => y + 1 == N,
+                    1 => x + 1 == n,
+                    2 => y + 1 == n,
                     _ => x == 0,
                 };
                 if boundary {
@@ -271,16 +276,15 @@ pub(super) fn resource(
             clips: vec![],
         },
         normals: Arc::new(b.normals),
-        anchor,
-        unit,
         cast_error: b.cast_error,
         bounds: global_bounds(doc, t),
-        error: error(doc, t, max) + b.cast_error * 2.,
+        radial_upper: doc.radius() + height_bounds(doc, t.cone().0, t.cone().1).1,
+        error: error(doc, t, max, n) + b.cast_error * 2.,
     })
 }
 pub(super) fn body(
     doc: &Document,
-    anchor: Anchor,
+    _anchor: Anchor,
     size: [f32; 3],
     _color: [f32; 3],
 ) -> Result<Resource> {
@@ -338,10 +342,174 @@ pub(super) fn body(
             clips: vec![],
         },
         normals: Arc::new(n),
-        anchor,
-        unit: 1.,
         cast_error: 0.,
         bounds: [DVec3::ZERO; 8],
+        radial_upper: 0.,
         error: 0.,
+    })
+}
+
+pub(super) struct Grouped {
+    pub built: u64,
+    pub assets: Vec<Asset>,
+    pub coordinates: Vec<Option<Arc<Vec<crate::meshes::SplitPosition>>>>,
+    pub normals: Vec<Arc<Vec<[f32; 3]>>>,
+    pub groups: Vec<Group>,
+}
+/// Submission-only aggregation, preserving triangle order and every consumed
+/// attribute. Local positions remain per-piece validation proxies; the explicit
+/// common high/low stream is the sole planetary raster/bounds coordinate system.
+/// Detail projection still depends on local proxy geometry: keep it ungrouped.
+pub(super) fn groups(
+    resources: &BTreeMap<ResourceKey, Arc<Resource>>,
+    requested: usize,
+    body: &Resource,
+    previous: &Atlas,
+    anchor: Anchor,
+    view: &View,
+) -> Result<Grouped> {
+    let old: BTreeMap<_, _> = previous
+        .groups
+        .iter()
+        .enumerate()
+        .map(|(i, g)| (Arc::as_ptr(&g.members[0]) as usize, i))
+        .collect();
+    let mut out = Grouped {
+        built: 0,
+        assets: vec![],
+        coordinates: vec![],
+        normals: vec![],
+        groups: vec![],
+    };
+    let entries: Vec<_> = resources.iter().collect();
+    let mut offset = 0;
+    while offset < entries.len() {
+        let first = entries[offset];
+        let mut end = offset + 1;
+        if first.1.asset.material.detail.is_none()
+            && interior(first.1, anchor, view, &previous.settings)
+        {
+            while end < entries.len()
+                && end - offset < requested
+                && entries[end].0.tile.face == first.0.tile.face
+                && entries[end].0.tile.level == first.0.tile.level
+                && entries[end].0.tile.xy[0].abs_diff(first.0.tile.xy[0]) <= 1
+                && entries[end].0.tile.xy[1].abs_diff(first.0.tile.xy[1]) <= 7
+                && entries[end].1.asset.material == first.1.asset.material
+                && interior(entries[end].1, anchor, view, &previous.settings)
+            {
+                end += 1;
+            }
+        }
+        let chunk = &entries[offset..end];
+        let mut asset = first.1.asset.clone();
+        let mut lo = DVec3::splat(f64::INFINITY);
+        let mut hi = DVec3::splat(f64::NEG_INFINITY);
+        for (_, r) in chunk {
+            for p in r.bounds {
+                lo = lo.min(p);
+                hi = hi.max(p);
+            }
+        }
+        let bounds = std::array::from_fn(|i| {
+            DVec3::new(
+                if i & 1 == 0 { lo.x } else { hi.x },
+                if i & 2 == 0 { lo.y } else { hi.y },
+                if i & 4 == 0 { lo.z } else { hi.z },
+            )
+        });
+        let retained = old
+            .get(&(Arc::as_ptr(first.1) as usize))
+            .copied()
+            .filter(|&i| {
+                let g = &previous.groups[i];
+                g.members.len() == chunk.len()
+                    && g.members
+                        .iter()
+                        .zip(chunk)
+                        .all(|(a, (_, b))| Arc::ptr_eq(a, b))
+            });
+        out.groups.push(Group {
+            members: chunk.iter().map(|(_, r)| Arc::clone(r)).collect(),
+            envelope: crate::atmosphere::transport::Envelope {
+                corners: bounds,
+                radius_upper: chunk.iter().map(|(_, r)| r.radial_upper).fold(0., f64::max),
+            },
+            material: asset.material.clone(),
+        });
+        if let Some(i) = retained {
+            asset.geometry = previous.meshes.assets[i].geometry.clone();
+            out.coordinates.push(previous.coordinates[i].clone());
+            out.normals.push(previous.normals[i].clone());
+        } else if chunk.len() == 1 {
+            out.coordinates.push(first.1.coordinates.clone());
+            out.normals.push(first.1.normals.clone());
+        } else {
+            out.built += 1;
+            let nv = chunk
+                .iter()
+                .map(|(_, r)| r.asset.geometry.positions.len())
+                .sum();
+            let nt = chunk
+                .iter()
+                .map(|(_, r)| r.asset.geometry.triangles.len())
+                .sum();
+            let mut positions = Vec::with_capacity(nv);
+            let mut triangles = Vec::with_capacity(nt);
+            let mut rest = Vec::with_capacity(nv);
+            let mut normals = Vec::with_capacity(nv);
+            let mut split = Vec::with_capacity(nv);
+            for (_, r) in chunk {
+                let g = &r.asset.geometry;
+                let start = positions.len() as u32;
+                positions.extend_from_slice(&g.positions);
+                triangles.extend(g.triangles.iter().map(|t| t.map(|i| i + start)));
+                rest.extend_from_slice(
+                    g.material_coordinates
+                        .as_ref()
+                        .expect("canonical terrain domain"),
+                );
+                normals.extend_from_slice(&r.normals);
+                split.extend_from_slice(
+                    r.coordinates
+                        .as_ref()
+                        .expect("canonical terrain coordinates"),
+                );
+            }
+            let geometry = Geometry {
+                positions,
+                triangles,
+                material_coordinates: Some(rest),
+            };
+            geometry.validate()?;
+            asset.geometry = Arc::new(geometry);
+            out.coordinates.push(Some(Arc::new(split)));
+            out.normals.push(Arc::new(normals));
+        }
+        out.assets.push(asset);
+        offset = end;
+    }
+    out.assets.push(body.asset.clone());
+    out.coordinates.push(None);
+    out.normals.push(body.normals.clone());
+    Ok(out)
+}
+
+// A group is admitted only well inside the current frustum. Boundary/outside
+// tiles retain individual culling, avoiding the extra triangles of a loose union.
+// The margin also covers the small look/motion window before the next replan.
+fn interior(resource: &Resource, anchor: Anchor, view: &View, settings: &Settings) -> bool {
+    let transform = view.basis.transpose() * anchor.basis.transpose();
+    let offset = view.basis.transpose()
+        * (-DVec3::Y * (anchor.radius + anchor.pose.altitude_meters) - view.eye);
+    let tan = (settings.fov_degrees.to_radians() * 0.5).tan();
+    let aspect = f64::from(settings.viewport[0]) / f64::from(settings.viewport[1]);
+    resource.bounds.iter().all(|p| {
+        let p = transform * *p + offset;
+        let margin = 64. + settings.distance_meters * 0.02 + p.length() * 0.02;
+        p.z < -f64::from(view.clip.near) - margin
+            && p.z > -f64::from(view.clip.far) + margin
+            && p.x.abs() < -p.z * tan * aspect - margin
+            && p.y.abs() < -p.z * tan - margin
     })
 }

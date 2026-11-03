@@ -180,6 +180,40 @@ fn index_stride(vertices: usize) -> usize {
     if vertices <= u16::MAX as usize { 2 } else { 4 }
 }
 
+/// Canonical smooth planetary vertices already have a source index topology.
+/// Consume it directly: do not expand all corners and hash them back together.
+pub(crate) fn source_indexed(
+    device: &wgpu::Device,
+    vertices: &[u8],
+    triangles: &[[u32; 3]],
+    vertex_count: usize,
+) -> Page {
+    let narrow: Vec<u16>;
+    let (indices, format) = if vertex_count <= 65536 {
+        narrow = triangles.iter().flatten().map(|&i| i as u16).collect();
+        (bytemuck::cast_slice(&narrow), wgpu::IndexFormat::Uint16)
+    } else {
+        (bytemuck::cast_slice(triangles), wgpu::IndexFormat::Uint32)
+    };
+    Page {
+        vertices: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("canonical planetary vertices"),
+            contents: vertices,
+            usage: wgpu::BufferUsages::VERTEX,
+        }),
+        indices: Some(Index {
+            buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("canonical planetary indices"),
+                contents: indices,
+                usage: wgpu::BufferUsages::INDEX,
+            }),
+            format,
+        }),
+        count: (triangles.len() * 3) as u32,
+        vertex_count,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::partition;

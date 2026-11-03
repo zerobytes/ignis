@@ -39,6 +39,14 @@ struct PlanetVertex {
     rest: [f32; 3],
     weights: [f32; 3],
 }
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct PlanetCompactVertex {
+    high: [f32; 3],
+    normal: [f32; 3],
+    low: [f32; 3],
+    rest: [f32; 3],
+}
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Key {
     source: usize,
@@ -64,6 +72,7 @@ struct Geometry {
     _source: Arc<crate::meshes::Geometry>,
     _planet: Option<Arc<Vec<crate::meshes::SplitPosition>>>,
     planet: bool,
+    planet_compact: bool,
     _normals: Option<Arc<Vec<[f32; 3]>>>,
     _atmosphere: Option<Arc<Vec<u8>>>,
     _lod: Option<Arc<crate::mesh_lods::Pack>>,
@@ -157,6 +166,7 @@ pub(crate) struct Gpu {
     full: wgpu::RenderPipeline,
     full_reverse: [wgpu::RenderPipeline; 3],
     planet: wgpu::RenderPipeline,
+    planet_compact: wgpu::RenderPipeline,
     reverse_z: bool,
     full_compact: wgpu::RenderPipeline,
     full_minimal: wgpu::RenderPipeline,
@@ -220,7 +230,11 @@ impl Gpu {
                 vertex: wgpu::VertexState {
                     module: shader,
                     entry_point: Some(if planet {
-                        "vs_shared_planet"
+                        if compact {
+                            "vs_shared_planet_compact"
+                        } else {
+                            "vs_shared_planet"
+                        }
                     } else if shadow {
                         if minimal {
                             "vs_shared_shadow_minimal"
@@ -242,7 +256,7 @@ impl Gpu {
                     buffers: &[
                         wgpu::VertexBufferLayout {
                             array_stride: if planet {
-                                60
+                                if compact { 48 } else { 60 }
                             } else if cheap {
                                 12
                             } else if minimal {
@@ -254,7 +268,11 @@ impl Gpu {
                             },
                             step_mode: wgpu::VertexStepMode::Vertex,
                             attributes: if planet {
-                                &planet_attrs
+                                if compact {
+                                    &planet_attrs[..4]
+                                } else {
+                                    &planet_attrs
+                                }
                             } else if cheap {
                                 &attrs[..1]
                             } else if minimal {
@@ -403,6 +421,7 @@ impl Gpu {
                 pipeline(false, false, true, true, false, true, false),
             ],
             planet: pipeline(false, false, false, false, false, true, true),
+            planet_compact: pipeline(false, false, true, false, false, true, true),
             reverse_z: false,
             full_compact: pipeline(false, false, true, false, false, false, false),
             full_minimal: pipeline(false, false, true, true, false, false, false),
@@ -626,22 +645,25 @@ impl Gpu {
             // A material-only edit can leave all vertex bytes unchanged.
             // Re-evaluate this policy independently of geometry invalidation.
             let material = &frame.meshes.source.assets[draw.asset].material;
-            // Promoting unique surfaces must not also introduce indexed raster
-            // interpolation: a curved floor exposed RGB8=10 differences on Metal.
-            // Keep their original corner stream. Repeated assets retain the
-            // existing indexing policy; constant atmospheric fills can index.
-            let indexed = self.indexing
-                && (color.is_some()
-                    || (draw.repeated
-                        && material.pattern.is_none()
-                        && material.secondary_pattern.is_none()
-                        && material.detail.is_none()
-                        && !material.has_coverage()));
+            // Planet tuples use the global high/low coordinate pipeline and have
+            // a separate exact raster oracle. Keep the legacy unique-surface
+            // corner policy: that pipeline exposed indexed interpolation drift.
             let planet = frame
                 .meshes
                 .planet_coordinates
                 .get(draw.asset)
                 .and_then(|p| p.as_ref());
+            let planet_compact =
+                planet.is_some() && self.compact_vertices && material.detail.is_none();
+            let indexed = self.indexing
+                && ((planet.is_some() && material.detail.is_none() && !material.has_coverage())
+                    || color.is_some()
+                    || (draw.repeated
+                        && material.pattern.is_none()
+                        && material.secondary_pattern.is_none()
+                        && material.detail.is_none()
+                        && !material.has_coverage()));
+
             let minimal_material = self.minimal_vertices
                 // Finite planet optics also consumes the canonical radial domain,
                 // even when the authored material has no procedural channels.
@@ -686,7 +708,7 @@ impl Gpu {
                     0
                 },
                 layout: if planet.is_some() {
-                    4
+                    if planet_compact { 5 } else { 4 }
                 } else if color.is_some() {
                     0
                 } else if !self.compact_vertices {
@@ -750,7 +772,25 @@ impl Gpu {
                         .iter()
                         .all(|v| v.color == [1.; 3] && v.material as usize == draw.asset + 1);
                 let minimal = compact && minimal_material;
+                let direct_planet = asset.geometry.positions.len() * 48
+                    + asset.geometry.triangles.len() * 6
+                    < source_vertices.len() * 48
+                    && planet_compact
+                    && indexed
+                    && representations.normals.is_some()
+                    && asset.geometry.positions.len() * 48
+                        <= device.limits().max_buffer_size as usize
+                    && (asset.geometry.triangles.len()
+                        * 3
+                        * if asset.geometry.positions.len() <= 65536 {
+                            2
+                        } else {
+                            4
+                        })
+                    .next_multiple_of(4)
+                        <= device.limits().max_buffer_size as usize;
                 let planet_data: Vec<PlanetVertex>;
+                let planet_compact_data: Vec<PlanetCompactVertex>;
                 let minimal_data: Vec<MinimalVertex>;
                 let compact_data: Vec<CompactVertex>;
                 let bytes = if let Some(p) = planet {
@@ -758,21 +798,56 @@ impl Gpu {
                         source_vertices.len() == asset.geometry.triangles.len() * 3,
                         "Planet payload requires the full canonical triangle stream"
                     );
-                    planet_data = source_vertices
-                        .iter()
-                        .zip(asset.geometry.triangles.iter().flatten())
-                        .map(|(v, &i)| {
-                            let c = p[i as usize];
-                            PlanetVertex {
+                    if direct_planet {
+                        let normals = representations.normals.as_ref().unwrap();
+                        let rest = asset
+                            .geometry
+                            .material_coordinates
+                            .as_ref()
+                            .unwrap_or(&asset.geometry.positions);
+                        planet_compact_data = p
+                            .iter()
+                            .enumerate()
+                            .map(|(i, c)| PlanetCompactVertex {
                                 high: c.high,
-                                normal: v.normal,
                                 low: c.low,
-                                rest: v.rest_position,
-                                weights: v.material_projection_weights,
-                            }
-                        })
-                        .collect();
-                    bytemuck::cast_slice(&planet_data)
+                                normal: normals[i],
+                                rest: rest[i],
+                            })
+                            .collect();
+                        bytemuck::cast_slice(&planet_compact_data)
+                    } else if planet_compact {
+                        planet_compact_data = source_vertices
+                            .iter()
+                            .zip(asset.geometry.triangles.iter().flatten())
+                            .map(|(v, &i)| {
+                                let c = p[i as usize];
+                                PlanetCompactVertex {
+                                    high: c.high,
+                                    normal: v.normal,
+                                    low: c.low,
+                                    rest: v.rest_position,
+                                }
+                            })
+                            .collect();
+                        bytemuck::cast_slice(&planet_compact_data)
+                    } else {
+                        planet_data = source_vertices
+                            .iter()
+                            .zip(asset.geometry.triangles.iter().flatten())
+                            .map(|(v, &i)| {
+                                let c = p[i as usize];
+                                PlanetVertex {
+                                    high: c.high,
+                                    normal: v.normal,
+                                    low: c.low,
+                                    rest: v.rest_position,
+                                    weights: v.material_projection_weights,
+                                }
+                            })
+                            .collect();
+                        bytemuck::cast_slice(&planet_data)
+                    }
                 } else if color.is_some() {
                     if let Some(level) = level {
                         let level = selected.level(draw.asset, level);
@@ -813,7 +888,7 @@ impl Gpu {
                     bytemuck::cast_slice(source_vertices)
                 };
                 let stride = if planet.is_some() {
-                    60
+                    if planet_compact { 48 } else { 60 }
                 } else if color.is_some() {
                     12
                 } else if minimal {
@@ -831,8 +906,19 @@ impl Gpu {
                 // discrepancy on Metal with indexing. Retain their stream until
                 // interpolation/derivative stability is demonstrated; atmospheric
                 // substitution no longer evaluates that material.
-                let pages = if planet.is_some() {
-                    crate::render_geometry::upload::<15>(device, bytes, false)
+                let pages = if direct_planet {
+                    vec![crate::render_geometry::source_indexed(
+                        device,
+                        bytes,
+                        &asset.geometry.triangles,
+                        asset.geometry.positions.len(),
+                    )]
+                } else if planet.is_some() {
+                    if planet_compact {
+                        crate::render_geometry::upload::<12>(device, bytes, indexed)
+                    } else {
+                        crate::render_geometry::upload::<15>(device, bytes, indexed)
+                    }
                 } else if let Some(indices) = compiled_indices {
                     vec![crate::render_geometry::compiled(
                         device,
@@ -858,6 +944,7 @@ impl Gpu {
                 entry.insert(Geometry {
                     _planet: representations.planet.clone(),
                     planet: planet.is_some(),
+                    planet_compact,
                     _source: asset.geometry.clone(),
                     _normals: representations.normals.clone(),
                     _atmosphere: if key.cheap && key.level.is_some() {
@@ -873,7 +960,11 @@ impl Gpu {
                     pages,
                     bytes: allocated_bytes,
                     index_bytes,
-                    triangles: compiled_indices.map_or(bytes.len() / stride / 3, |i| i.len()),
+                    triangles: if direct_planet {
+                        asset.geometry.triangles.len()
+                    } else {
+                        compiled_indices.map_or(bytes.len() / stride / 3, |i| i.len())
+                    },
                     compact,
                     minimal,
                     indexing_allowed: indexed,
@@ -1302,7 +1393,11 @@ impl Gpu {
             let compact = self.geometry[&batch.key].compact;
             let minimal = self.geometry[&batch.key].minimal;
             pass.set_pipeline(if self.geometry[&batch.key].planet && !shadow {
-                &self.planet
+                if self.geometry[&batch.key].planet_compact {
+                    &self.planet_compact
+                } else {
+                    &self.planet
+                }
             } else if !shadow && !transparent && self.reverse_z {
                 &self.full_reverse[if minimal {
                     2

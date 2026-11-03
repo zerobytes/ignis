@@ -542,9 +542,12 @@ fn planet_terrain_air(surface:vec3<f32>,world:vec3<f32>,rest:vec3<f32>)->vec3<f3
     let b=eye_radius*dot(globals.planet_radial.xyz,ray);
     let perpendicular=eye_radius*length(cross(globals.planet_radial.xyz,ray));
     let half=sqrt(max(0.0,radius*radius-perpendicular*perpendicular));
-    var hit=-b-half;
-    if hit<0.0 {hit=-b+half;}
-    let limit=min(distance,max(0.0,hit));
+    let near=-b-half;
+    let far=-b+half;
+    let hit=select(far,near,abs(near-distance)<=abs(far-distance));
+    // Root selection near tangency can amplify f32 error. Enforce the same
+    // displacement cap consumed by the CPU certificate; otherwise keep the mesh.
+    let limit=select(distance,hit,hit>=0.0 && abs(hit-distance)<=globals.planet_eye_high.w);
     let transmission=exp(-planet_air_path(ray,limit)*globals.planet_optics.w);
     return mix(atmosphere_color(ray),surface,transmission);
 }
@@ -679,8 +682,7 @@ struct OcclusionOut {
 
 // All tiles share the same split geocentric coordinates and observer constants.
 // Subtract before rescaling: close border vertices reconstruct bit-identically.
-@vertex fn vs_shared_planet(@location(0) high:vec3<f32>,@location(1) normal:vec3<f32>,
-    @location(3) low:vec3<f32>,@location(5) rest:vec3<f32>,@location(12) weights:vec3<f32>,i:StaticInstance)->VertexOut {
+fn planet_vertex(high:vec3<f32>,normal:vec3<f32>,low:vec3<f32>,rest:vec3<f32>,weights:vec3<f32>,i:StaticInstance)->VertexOut {
     let axes=mat3x3<f32>(globals.planet_axis0.xyz,globals.planet_axis1.xyz,globals.planet_axis2.xyz);
     let delta=(high-globals.planet_eye_high.xyz)+(low-globals.planet_eye_low.xyz);
     var out:VertexOut;
@@ -689,4 +691,15 @@ struct OcclusionOut {
     out.normal=normalize(axes*normal);
     out.color=i.tint;out.rest=rest;out.material=i.material;out.material_projection_weights=weights;
     return out;
+}
+
+// No projection weights are fetched when the material has no detail channel.
+@vertex fn vs_shared_planet_compact(@location(0) high:vec3<f32>,@location(1) normal:vec3<f32>,
+    @location(3) low:vec3<f32>,@location(5) rest:vec3<f32>,i:StaticInstance)->VertexOut {
+    return planet_vertex(high,normal,low,rest,vec3<f32>(0.0),i);
+}
+
+@vertex fn vs_shared_planet(@location(0) high:vec3<f32>,@location(1) normal:vec3<f32>,
+    @location(3) low:vec3<f32>,@location(5) rest:vec3<f32>,@location(12) weights:vec3<f32>,i:StaticInstance)->VertexOut {
+    return planet_vertex(high,normal,low,rest,weights,i);
 }

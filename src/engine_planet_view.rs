@@ -1,6 +1,6 @@
 //! Session camera/visuals only: no actor, scene, replay or physics mutations.
 use super::*;
-use crate::planet::orbit::{Atlas, Settings};
+use crate::planet::orbit::{ActorView, Atlas, Settings};
 impl Engine {
     pub fn inspect_planet_view(&self) -> Value {
         self.planet_view
@@ -86,7 +86,12 @@ impl Engine {
             .as_ref()
             .ok_or_else(|| invalid("Planet runtime required"))?;
         let eye = f64::from(self.player_view.as_ref().unwrap().config.eye_height);
-        if let Some(view) = &mut self.planet_view {
+        if let Some(view) = &mut self
+            .planet_view
+            .as_mut()
+            .filter(|v| v.settings.tile_subdivisions == settings.tile_subdivisions)
+        {
+            view.set_light(&self.scene.light);
             let old = std::mem::replace(&mut view.settings, settings);
             if let Err(e) = view.update(
                 &world.config.document,
@@ -104,9 +109,12 @@ impl Engine {
                 &world.config,
                 settings,
                 world.anchor,
-                entity.transform.size,
-                entity.color,
-                eye,
+                ActorView {
+                    size: entity.transform.size,
+                    color: entity.color,
+                    eye,
+                },
+                &self.scene.light,
                 fraction,
             )?);
         }
@@ -118,6 +126,10 @@ impl Engine {
             let fraction = self.planet_camera_fraction(&settings)?;
             let world = self.simulation.planet.as_ref().expect("planet view source");
             let eye = f64::from(self.player_view.as_ref().unwrap().config.eye_height);
+            self.planet_view
+                .as_mut()
+                .unwrap()
+                .set_light(&self.scene.light);
             self.planet_view.as_mut().unwrap().update(
                 &world.config.document,
                 &world.config,

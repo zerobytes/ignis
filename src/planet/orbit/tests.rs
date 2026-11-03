@@ -75,7 +75,19 @@ fn engine() -> Engine {
     e
 }
 fn atlas(c: &super::super::runtime::Config, s: Settings) -> Atlas {
-    Atlas::new(c, s, anchor(c), [0.6, 1.8, 0.6], [0.8, 0.6, 0.1], 1.62, 1.).unwrap()
+    Atlas::new(
+        c,
+        s,
+        anchor(c),
+        ActorView {
+            size: [0.6, 1.8, 0.6],
+            color: [0.8, 0.6, 0.1],
+            eye: 1.62,
+        },
+        &RoomRecipe::default().generate().unwrap().light,
+        1.,
+    )
+    .unwrap()
 }
 
 #[test]
@@ -105,12 +117,13 @@ fn planet_orbit_conforming_closed_surface_across_levels_and_cube_corners() {
         leaves.extend(t.children());
         t = t.children()[3];
     }
-    let registry = topology::Registry::new(&leaves, 3);
+    let registry = topology::Registry::new(&leaves, 3, N);
     let mut edges: BTreeMap<(Key, Key), (usize, i32)> = BTreeMap::new();
     let mut seen: BTreeMap<Key, (crate::meshes::SplitPosition, DVec3)> = BTreeMap::new();
     for tile in leaves {
         let k = ResourceKey {
             tile,
+            grid: N,
             signature: registry.signature(tile),
         };
         let r = topology::resource(&c.document, &c, &k, &registry, 3).unwrap();
@@ -182,7 +195,7 @@ fn planet_orbit_clip_and_basis_are_finite_at_surface_globe_and_astronomical_zoom
                 1.62,
                 c.document.radius() + 10.,
                 1.,
-                &Source::new(&c.document).unwrap(),
+                &Source::new(&c.document, N).unwrap(),
             )
             .unwrap();
             assert!((v.basis.determinant() - 1.).abs() < 1e-12);
@@ -405,4 +418,112 @@ fn planet_orbit_frame_fits_narrow_viewport_and_fov_without_moving_player() {
     let tangent = radius / (distance * distance - radius * radius).sqrt();
     assert!(tangent < 5f64.to_radians().tan() * (64. / 800.) * 0.9);
     assert_eq!(physics, e.inspect_planet_runtime());
+}
+
+#[test]
+fn planet_orbit_inherits_density_and_finite_material_choice_keeps_geometry() {
+    let mut c = config();
+    c.material=serde_json::from_value(serde_json::json!({"pattern":{"frequency":[1,1,1],"low":[0.01,0.01,0.01],"high":[0.02,0.02,0.02],"bump":0,"warp":0,"octaves":1,"seed":7,"contrast":1}})).unwrap();
+    let mut light = RoomRecipe::default().generate().unwrap().light;
+    light.direct_intensity = 4.;
+    light.atmosphere = Some(crate::atmosphere::Atmosphere {
+        density: 0.02,
+        sun_strength: 0.,
+        ..Default::default()
+    });
+    let mut a = Atlas::new(
+        &c,
+        Settings {
+            tile_subdivisions: 32,
+            max_tiles: 192,
+            ..Default::default()
+        },
+        anchor(&c),
+        ActorView {
+            size: [0.6, 1.8, 0.6],
+            color: [1.; 3],
+            eye: 1.62,
+        },
+        &light,
+        1.,
+    )
+    .unwrap();
+    assert_eq!(a.optical_depth(), f64::from(0.02f32) * 8000.);
+    assert!(
+        a.cheap_materials > 0,
+        "fixture must exercise material substitution"
+    );
+    let geometry: Vec<_> = a.meshes.assets.iter().map(|a| a.geometry.clone()).collect();
+    a.settings.atmosphere_optimization = false;
+    a.update(&c.document, &c, anchor(&c), 1.62, 1.).unwrap();
+    assert_eq!(a.cheap_materials, 0);
+    for (old, new) in geometry.iter().zip(&a.meshes.assets) {
+        assert!(Arc::ptr_eq(old, &new.geometry));
+    }
+    light.atmosphere.as_mut().unwrap().density = 0.001;
+    a.set_light(&light);
+    assert_eq!(a.optical_depth(), f64::from(0.001f32) * 8000.);
+    a.settings.atmosphere_optical_depth = Some(0.3);
+    assert_eq!(a.optical_depth(), 0.3);
+}
+
+#[test]
+fn planet_orbit_submission_groups_retain_unchanged_payloads() {
+    let c = config();
+    let a = atlas(
+        &c,
+        Settings {
+            max_tiles: 96,
+            ..Default::default()
+        },
+    );
+    let repeated = topology::groups(&a.resources, 8, &a.body, &a, a.anchor, &a.view).unwrap();
+    assert_eq!(repeated.built, 0);
+    for (before, after) in a.meshes.assets.iter().zip(&repeated.assets) {
+        assert!(Arc::ptr_eq(&before.geometry, &after.geometry));
+    }
+    let mut partial = a.resources.clone();
+    partial.pop_first();
+    let next = topology::groups(&partial, 8, &a.body, &a, a.anchor, &a.view).unwrap();
+    let retained = next
+        .assets
+        .iter()
+        .filter(|after| {
+            a.meshes
+                .assets
+                .iter()
+                .any(|before| Arc::ptr_eq(&before.geometry, &after.geometry))
+        })
+        .count();
+    assert!(retained > 1, "unaffected groups must retain their payloads");
+    assert_eq!(
+        next.assets
+            .iter()
+            .take(next.groups.len())
+            .map(|a| a.geometry.triangles.len())
+            .sum::<usize>(),
+        partial
+            .values()
+            .map(|r| r.asset.geometry.triangles.len())
+            .sum::<usize>()
+    );
+}
+
+#[test]
+fn planet_orbit_warm_gate_tracks_actual_collision_adjusted_eye() {
+    let c = config();
+    let mut a = atlas(
+        &c,
+        Settings {
+            distance_meters: 125.,
+            max_tiles: 48,
+            ..Default::default()
+        },
+    );
+    let plans = a.plans;
+    a.update(&c.document, &c, anchor(&c), 1.62, 0.5).unwrap();
+    assert!(
+        a.plans > plans,
+        "camera collision moved the eye without moving the actor or settings"
+    );
 }

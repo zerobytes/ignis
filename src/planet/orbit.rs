@@ -29,9 +29,14 @@ pub struct Settings {
     pub viewport: [u32; 2],
     pub max_error_pixels: f64,
     pub max_tiles: usize,
+    /// Sampling per tile; canonical physical grid resolution stays unchanged.
+    pub tile_subdivisions: u16,
+    pub atmosphere_optimization: bool,
+    /// GPU submission grouping, preserving source tiles and their sample grid.
+    pub render_group_size: usize,
     pub atmosphere_height_meters: f64,
     /// Vertical optical depth of a homogeneous shell, not scattering/cloud simulation.
-    pub atmosphere_optical_depth: f64,
+    pub atmosphere_optical_depth: Option<f64>,
     pub space_color: [f32; 3],
 }
 impl Default for Settings {
@@ -44,8 +49,11 @@ impl Default for Settings {
             viewport: [1280, 800],
             max_error_pixels: 8.,
             max_tiles: 768,
+            tile_subdivisions: N as u16,
+            atmosphere_optimization: true,
+            render_group_size: 8,
             atmosphere_height_meters: 8000.,
-            atmosphere_optical_depth: 0.3,
+            atmosphere_optical_depth: None,
             space_color: [0.001, 0.002, 0.004],
         }
     }
@@ -63,10 +71,13 @@ impl Settings {
             || !self.max_error_pixels.is_finite()
             || !(0.5..=64.).contains(&self.max_error_pixels)
             || !(6..=1536).contains(&self.max_tiles)
+            || ![32, 64].contains(&self.tile_subdivisions)
+            || ![1, 8].contains(&self.render_group_size)
             || !self.atmosphere_height_meters.is_finite()
             || !(1. ..=doc.radius()).contains(&self.atmosphere_height_meters)
-            || !self.atmosphere_optical_depth.is_finite()
-            || !(0. ..=8.).contains(&self.atmosphere_optical_depth)
+            || self
+                .atmosphere_optical_depth
+                .is_some_and(|v| !v.is_finite() || !(0. ..=8.).contains(&v))
             || self
                 .space_color
                 .iter()
@@ -91,15 +102,17 @@ impl Settings {
     }
 }
 struct Source {
+    grid: u32,
     operations: [super::Prepared; super::MAX_OPERATIONS],
     lower: f64,
     upper: f64,
 }
 impl Source {
-    fn new(doc: &Document) -> Result<Self> {
+    fn new(doc: &Document, grid: u32) -> Result<Self> {
         let sampler = Sampler::new(doc)?;
         let (lower, upper) = height_bounds(doc, DVec3::Y, std::f64::consts::PI);
         Ok(Self {
+            grid,
             operations: sampler.operations,
             lower,
             upper,
@@ -172,8 +185,8 @@ impl View {
         let (lowest, highest) = (source.lower, source.upper);
         // Even the coarsest allowed chordal mesh encloses this sphere. The
         // numerical guard covers f32 vertex/placement roundoff, not a distance cut.
-        let inner =
-            (doc.radius() + lowest) * (2. * 2f64.sqrt() / f64::from(N)).cos() - doc.radius() * 1e-5;
+        let inner = (doc.radius() + lowest) * (2. * 2f64.sqrt() / f64::from(source.grid)).cos()
+            - doc.radius() * 1e-5;
         let horizon = if distance > inner {
             Some((
                 unit,
@@ -256,11 +269,11 @@ pub(crate) fn height_bounds(doc: &Document, unit: DVec3, angle: f64) -> (f64, f6
     }
     (lo, hi)
 }
-fn error(doc: &Document, tile: Tile, max_level: u8) -> f64 {
+fn error(doc: &Document, tile: Tile, max_level: u8, n: u32) -> f64 {
     if tile.level == max_level {
         return 0.;
     } // Canonical full-resolution grid of the physical source.
-    let angle = 2. * 2f64.sqrt() / (f64::from(N) * (1u64 << tile.level) as f64);
+    let angle = 2. * 2f64.sqrt() / (f64::from(n) * (1u64 << tile.level) as f64);
     let diagonal = angle * doc.radius();
     let (c, cone) = tile.cone();
     let mut residual = 0.;
@@ -358,7 +371,13 @@ fn projected(doc: &Document, t: Tile, max: u8, anchor: Anchor, view: &View, s: &
     if hidden(t, view) {
         return 0.;
     }
-    projected_bounds(&global_bounds(doc, t), error(doc, t, max), anchor, view, s)
+    projected_bounds(
+        &global_bounds(doc, t),
+        error(doc, t, max, grid_side(s, max)),
+        anchor,
+        view,
+        s,
+    )
 }
 fn hidden(t: Tile, v: &View) -> bool {
     let Some((eye, angle)) = v.horizon else {
@@ -401,9 +420,18 @@ fn projected_bounds(
     let corner_sec_squared = 1. + tan * tan * (1. + aspect * aspect);
     error * f64::from(s.viewport[1]) * corner_sec_squared / (2. * tan * nearest)
 }
+fn grid_side(s: &Settings, _max: u8) -> u32 {
+    u32::from(s.tile_subdivisions)
+}
+pub(crate) struct ActorView {
+    pub size: [f32; 3],
+    pub color: [f32; 3],
+    pub eye: f64,
+}
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct ResourceKey {
     tile: Tile,
+    grid: u32,
     signature: Vec<(Key, u8)>,
 }
 #[derive(Clone, Copy)]
@@ -433,14 +461,23 @@ struct Resource {
     keys: Vec<Key>,
     asset: Asset,
     normals: Arc<Vec<[f32; 3]>>,
-    anchor: Anchor,
-    unit: f64,
     cast_error: f64,
     bounds: [DVec3; 8],
+    radial_upper: f64,
     error: f64,
 }
+struct Group {
+    members: Vec<Arc<Resource>>,
+    envelope: crate::atmosphere::transport::Envelope,
+    material: crate::materials::Material,
+}
 pub(crate) struct Atlas {
+    groups: Vec<Group>,
     source: Source,
+    scene_air: crate::atmosphere::Atmosphere,
+    light: crate::model::Light,
+    cheap_materials: usize,
+    group_builds: u64,
     coordinates: Vec<Option<Arc<Vec<crate::meshes::SplitPosition>>>>,
     pub settings: Settings,
     pub meshes: crate::meshes::Document,
@@ -460,6 +497,7 @@ pub(crate) struct Atlas {
     body_color: [f32; 3],
     show_body: bool,
     planned_anchor: Anchor,
+    planned_eye: DVec3,
     planned_settings: Settings,
 }
 impl Atlas {
@@ -467,11 +505,15 @@ impl Atlas {
         config: &super::runtime::Config,
         settings: Settings,
         anchor: Anchor,
-        size: [f32; 3],
-        color: [f32; 3],
-        eye: f64,
+        actor: ActorView,
+        light: &crate::model::Light,
         fraction: f64,
     ) -> Result<Self> {
+        let ActorView { size, color, eye } = actor;
+        let scene_air = light.atmosphere.unwrap_or(crate::atmosphere::Atmosphere {
+            density: 0.,
+            ..Default::default()
+        });
         if !config.material.opaque_occluder() {
             return Err(invalid(
                 "Planet global coverage requires opaque terrain; transparent terrain is not a closed world surface",
@@ -479,7 +521,11 @@ impl Atlas {
         }
         let doc = &config.document;
         settings.validate(doc)?;
-        let source = Source::new(doc)?;
+        let effective = u32::from(config.level) + config.subdivisions.ilog2();
+        let grid = u32::from(settings.tile_subdivisions).min(1 << effective.min(6));
+        let mut settings = settings;
+        settings.tile_subdivisions = grid as u16;
+        let source = Source::new(doc, grid)?;
         let half = f64::from(size[1]) * 0.5;
         let h = source.upper;
         let outer = (doc.radius() + h)
@@ -488,9 +534,15 @@ impl Atlas {
         let body = Arc::new(topology::body(doc, anchor, size, color)?);
         let mut a = Self {
             source,
+            groups: vec![],
+            scene_air,
+            light: light.clone(),
+            cheap_materials: 0,
+            group_builds: 0,
             coordinates: vec![],
             planned_settings: settings.clone(),
             planned_anchor: anchor,
+            planned_eye: observer(anchor, &view),
             settings,
             meshes: Default::default(),
             normals: vec![],
@@ -504,7 +556,7 @@ impl Atlas {
             plans: 0,
             retired: 0,
             max_level: (u32::from(config.level) + config.subdivisions.ilog2())
-                .saturating_sub(N.ilog2()) as u8,
+                .saturating_sub(grid.ilog2()) as u8,
             body,
             half,
             body_color: color,
@@ -536,7 +588,10 @@ impl Atlas {
         let show_body = (view.eye - DVec3::Y * eye).length() > 0.65;
         // Ordinary motion/looking changes placement only; amortize the expensive
         // source bake. Still recompute the exposed error bound for the current eye.
-        let movement = anchor.origin_in(self.planned_anchor).length();
+        let movement = anchor
+            .origin_in(self.planned_anchor)
+            .length()
+            .max((observer(anchor, &view) - self.planned_eye).length());
         let mut threshold_settings = self.settings.clone();
         threshold_settings.distance_meters = self.planned_settings.distance_meters;
         threshold_settings.yaw_degrees = self.planned_settings.yaw_degrees;
@@ -563,6 +618,7 @@ impl Atlas {
                 .map(|(_, r)| projected_bounds(&r.bounds, r.error, anchor, &view, &self.settings))
                 .fold(0., f64::max);
             self.limited = self.maximum_error > self.settings.max_error_pixels;
+            self.update_materials(config, anchor, &view);
             self.update_placements(anchor, &view);
             self.view = view;
             self.anchor = anchor;
@@ -585,7 +641,7 @@ impl Atlas {
         }
         while let Some(Priority { tile, error }) = queue.pop() {
             if error <= self.settings.max_error_pixels * 0.8
-                || leaves.len() + 3 > self.settings.max_tiles
+                || leaves.len() + 3 > self.tile_budget()
             {
                 break;
             }
@@ -605,13 +661,14 @@ impl Atlas {
             .iter()
             .map(|t| projected(doc, *t, self.max_level, anchor, &view, &self.settings))
             .fold(0., f64::max);
-        let registry = topology::Registry::new(&leaves, self.max_level);
+        let registry = topology::Registry::new(&leaves, self.max_level, self.source.grid);
         let mut staged = BTreeMap::new();
         let mut born = 0;
         let mut count = 0;
         for tile in leaves {
             let key = ResourceKey {
                 tile,
+                grid: self.source.grid,
                 signature: registry.signature(tile),
             };
             let resource = if let Some(r) = self.resources.get(&key) {
@@ -639,28 +696,27 @@ impl Atlas {
                 .keys()
                 .zip(self.resources.keys())
                 .any(|(a, b)| a != b)
-            || show_body != self.show_body;
+            || show_body != self.show_body
+            || self.planned_settings.render_group_size != self.settings.render_group_size;
         let retired = self
             .resources
             .keys()
             .filter(|k| !staged.contains_key(*k))
             .count() as u64;
         if changed {
-            self.coordinates = staged
-                .values()
-                .map(|r| r.coordinates.clone())
-                .chain(std::iter::once(None))
-                .collect();
-            self.meshes.assets = staged
-                .values()
-                .map(|r| r.asset.clone())
-                .chain(std::iter::once(self.body.asset.clone()))
-                .collect();
-            self.normals = staged
-                .values()
-                .map(|r| r.normals.clone())
-                .chain(std::iter::once(self.body.normals.clone()))
-                .collect();
+            let grouped = topology::groups(
+                &staged,
+                self.settings.render_group_size,
+                &self.body,
+                self,
+                anchor,
+                &view,
+            )?;
+            self.group_builds += grouped.built;
+            self.meshes.assets = grouped.assets;
+            self.coordinates = grouped.coordinates;
+            self.normals = grouped.normals;
+            self.groups = grouped.groups;
             self.meshes.instances = self
                 .meshes
                 .assets
@@ -685,6 +741,7 @@ impl Atlas {
         // A render-only matrix bypasses no authoring validation: authored instances stay identity.
         self.show_body = show_body;
         self.planned_anchor = anchor;
+        self.planned_eye = observer(anchor, &view);
         self.planned_settings = self.settings.clone();
         self.show_body = show_body;
         self.resources = staged;
@@ -700,13 +757,13 @@ impl Atlas {
         self.plans += 1;
         self.builds += born;
         self.retired += retired;
+        self.update_materials(config, anchor, &self.view.clone());
         self.update_placements(anchor, &self.view.clone());
         Ok(())
     }
-    fn update_placements(&mut self, anchor: Anchor, view: &View) {
+    fn update_placements(&mut self, _anchor: Anchor, view: &View) {
         self.placements.clear();
-        self.placements
-            .extend(self.resources.values().map(|r| placement(r, anchor, view)));
+        self.placements.resize(self.groups.len(), Mat4::IDENTITY);
         if self.show_body {
             let mut body = Mat4::from_mat3(view.basis.transpose().as_mat3());
             body.w_axis = (view.basis.transpose() * (DVec3::Y * self.half - view.eye))
@@ -714,6 +771,75 @@ impl Atlas {
                 .extend(1.);
             self.placements.push(body);
         }
+    }
+    pub fn set_light(&mut self, light: &crate::model::Light) {
+        self.scene_air = light.atmosphere.unwrap_or(crate::atmosphere::Atmosphere {
+            density: 0.,
+            ..Default::default()
+        });
+        self.light = light.clone();
+    }
+    fn update_materials(&mut self, config: &super::runtime::Config, anchor: Anchor, view: &View) {
+        self.cheap_materials = 0;
+        let air = self.scene_air;
+        let permitted = self.settings.atmosphere_optimization
+            && air.reduce_details
+            && air.color_error > 0.
+            && air.layers.is_none()
+            && self.light.shadow.is_none()
+            && self.light.environment.is_none_or(|e| e.intensity == 0.)
+            && config.material.surface.is_none()
+            && config.material.transmission == 0.
+            && config
+                .material
+                .reflectance
+                .is_none_or(|r| r.f0 == 0. && r.metallic == 0.);
+        let r = config.document.radius();
+        let eye = observer(anchor, view);
+        let shift = crate::atmosphere::transport::correction_limit(r, view.altitude);
+        // Bounds cover source vertices. Include common-frame f32 reconstruction;
+        // the shader itself caps any optical-root displacement by `shift`.
+        let guard = 256.
+            * f64::from(f32::EPSILON)
+            * (r + eye.length() + self.settings.atmosphere_height_meters);
+        let upper =
+            crate::distant::selection::bound(&config.material, glam::Vec3::from(config.color));
+        let illumination =
+            self.light.ambient + (1. - self.light.ambient) * self.light.direct_intensity;
+        let contrast = f64::from(upper.max_element().max(1.) * illumination.max(1.) + 0.1) * 1.001;
+        let medium = crate::atmosphere::transport::Medium::Sphere {
+            radius: r + self.settings.atmosphere_height_meters,
+        };
+        let density = self.optical_depth() / self.settings.atmosphere_height_meters;
+        for (group, asset) in self.groups.iter().zip(&mut self.meshes.assets) {
+            let masked = permitted
+                && density > 0.
+                && 2.
+                    * contrast
+                    * medium.transmission_upper(density, eye, group.envelope, shift, guard)
+                    <= f64::from(air.color_error) * 0.1;
+            let material = if masked {
+                crate::materials::Material::default()
+            } else {
+                group.material.clone()
+            };
+            if asset.material != material {
+                asset.material = material;
+            }
+            self.cheap_materials += usize::from(masked);
+        }
+    }
+    fn tile_budget(&self) -> usize {
+        let n = self.source.grid as usize;
+        // Interiors plus a global bound on added border points/fan centres.
+        self.settings
+            .max_tiles
+            .min(1_999_000 / ((n + 1) * (n + 1) + 16 * n))
+    }
+    fn optical_depth(&self) -> f64 {
+        self.settings
+            .atmosphere_optical_depth
+            .unwrap_or(f64::from(self.scene_air.density) * self.settings.atmosphere_height_meters)
     }
     fn body_color(&self) -> [f32; 3] {
         self.body_color
@@ -723,8 +849,8 @@ impl Atlas {
             "planet_center_view_meters":self.view.center.to_array(),"render_origin":"camera","render_units":"meters","clip":self.view.clip,"resident_tiles":self.resources.len(),"vertices":self.resources.values().map(|r|r.asset.geometry.positions.len()).sum::<usize>(),
             "triangles":self.resources.values().map(|r|r.asset.geometry.triangles.len()).sum::<usize>(),"geometry_builds":self.builds,"residence_plans":self.plans,"retired_tiles":self.retired,
             "max_source_cast_error_meters":self.resources.values().map(|r|r.cast_error).fold(0.,f64::max),"maximum_geometric_bound_pixels":self.maximum_error,"quality_limited":self.limited,
-            "all_six_faces_covered":true,"conforming_edges":true,"shared_high_low_coordinates":true,"depth_contract":"reverse_z_finite","physical_grid_level":self.max_level+N.ilog2() as u8,
-            "atmosphere_model":"homogeneous_finite_shell","legacy_atmospheric_selector":false,"gpu_occlusion":"fallback_custom_projection"})
+            "all_six_faces_covered":true,"conforming_edges":true,"shared_high_low_coordinates":true,"depth_contract":"reverse_z_finite","physical_grid_level":self.max_level+self.source.grid.ilog2() as u8,
+            "atmosphere_model":"homogeneous_finite_shell","effective_density_per_meter":self.optical_depth()/self.settings.atmosphere_height_meters,"effective_optical_depth":self.optical_depth(),"effective_tile_budget":self.tile_budget(),"finite_atmospheric_materials":self.cheap_materials,"render_groups":self.groups.len(),"group_builds":self.group_builds,"legacy_atmospheric_selector":false,"gpu_occlusion":"fallback_custom_projection"})
     }
     pub fn apply(&self, frame: &mut crate::render::RenderFrame) {
         frame.meshes.update(&self.meshes, 0);
@@ -752,9 +878,9 @@ impl Atlas {
             altitude: self.view.altitude,
             radial,
             height: self.settings.atmosphere_height_meters,
-            optical_depth: self.settings.atmosphere_optical_depth,
+            optical_depth: self.optical_depth(),
             space_color: self.settings.space_color,
-            terrain_materials: self.resources.len() as u32,
+            terrain_materials: self.groups.len() as u32,
             eye: crate::meshes::SplitPosition::new(
                 self.anchor.basis
                     * (self.view.eye / self.anchor.radius
@@ -783,16 +909,9 @@ impl Atlas {
         frame.selection_mesh = None;
     }
 }
-fn placement(r: &Resource, target: Anchor, v: &View) -> Mat4 {
-    let translation = v.basis.transpose() * (r.anchor.origin_in(target) - v.eye);
-    let rotation =
-        glam::DQuat::from_mat3(&(v.basis.transpose() * target.basis.transpose() * r.anchor.basis))
-            .as_quat();
-    Mat4::from_scale_rotation_translation(
-        glam::Vec3::splat(r.unit as f32),
-        rotation,
-        translation.as_vec3(),
-    )
+
+fn observer(anchor: Anchor, view: &View) -> DVec3 {
+    anchor.basis * (view.eye + DVec3::Y * (anchor.radius + anchor.pose.altitude_meters))
 }
 
 #[cfg(test)]

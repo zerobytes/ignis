@@ -1,4 +1,5 @@
 //! Scene-authored aerial perspective and quality budgets; selection lives in distant.
+pub(crate) mod transport;
 use crate::model::{Result, invalid};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
