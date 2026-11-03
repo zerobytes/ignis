@@ -2,25 +2,43 @@
   "version": 1,
   "field": {
     "mean": [
-      0.5,
-      0.1,
+      0.0,
+      1.5,
       0.0
     ],
     "gusts": [
       {
         "amplitude": [
-          0.5,
-          0.15,
-          -0.3
+          1.2,
+          0.0,
+          0.0
         ],
-        "period_seconds": 6.0,
+        "period_seconds": 16.0,
+        "phase_radians": 0.0
+      },
+      {
+        "amplitude": [
+          0.0,
+          0.0,
+          1.2
+        ],
+        "period_seconds": 16.0,
+        "phase_radians": 1.5707963267948966
+      },
+      {
+        "amplitude": [
+          0.0,
+          2.5,
+          0.0
+        ],
+        "period_seconds": 8.0,
         "phase_radians": 0.0
       }
     ],
     "turbulence": {
       "seed": 2718,
       "modes": 16,
-      "rms_speed": 0.7,
+      "rms_speed": 0.5,
       "min_wavelength": 1.0,
       "max_wavelength": 12.0,
       "advection": [
@@ -73,7 +91,7 @@
       {
         "center": [
           0.0,
-          1.8,
+          3.0,
           0.0
         ],
         "axis": [
@@ -86,10 +104,10 @@
           0.0,
           0.0
         ],
-        "radius": 5.0,
-        "half_height": 5.0,
-        "peak_swirl_speed": 3.5,
-        "updraft_speed": 4.0,
+        "radius": 7.0,
+        "half_height": 8.0,
+        "peak_swirl_speed": 1.5,
+        "updraft_speed": 1.0,
         "start_seconds": 0.0,
         "duration_seconds": null,
         "fade_seconds": 1.0

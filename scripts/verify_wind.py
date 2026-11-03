@@ -106,6 +106,30 @@ def main():
         c.call('wind', operation={'op': 'load', 'path': 'artifacts/wind/current.ignis-wind'})
         report['groups'].append('editor/offscreen panel/source save-load/undo')
 
+        # Protect the demonstrated behavior after the initial launch transient.
+        c.call('reset')
+        transport = []
+        for start, end in [(8, 12), (16, 20), (24, 28), (56, 60)]:
+            current = c.call('inspect')['tick']
+            c.call('step', ticks=start * 60 - current)
+            before = c.call('wind', operation={'op': 'inspect'})['bodies']
+            c.call('step', ticks=(end - start) * 60)
+            after = c.call('wind', operation={'op': 'inspect'})['bodies']
+            travel = [math.dist(a['position'], b['position']) for a, b in zip(before, after)]
+            row = {'window_seconds': [start, end],
+                   'bodies_travelling_over_one_meter': sum(d > 1. for d in travel),
+                   'airborne_at_end': sum(b['position'][1] > .3 for b in after),
+                   'mean_displacement_m': sum(travel) / len(travel),
+                   'mean_x_displacement_m': sum(b['position'][0] - a['position'][0]
+                                                for a, b in zip(before, after)) / len(after)}
+            assert row['bodies_travelling_over_one_meter'] >= 48, row
+            assert row['airborne_at_end'] >= 40, row
+            transport.append(row)
+        assert transport[0]['mean_x_displacement_m'] < -.25, transport
+        assert transport[1]['mean_x_displacement_m'] > .25, transport
+        report['late_transport'] = transport
+        report['groups'].append('late gust re-entrainment and opposite horizontal transport through 60 seconds')
+
         calm = copy.deepcopy(source['wind'])
         calm['field'] = {}
         c.call('wind', operation={'op': 'replace', 'document': calm})

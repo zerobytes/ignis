@@ -163,11 +163,46 @@ cargo test --locked --release --test wind
 
 The demonstration has 64 independent leaf meshes sharing one visible asset,
 each with two aerodynamic triangles, a small stem ballast and its own rigid
-state. It combines spatial shear currents, advected turbulence, a gust and an
-ascending vortex with a smooth onset. This is an authored example, not an
-identified species or an emergent meteorological simulation.
+state. It combines spatial shear currents, advected turbulence, an eight-second
+vertical gust and horizontal components that turn over sixteen seconds, plus
+a weaker ascending vortex with a smooth onset. Three thin posts are two-meter
+world references. The camera includes the lifting region, and the floor is
+wide enough for the measured dispersion. Leaves rise, translate, change course
+and settle during weaker phases; subsequent gusts can lift them again. They
+can disperse beyond the fixed camera over a long session; R starts the example
+again. This is an authored example, not an identified species or an emergent
+meteorological simulation.
 
-## Validation evidence (2026-11-03)
+### Correction after native visual review
+
+The initial recipe in `b1798f9` lost its airborne population quickly: 45 of 64
+bodies were near the floor at three seconds, and 62 at ten seconds, with mean
+body speed 0.0444 m/s at ten seconds. The remaining visible rocking did not
+adequately demonstrate the requested transport. A short nonzero-displacement
+check had missed this presentation failure.
+
+Only the demo field, framing and floor/reference geometry changed. Surface
+mass, inertia, aerodynamic coefficients, contact solver and body integration
+remain the same. No trajectories, teleports or angular animation were added.
+The focused verifier now checks late transport and opposite horizontal motion:
+
+| Window (s) | Bodies travelling >1 m | Airborne at end | Mean displacement (m) | Mean X displacement (m) |
+|---:|---:|---:|---:|---:|
+| 8–12 | 61 | 59 | 7.774 | -3.013 |
+| 16–20 | 59 | 55 | 7.141 | 2.207 |
+| 24–28 | 60 | 57 | 7.294 | -2.891 |
+| 56–60 | 56 | 55 | 6.651 | -2.548 |
+
+Nine MCP groups passed on build `d8dec4c557b67a8c`, including the existing
+save/replay/contact checks; portable continuation's sampled maximum error was
+0.001696 m. Weighted field work is now 35,328 per tick for 64 bodies. The new
+native window was also observed after P: PLAY with advancing ticks, airborne
+leaves above the reference posts, and spatial displacement. Artistic acceptance
+still belongs to the user. Raw diagnosis and parameter-study results are under
+`artifacts/wind/{motion-diagnosis,transport-study,transport-refinement}.json`;
+the current verifier report is `artifacts/wind/verification.json`.
+
+## Initial validation evidence (2026-11-03, recipe b1798f9)
 
 macOS arm64/Metal, Apple M4 Pro; tested release build `3b1639bd281e9ed2`.
 Evidence is local under `artifacts/wind/`; source and the reproducible scripts
@@ -189,6 +224,8 @@ substeps; the full displacement vectors matched exactly in that sample. Numerica
 positive/passive drag and impulse torque, scalar timestep convergence, motion,
 contacts, authoring/replay/save integrity and unchanged resident geometry.
 
+The timing table below used the original recipe in `b1798f9`; the revised
+demonstration above has a different field and does not inherit these timings.
 `examples/wind_cost.rs` measures the complete authoritative CPU tick, including
 contacts, with two panels/body, four substeps, 16 modes and the demo field.
 Each case warms 120 ticks, then measures twelve windows of 60 ticks. The p95
@@ -210,7 +247,8 @@ Commands and raw evidence: `artifacts/wind/{verification,cost,rust-summary}.json
 `build-final.log`, `clippy-release.log`, `fmt.log`, and the regression subfolder.
 The verification scripts were executed directly: the general verification
 runner's pre-existing discovery/registration mismatch is a separate gap; no
-complete MCP-suite claim is made. No native window was opened or replaced;
-the existing editor was preserved. The one current application executable is
+complete MCP-suite claim is made. During that initial automated gate, no native window was opened or replaced;
+the existing editor was preserved. The later requested native demonstration
+and visual correction are recorded above. The one current application executable is
 `target/release/ignis`; no archived/copied app build was created. Human artistic
 and native-input acceptance remain separate.

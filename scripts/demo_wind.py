@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Author the wind/leaves scene through the real MCP service, without a window."""
 import argparse
+import copy
 import json
 import math
 from pathlib import Path
@@ -9,10 +10,19 @@ from verify_lab import Client, ROOT
 
 def recipe(scene, count=64):
     scene['name'] = 'Wind — free aerodynamic leaves'
-    scene['camera'].update({'position': [8., 5.5, 9.], 'target': [0., 2., 0.]})
+    scene['camera'].update({'position': [14., 12., 20.], 'target': [1.5, 5., 0.]})
     scene['entities'] = [e for e in scene['entities'] if e['id'] == 'floor']
     for e in scene['entities']:
         e['color'] = [.24, .27, .25]
+        e['transform']['size'][0] = e['transform']['size'][2] = 256.
+    # Fixed two-meter references make translation legible beside rotation.
+    floor = scene['entities'][0]
+    for i, (x, z) in enumerate([(-4., 0.), (0., -4.), (4., 0.)]):
+        marker = copy.deepcopy(floor)
+        marker.update(id=f'wind-reference-{i}', name='2 m reference', body=None,
+                      color=[.55, .65, .7],
+                      transform={'position': [x, 1., z], 'size': [.06, 2., .06]})
+        scene['entities'].append(marker)
     # A pair of triangular midsurfaces, with an actual thin closed visible skin.
     outline = [[-.16, 0., 0.], [0., .012, .075], [.16, 0., 0.], [0., -.006, -.075]]
     positions = [[x, y + sign * .001, z] for sign in [1, -1] for x, y, z in outline]
@@ -21,14 +31,19 @@ def recipe(scene, count=64):
         triangles += [[a, b + 4, b], [a, a + 4, b + 4]]
     scene['meshes'] = {'assets': [{'id': 'dry-leaf', 'geometry': {'positions': positions, 'triangles': triangles},
                                   'material': {'reflectance': {'roughness': .85, 'f0': .04}}}], 'instances': []}
-    field = {'mean': [.5, .1, 0.],
-             'gusts': [{'amplitude': [.5, .15, -.3], 'period_seconds': 6., 'phase_radians': 0.}],
-             'turbulence': {'seed': 2718, 'modes': 16, 'rms_speed': .7, 'min_wavelength': 1.,
+    # An eight-second lifting gust re-entrains settled sheets. Horizontal
+    # components turn over sixteen seconds; these remain airflow velocities,
+    # never assignments to body trajectories or orientations.
+    field = {'mean': [0., 1.5, 0.],
+             'gusts': [{'amplitude': [1.2, 0., 0.], 'period_seconds': 16., 'phase_radians': 0.},
+                       {'amplitude': [0., 0., 1.2], 'period_seconds': 16., 'phase_radians': math.pi / 2},
+                       {'amplitude': [0., 2.5, 0.], 'period_seconds': 8., 'phase_radians': 0.}],
+             'turbulence': {'seed': 2718, 'modes': 16, 'rms_speed': .5, 'min_wavelength': 1.,
                             'max_wavelength': 12., 'advection': [.7, .1, 0.]},
              'jets': [{'origin': [0., 0., -2.], 'direction': [1., 0., 0.], 'transverse': [0., 0., 1.], 'speed': .8, 'width': 1.5},
                       {'origin': [0., 0., 2.], 'direction': [-1., 0., 0.], 'transverse': [0., 0., 1.], 'speed': .8, 'width': 1.5}],
-             'vortices': [{'center': [0., 1.8, 0.], 'axis': [0., 1., 0.], 'velocity': [0., 0., 0.],
-                           'radius': 5., 'half_height': 5., 'peak_swirl_speed': 3.5, 'updraft_speed': 4.,
+             'vortices': [{'center': [0., 3., 0.], 'axis': [0., 1., 0.], 'velocity': [0., 0., 0.],
+                           'radius': 7., 'half_height': 8., 'peak_swirl_speed': 1.5, 'updraft_speed': 1.,
                            'start_seconds': 0., 'duration_seconds': None}]}
     bodies = []
     for i in range(count):
