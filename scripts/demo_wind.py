@@ -64,28 +64,51 @@ def recipe(scene, count=64):
     return scene
 
 
+def vortex_recipe(scene, count=64):
+    scene = recipe(scene, count)
+    scene['name'] = 'Wind — ascending whirlwind'
+    scene['camera'].update(position=[11., 17., 18.], target=[0., 5., 0.])
+    field = scene['wind']['field']
+    field['gusts'] = [{'amplitude': [0., 2.5, 0.], 'period_seconds': 8., 'phase_radians': 0.}]
+    field['jets'] = []
+    field['turbulence']['rms_speed'] = .1
+    field['vortices'] = [{'center': [0., 4., 0.], 'axis': [0., 1., 0.],
+                          'velocity': [0., 0., 0.], 'radius': 40., 'half_height': 30.,
+                          'peak_swirl_speed': 12., 'updraft_speed': .5,
+                          'start_seconds': 0., 'duration_seconds': None}]
+    guide = copy.deepcopy(scene['entities'][1])
+    guide.update(id='vortex-axis-guide', name='Vortex axis reference (8 m)',
+                 color=[.15, .55, .8],
+                 transform={'position': [0., 4., 0.], 'size': [.06, 8., .06]})
+    scene['entities'].append(guide)
+    return scene
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', type=Path, default=ROOT / 'target/release/ignis')
+    parser.add_argument('--vortex', action='store_true', help='Author the separate whirlwind scene')
     args = parser.parse_args()
-    out = ROOT / 'artifacts/wind'
+    out = ROOT / ('artifacts/wind/vortex' if args.vortex else 'artifacts/wind')
     out.mkdir(parents=True, exist_ok=True)
+    output = out.relative_to(ROOT).as_posix()
     c = Client(args.binary, log_path=out / 'demo-runtime.log')
     try:
         c.request('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {}, 'clientInfo': {'name': 'wind-demo', 'version': '1'}})
         c.request('notifications/initialized', notification=True)
         c.call('generate', recipe={'width': 24., 'depth': 24., 'seed': 42, 'obstacles': 0})
-        scene = recipe(c.call('inspect')['scene'])
-        path = 'examples/wind-leaves.scene.json'
+        scene = (vortex_recipe if args.vortex else recipe)(c.call('inspect')['scene'])
+        path = 'examples/wind-vortex.scene.json' if args.vortex else 'examples/wind-leaves.scene.json'
         (ROOT / path).write_text(json.dumps(scene, indent=2) + '\n')
         c.call('load_scene', path=path)
         c.call('save_scene', path=path)
-        c.call('wind', operation={'op': 'save', 'path': 'assets/wind/leaves.ignis-wind'})
-        c.call('capture', path='artifacts/wind/start.png', width=1280, height=800)
-        for tick in [60, 180, 360]:
+        source = 'vortex' if args.vortex else 'leaves'
+        c.call('wind', operation={'op': 'save', 'path': f'assets/wind/{source}.ignis-wind'})
+        c.call('capture', path=f'{output}/start.png', width=1280, height=800)
+        for tick in ([240, 720, 1200, 2400] if args.vortex else [60, 180, 360]):
             previous = c.call('inspect')['tick']
             c.call('step', ticks=tick - previous)
-            c.call('capture', path=f'artifacts/wind/tick-{tick}.png', width=1280, height=800)
+            c.call('capture', path=f'{output}/tick-{tick}.png', width=1280, height=800)
         state = c.call('wind', operation={'op': 'inspect'})
         state['build_id'] = c.call('inspect')['build_id']
         (out / 'demo-state.json').write_text(json.dumps(state, indent=2))

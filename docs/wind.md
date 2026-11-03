@@ -202,6 +202,36 @@ still belongs to the user. Raw diagnosis and parameter-study results are under
 `artifacts/wind/{motion-diagnosis,transport-study,transport-refinement}.json`;
 the current verifier report is `artifacts/wind/verification.json`.
 
+## Whirlwind scene
+
+```sh
+python3 scripts/demo_wind.py --vortex
+target/release/ignis --root . --scene examples/wind-vortex.scene.json --continuous
+python3 scripts/verify_wind_vortex.py
+```
+
+This separate recipe uses a stationary vertical curl vortex, with 40 m support
+radius, 30 m half-height and 12 m/s peak tangential speed. A mean upward flow
+and the eight-second vertical gust lift sheets back into the circulation.
+Horizontal gusts and shear jets are absent; transverse turbulence is reduced
+to 0.1 m/s RMS so the orbital motion stays legible. The fixed blue eight-meter
+line marks the axis and has no collider. Surface profiles, masses, inertia,
+drag coefficients and the solver are inherited unchanged from the leaf demo.
+Leaf positions and orientations are still integrated from forces and contacts.
+
+The verifier samples a horizontal ring for signed velocity circulation and
+integrates each body's world-space azimuth, independently of its orientation.
+The measured mean signed sweep is 125.68 degrees after 12 s, 206.66 after 20 s
+and 396.54 after 40 s. At 40 s, 52 of 64 bodies have travelled over 180 degrees
+in the vortex direction, 53 are airborne, mean radius is 6.50 m and airborne
+mean tangential speed is 1.92 m/s. The replay matches. These are observations
+of this authored profile, not a guarantee of trapping every sheet forever;
+bodies can settle or disperse. P runs/pauses; R resets.
+
+Sources: `examples/wind-vortex.scene.json`, `assets/wind/vortex.ignis-wind`.
+Current measurements and captures: `artifacts/wind/vortex/verification.json`
+and `tick-240.png`, `tick-720.png`, `tick-1200.png`, `tick-2400.png`.
+
 ## Initial validation evidence (2026-11-03, recipe b1798f9)
 
 macOS arm64/Metal, Apple M4 Pro; tested release build `3b1639bd281e9ed2`.
