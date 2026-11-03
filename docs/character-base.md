@@ -1,6 +1,8 @@
 # Base humana feminina — EAF-187
 
-Incremento atual: [globo ocular esférico e contato das pálpebras](character-spherical.md).
+Incremento atual: [influência proporcional dos pontos do rosto](character-soft.md).
+
+[Globo ocular esférico e contato das pálpebras](character-spherical.md).
 
 [Papada, região orbital e nariz](character-face.md).
 

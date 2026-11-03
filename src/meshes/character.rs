@@ -11,6 +11,8 @@ use std::{
 };
 mod controls;
 pub use controls::{Handle, HandlePose, Warp, WarpWeight};
+mod blending;
+pub use blending::{BlendField, FieldBlend};
 mod surface;
 pub use surface::Surface;
 
@@ -19,7 +21,7 @@ pub use refinement::Refinement;
 pub mod eyes;
 pub use eyes::Eye;
 
-pub const VERSION: u16 = 9;
+pub const VERSION: u16 = 10;
 pub const MAX_PARAMETERS: usize = 512;
 pub const MAX_BYTES: usize = 96 * 1024 * 1024;
 pub const LEGACY_MAX_BYTES: usize = 64 * 1024 * 1024;
@@ -114,6 +116,8 @@ pub struct Source {
     pub refinements: Vec<Refinement>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub eyes: Vec<Eye>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub field_blends: Vec<FieldBlend>,
 }
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -230,6 +234,7 @@ impl Source {
             }
         }
         self.validate_controls(&parameters, deltas)?;
+        self.validate_blends(&parameters)?;
         self.validate_surfaces(&parameters)?;
         names.clear();
         for (i, j) in self.joints.iter().enumerate() {
@@ -393,20 +398,32 @@ impl Source {
         let values = self.values(configuration)?;
         let mut positions = self.positions.clone();
         let mut active = 0;
+        let grouped: BTreeSet<_> = self
+            .field_blends
+            .iter()
+            .flat_map(|b| &b.fields)
+            .flat_map(|f| &f.targets)
+            .collect();
+        let mut gains = Vec::with_capacity(self.targets.len());
         for t in &self.targets {
             let gain = t.factors.iter().fold(t.gain, |gain, f| {
                 gain * response(&f.curve, values[&f.parameter])
             });
+            gains.push(gain);
             if gain == 0. {
                 continue;
             }
             active += 1;
+            if grouped.contains(&t.name) {
+                continue;
+            }
             for d in &t.deltas {
                 for (value, offset) in positions[d.vertex as usize].iter_mut().zip(d.offset) {
                     *value += gain * offset;
                 }
             }
         }
+        self.apply_blends(&mut positions, &values, &gains);
         let socket_rotations = self.apply_warps(&mut positions, &values)?;
         let (bones, bind) = self.bind(&positions)?;
         let (_, base_bind) = self.bind(&self.positions)?;

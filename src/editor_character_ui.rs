@@ -18,7 +18,7 @@ impl Default for State {
         Self {
             key: None,
             draft: Default::default(),
-            source_path: "artifacts/character-base/human-spherical.ignis-character".into(),
+            source_path: "artifacts/character-base/human-soft.ignis-character".into(),
             prefix: "female".into(),
             preset_path: "artifacts/character-base/female.ignis-character-config".into(),
             confirm_regenerate: false,
@@ -284,6 +284,13 @@ pub(super) fn properties(
             }
             face_properties(ui, service, commands);
             ui.add_enabled_ui(editor.ready&&!service.engine.playing,|ui| {
+                if let Some(p)=source.parameters.iter().find(|p|p.name=="face_softness") {
+                    ui.label("Influência suave dos pontos");
+                    let value=state.draft.parameters.entry(p.name.clone()).or_insert(p.default);
+                    changed|=ui.add(egui::Slider::new(value,p.minimum..=p.maximum).max_decimals(2))
+                        .on_hover_text("Amplia a região que acompanha os pontos do rosto. 1 usa a transição suave; 0 recupera a influência local anterior.")
+                        .changed();
+                }
                 if source.parameters.iter().any(|p|p.name=="body_masculinity") {
                     ui.horizontal(|ui| {
                         ui.label("Base corporal:");

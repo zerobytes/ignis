@@ -23,6 +23,7 @@ fn source() -> Source {
         surfaces: Vec::new(),
         refinements: Vec::new(),
         eyes: Vec::new(),
+        field_blends: Vec::new(),
         positions: vec![[0., 0., 0.], [0., 1., 0.], [1., 0., 0.]],
         parameters: vec![Parameter {
             name: "width".into(),
@@ -129,6 +130,80 @@ fn handled_source() -> Source {
         }],
     });
     s
+}
+
+#[test]
+fn proportional_fields_bound_overlap_without_pinning_inactive_handles() {
+    let mut s = handled_source();
+    s.parameters.push(Parameter {
+        name: "soft".into(),
+        minimum: 0.,
+        maximum: 1.,
+        default: 1.,
+    });
+    let mut fields = Vec::new();
+    for h in &s.handles {
+        let targets = h.parameters.each_ref().map(|p| format!("move_{p}"));
+        for (axis, name) in targets.iter().enumerate() {
+            let target = s.targets.iter_mut().find(|t| t.name == *name).unwrap();
+            target.factors.push(Factor {
+                parameter: "soft".into(),
+                curve: vec![[0., 0.], [1., 1.]],
+            });
+            target.deltas = (0..3)
+                .map(|vertex| Delta {
+                    vertex,
+                    offset: std::array::from_fn(|a| if a == axis { 0.02 } else { 0. }),
+                })
+                .collect();
+        }
+        fields.push(BlendField {
+            parameters: h.parameters.clone(),
+            targets,
+        });
+    }
+    s.field_blends.push(FieldBlend {
+        strength: "soft".into(),
+        fields,
+    });
+    let geometry = |values: &[(&str, f32)]| {
+        let configuration = Configuration {
+            parameters: values.iter().map(|(p, v)| ((*p).into(), *v)).collect(),
+        };
+        s.compile(&configuration, &placement()).unwrap().0.assets[0]
+            .geometry
+            .positions
+            .clone()
+    };
+    let baseline = geometry(&[]);
+    let one = geometry(&[("left_x", 0.002)]);
+    let both = geometry(&[("left_x", 0.02), ("right_x", 0.02)]);
+    let opposite = geometry(&[("left_x", 0.02), ("right_x", -0.02)]);
+    let tiny = geometry(&[("left_x", 0.02), ("right_z", 0.00001)]);
+    let full = geometry(&[("left_x", 0.02)]);
+    assert_eq!(geometry(&[("left_x", 0.02), ("soft", 0.)]), baseline);
+    for i in 0..3 {
+        assert!((one[i][0] - baseline[i][0] - 0.002).abs() < 1e-6);
+        assert!((both[i][0] - baseline[i][0] - 0.02).abs() < 1e-6);
+        assert_eq!(opposite[i], baseline[i]);
+        assert!(glam::Vec3::from(tiny[i]).distance(full[i].into()) < 0.00003);
+    }
+    let mut invalid = s.clone();
+    invalid.version = 9;
+    assert!(invalid.validate().is_err());
+    invalid = s.clone();
+    let duplicate = invalid.field_blends[0].fields[0].clone();
+    invalid.field_blends[0].fields.push(duplicate);
+    assert!(invalid.validate().is_err());
+    invalid = s.clone();
+    invalid
+        .targets
+        .iter_mut()
+        .find(|t| t.name == "move_left_y")
+        .unwrap()
+        .deltas[0]
+        .offset[1] *= 0.5;
+    assert!(invalid.validate().is_err());
 }
 
 // Critical: a viewport preview cannot commit or overwrite a concurrent edit;
@@ -845,6 +920,7 @@ fn source3_rigid_socket_transport_preserves_the_entire_insert() {
         surfaces: vec![],
         refinements: vec![],
         eyes: vec![],
+        field_blends: vec![],
         joints: vec![
             Joint {
                 name: "root".into(),

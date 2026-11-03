@@ -7,7 +7,7 @@ from verify_lab import Client
 
 def main():
  out=ROOT/'artifacts/character-eyes';scene='artifacts/character-eyes/editor.scene.json'
- if any(b['recipe']['source_path'].endswith(('/human-face.ignis-character','/human-spherical.ignis-character')) for b in json.loads((ROOT/scene).read_text()).get('characters',[])):
+ if any(b['recipe']['source_path'].endswith(('/human-face.ignis-character','/human-spherical.ignis-character','/human-soft.ignis-character')) for b in json.loads((ROOT/scene).read_text()).get('characters',[])):
   from open_face import main as open_current
   return open_current()
  binary=Path.home()/'Applications/Ignis Editor.app/Contents/MacOS/ignis'
