@@ -1037,7 +1037,8 @@ impl Renderer {
     }
     /// Experimental reconstruction of redundant static procedural coordinates.
     pub fn set_reconstructed_coordinates(&mut self, enabled: bool, indexed: bool) {
-        self.instanced.set_reconstructed_coordinates(enabled, indexed);
+        self.instanced
+            .set_reconstructed_coordinates(enabled, indexed);
     }
     pub fn mesh_proxy_info(&self) -> serde_json::Value {
         serde_json::to_value(self.mesh_proxy.as_ref().map(|p| &p.stats)).unwrap()

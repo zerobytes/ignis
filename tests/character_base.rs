@@ -1634,7 +1634,7 @@ fn source9_keeps_the_globe_spherical_and_wraps_only_the_lid_band() {
     let globe = a.asset("test_sclera").unwrap();
     let center = Vec3::from(globe.rig.as_ref().unwrap().bones[255].translation);
     let radius = (Vec3::from(globe.geometry.positions[0]) - center).length();
-    assert!(radius >= 0.016 && radius < 0.025);
+    assert!((0.016..0.025).contains(&radius));
     for p in &globe.geometry.positions {
         assert!(((Vec3::from(*p) - center).length() - radius).abs() < 2e-6);
     }
