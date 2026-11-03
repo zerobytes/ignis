@@ -62,6 +62,13 @@ impl Engine {
         ))
     }
     pub(super) fn set_planet_view(&mut self, settings: Option<Settings>) -> Result<()> {
+        self.set_planet_view_paced(settings, false)
+    }
+    pub(super) fn set_planet_view_paced(
+        &mut self,
+        settings: Option<Settings>,
+        paced: bool,
+    ) -> Result<()> {
         let Some(mut settings) = settings else {
             self.planet_view = None;
             self.view_revision += 1;
@@ -93,7 +100,13 @@ impl Engine {
         {
             view.set_light(&self.scene.light);
             let old = std::mem::replace(&mut view.settings, settings);
-            if let Err(e) = view.update(
+            let update = if paced {
+                Atlas::update_paced
+            } else {
+                Atlas::update
+            };
+            if let Err(e) = update(
+                view,
                 &world.config.document,
                 &world.config,
                 world.anchor,
@@ -131,7 +144,7 @@ impl Engine {
                 .as_mut()
                 .unwrap()
                 .set_light(&self.scene.light);
-            self.planet_view.as_mut().unwrap().update(
+            self.planet_view.as_mut().unwrap().update_paced(
                 &world.config.document,
                 &world.config,
                 world.anchor,

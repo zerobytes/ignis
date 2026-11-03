@@ -144,6 +144,11 @@ fn planet_orbit_conforming_closed_surface_across_levels_and_cube_corners() {
             let expected =
                 d * (1. + Sampler::new(&c.document).unwrap().height(d) / c.document.radius());
             assert!((reconstructed - expected).length() < 5e-15);
+            assert!(
+                (reconstructed - expected).length() * c.document.radius()
+                    <= r.coordinate_error + 2. * f64::EPSILON * c.document.radius(),
+                "the declared consumed-coordinate error must enclose every vertex"
+            );
         }
         for tri in &r.asset.geometry.triangles {
             let p = tri.map(|i| DVec3::from(r.keys[i as usize].map(|v| v as f64)).normalize());
@@ -217,6 +222,7 @@ fn planet_orbit_reuses_samples_without_changing_stitched_payload() {
     assert_eq!(fresh.coordinates, reused.coordinates);
     assert_eq!(fresh.keys, reused.keys);
     assert_eq!(fresh.normal_levels, reused.normal_levels);
+    assert!(reused.coordinate_error >= fresh.coordinate_error);
 }
 
 #[test]
@@ -489,6 +495,9 @@ fn planet_orbit_inherits_density_and_finite_material_choice_keeps_geometry() {
         Settings {
             tile_subdivisions: 32,
             max_tiles: 192,
+            // This regression isolates material selection from the independent
+            // atmospheric geometry derivative, whose oracle is tested above.
+            atmosphere_geometry: false,
             ..Default::default()
         },
         anchor(&c),

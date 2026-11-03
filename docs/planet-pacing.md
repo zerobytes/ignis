@@ -6,7 +6,12 @@ passo físico/residência e preparo do `RenderFrame`; apresentação/FPS continu
 um gate próprio. Não altera a fonte procedural, a densidade atmosférica, a
 resolução física, o orçamento de erro visual nem a velocidade do jogador.
 
-## Diagnóstico e alteração
+A continuação geométrica e os lotes de geração estão em
+[planet-atmospheric-geometry.md](planet-atmospheric-geometry.md). O trecho abaixo
+registra o primeiro incremento `28a0e73`; seus tempos históricos permanecem
+provisórios. A continuação não transforma essas medições em FPS validado.
+
+## Diagnóstico e primeiro incremento
 
 O giro replanejava a cobertura global e uma assinatura de costura diferente
 provocava novo bake de todo o tile. Agora, o bake reutiliza amostras do mesmo
@@ -28,10 +33,10 @@ Receitas de material com variação única por instância usam o quadro legado,
 preservando a derivação de seus slots; mapas fixos e receitas comuns continuam
 elegíveis ao fluxo canônico.
 
-Isso elimina trabalho repetido; **não acrescenta a redução atmosférica da
-geometria ao atlas planetário**. O material distante barato já existe nesse
-atlas. A seleção geométrica atmosférica do renderer anterior continua uma
-integração separada, com limites de contorno e contribuição visual próprios.
+Esse primeiro incremento eliminou trabalho repetido e manteve apenas a redução
+de material no atlas. A continuação ligada acima acrescenta derivados internos
+com perímetro exato e contribuição certificada pelo ar finito, sem importar o
+seletor de projeção legado nem alterar sua frente de vegetação.
 
 ## Reprodução
 
@@ -115,7 +120,25 @@ GPU adicionais. Arcs retêm a identidade da fonte; cópias por canto só ocorrem
 no corpo/fallback. Memória de amostras é limitada à residência atual e se
 retira com o recurso. Campos de tempo são diagnósticos de sessão, sem persistência.
 
-Continuam síncronos o planejamento, a geração de tiles novos, a montagem dos
-grupos e os uploads que realmente mudam. O runtime físico também mantém sua
+Naquele incremento continuavam síncronos o planejamento, a geração de tiles,
+a montagem dos grupos e os uploads. A continuação admite lotes de geração apenas
+quando a fonte instalada ainda cumpre o bound de detalhe; planejamento,
+publicação, uploads e o fallback urgente permanecem síncronos. O runtime físico também mantém sua
 residência local; a física usa a fonte completa. Não há alegação de geração
 assíncrona, ausência de travadas, 60 FPS ou aceite humano da nova execução.
+
+## Comparações da continuação
+
+O exemplo aceita `--synchronous-reference` (somente geração eager),
+`--geometry-reference` (somente geometria atmosférica desativada) e
+`--distance METERS` (4 m por padrão). As opções antigas de reuso/Frame continuam
+separadas. Os relatórios incluem a inspeção geométrica e da fila por amostra,
+completam o atlas fora do intervalo medido e registram a configuração usada.
+`scripts/verify_planet_pacing.py --eager` e `--geometry-off` exercitam os mesmos
+controles pelo MCP. Set explícito ao final preserva tick e percurso físico.
+
+Comparar poses/ticks antes de atribuir diferenças de tempo ao renderer. Uma fila
+pode manter temporariamente outra distribuição visual dentro do mesmo limite
+de erro; não exigir triângulos iguais para provar uma redução geométrica. As
+máscaras e a contribuição de cor têm oráculos próprios. Admissão de lotes não
+elimina a necessidade de medir os fallbacks urgentes e a física separadamente.

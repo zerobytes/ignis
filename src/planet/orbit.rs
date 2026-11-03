@@ -15,6 +15,12 @@ use std::{
     collections::{BTreeMap, BTreeSet, BinaryHeap},
     sync::Arc,
 };
+mod atmospheric_geometry;
+#[cfg(test)]
+mod atmospheric_geometry_tests;
+mod generation;
+#[cfg(test)]
+mod generation_tests;
 mod topology;
 const N: u32 = 32;
 type Key = [i64; 3];
@@ -32,6 +38,13 @@ pub struct Settings {
     /// Sampling per tile; canonical physical grid resolution stays unchanged.
     pub tile_subdivisions: u16,
     pub atmosphere_optimization: bool,
+    /// Reduce certified opaque tile interiors; false is the full-geometry oracle.
+    pub atmosphere_geometry: bool,
+    /// Spread movement/look refinement over complete, atomically installed atlases.
+    pub incremental_generation: bool,
+    pub generation_tiles_per_update: usize,
+    /// Soft generation budget; one indivisible tile may exceed this duration.
+    pub generation_time_ms: f64,
     /// GPU submission grouping, preserving source tiles and their sample grid.
     pub render_group_size: usize,
     /// Diagnostic oracle: false retains the original full sampling on seam changes.
@@ -55,6 +68,10 @@ impl Default for Settings {
             max_tiles: 768,
             tile_subdivisions: N as u16,
             atmosphere_optimization: true,
+            atmosphere_geometry: false,
+            incremental_generation: true,
+            generation_tiles_per_update: 8,
+            generation_time_ms: 4.,
             render_group_size: 8,
             reuse_vertex_samples: true,
             canonical_cpu_stream: true,
@@ -77,6 +94,9 @@ impl Settings {
             || !self.max_error_pixels.is_finite()
             || !(0.5..=64.).contains(&self.max_error_pixels)
             || !(6..=1536).contains(&self.max_tiles)
+            || !(1..=64).contains(&self.generation_tiles_per_update)
+            || !self.generation_time_ms.is_finite()
+            || !(0.1..=100.).contains(&self.generation_time_ms)
             || ![32, 64].contains(&self.tile_subdivisions)
             || ![1, 8].contains(&self.render_group_size)
             || !self.atmosphere_height_meters.is_finite()
@@ -442,7 +462,7 @@ pub(crate) struct ActorView {
     pub color: [f32; 3],
     pub eye: f64,
 }
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct ResourceKey {
     tile: Tile,
     grid: u32,
@@ -477,6 +497,7 @@ struct Resource {
     asset: Asset,
     normals: Arc<Vec<[f32; 3]>>,
     cast_error: f64,
+    coordinate_error: f64,
     bounds: [DVec3; 8],
     radial_upper: f64,
     error: f64,
@@ -487,6 +508,12 @@ struct Group {
     material: crate::materials::Material,
 }
 pub(crate) struct Atlas {
+    pending: Option<generation::Pending>,
+    last_generated_tiles: usize,
+    forced_synchronous: bool,
+    generation_batches: u64,
+    geometry_cache: atmospheric_geometry::Cache,
+    selected: BTreeMap<ResourceKey, Arc<Resource>>,
     last_update_ms: f64,
     reused_samples: u64,
     groups: Vec<Group>,
@@ -551,6 +578,12 @@ impl Atlas {
         let view = View::new(doc, anchor, &settings, eye, outer, fraction, &source)?;
         let body = Arc::new(topology::body(doc, anchor, size, color)?);
         let mut a = Self {
+            pending: None,
+            last_generated_tiles: 0,
+            forced_synchronous: false,
+            generation_batches: 0,
+            geometry_cache: Default::default(),
+            selected: Default::default(),
             last_update_ms: 0.,
             reused_samples: 0,
             source,
@@ -593,8 +626,41 @@ impl Atlas {
         eye: f64,
         fraction: f64,
     ) -> Result<()> {
+        self.pending = None;
+        self.geometry_cache.invalidate_rejections();
+        self.geometry_cache.retain(&self.resources);
+        self.update_mode(doc, config, anchor, eye, fraction, false)
+    }
+    pub fn update_paced(
+        &mut self,
+        doc: &Document,
+        config: &super::runtime::Config,
+        anchor: Anchor,
+        eye: f64,
+        fraction: f64,
+    ) -> Result<()> {
+        self.update_mode(
+            doc,
+            config,
+            anchor,
+            eye,
+            fraction,
+            self.settings.incremental_generation,
+        )
+    }
+    fn update_mode(
+        &mut self,
+        doc: &Document,
+        config: &super::runtime::Config,
+        anchor: Anchor,
+        eye: f64,
+        fraction: f64,
+        paced: bool,
+    ) -> Result<()> {
+        self.last_generated_tiles = 0;
+        self.forced_synchronous = false;
         let started = std::time::Instant::now();
-        let result = self.update_inner(doc, config, anchor, eye, fraction);
+        let result = self.update_inner(doc, config, anchor, eye, fraction, paced);
         if result.is_ok() {
             self.last_update_ms = started.elapsed().as_secs_f64() * 1000.;
         }
@@ -607,6 +673,7 @@ impl Atlas {
         anchor: Anchor,
         eye: f64,
         fraction: f64,
+        paced: bool,
     ) -> Result<()> {
         let h = self.source.upper;
         let outer = (doc.radius() + h)
@@ -621,6 +688,12 @@ impl Atlas {
             &self.source,
         )?;
         let show_body = (view.eye - DVec3::Y * eye).length() > 0.65;
+        let retained_error = self
+            .resources
+            .iter()
+            .filter(|(k, _)| !hidden(k.tile, &view))
+            .map(|(_, r)| projected_bounds(&r.bounds, r.error, anchor, &view, &self.settings))
+            .fold(0., f64::max);
         // Ordinary motion/looking changes placement only; amortize the expensive
         // source bake. Still recompute the exposed error bound for the current eye.
         let movement = anchor
@@ -639,156 +712,74 @@ impl Atlas {
             .max((self.settings.tilt_degrees - self.planned_settings.tilt_degrees).abs())
             .to_radians();
         let zoom = (self.settings.distance_meters - self.planned_settings.distance_meters).abs();
-        if !self.resources.is_empty()
+        if self.pending.is_none()
+            && !self.resources.is_empty()
             && threshold_settings == self.planned_settings
             && movement < 32f64.max(self.settings.distance_meters * 0.01)
             && angles < 0.005
             && zoom < 0.005 * (1. + self.settings.distance_meters)
             && show_body == self.show_body
         {
-            self.maximum_error = self
-                .resources
-                .iter()
-                .filter(|(k, _)| !hidden(k.tile, &view))
-                .map(|(_, r)| projected_bounds(&r.bounds, r.error, anchor, &view, &self.settings))
-                .fold(0., f64::max);
-            self.limited = self.maximum_error > self.settings.max_error_pixels;
-            self.update_materials(config, anchor, &view);
-            self.update_placements(anchor, &view);
-            self.view = view;
-            self.anchor = anchor;
-            return Ok(());
+            return self.place_current(config, anchor, view, show_body, retained_error);
         }
-        let mut leaves: BTreeSet<_> = FACES
-            .into_iter()
-            .map(|face| Tile {
-                face,
-                level: 0,
-                xy: [0, 0],
-            })
-            .collect();
-        let mut queue = BinaryHeap::new();
-        for &tile in &leaves {
-            queue.push(Priority {
-                tile,
-                error: projected(doc, tile, self.max_level, anchor, &view, &self.settings),
-            });
+        let mut pending = self
+            .pending
+            .take()
+            .unwrap_or_else(|| self.plan(doc, anchor, &view));
+        // Defer only while the installed source still meets the declared pixel
+        // budget for THIS eye. Closed coverage alone cannot preserve detail.
+        let defer =
+            paced && !self.resources.is_empty() && retained_error <= self.settings.max_error_pixels;
+        self.forced_synchronous = paced && !defer;
+        if !defer && pending.outdated(&self.settings, anchor, &view) {
+            pending = self.rebase(doc, anchor, &view, pending)?;
         }
-        while let Some(Priority { tile, error }) = queue.pop() {
-            if error <= self.settings.max_error_pixels * 0.8
-                || leaves.len() + 3 > self.tile_budget()
-            {
-                break;
+        let mut cache = std::mem::take(&mut self.geometry_cache);
+        let result = pending.step(doc, config, self, defer, &mut cache);
+        self.geometry_cache = cache;
+        self.last_generated_tiles = match result {
+            Ok(count) => count,
+            Err(error) => {
+                self.geometry_cache.retain(&self.resources);
+                return Err(error);
             }
-            if tile.level >= self.max_level {
-                continue;
-            }
-            leaves.remove(&tile);
-            for tile in tile.children() {
-                leaves.insert(tile);
-                queue.push(Priority {
-                    tile,
-                    error: projected(doc, tile, self.max_level, anchor, &view, &self.settings),
-                });
+        };
+        self.generation_batches += u64::from(self.last_generated_tiles > 0);
+        if pending.remaining() > 0 {
+            self.pending = Some(pending);
+            return self.place_current(config, anchor, view, show_body, retained_error);
+        }
+        // Finishing yesterday's view must not publish obsolete coverage. Reuse
+        // ready resources by the complete seam key, then finish the latest plan.
+        if pending.outdated(&self.settings, anchor, &view) {
+            pending = self.rebase(doc, anchor, &view, pending)?;
+            if pending.remaining() > 0 {
+                self.pending = Some(pending);
+                return self.place_current(config, anchor, view, show_body, retained_error);
             }
         }
-        let maximum = leaves
-            .iter()
-            .map(|t| projected(doc, *t, self.max_level, anchor, &view, &self.settings))
-            .fold(0., f64::max);
-        let registry = topology::Registry::new(&leaves, self.max_level, self.source.grid);
-        let mut staged = BTreeMap::new();
-        let mut born = 0;
-        let mut count = 0;
-        let mut reused_samples = 0;
-        let previous: BTreeMap<_, _> = self.resources.iter().map(|(k, r)| (k.tile, r)).collect();
-        for tile in leaves {
-            let key = ResourceKey {
-                tile,
-                grid: self.source.grid,
-                signature: registry.signature(tile),
-            };
-            let resource = if let Some(r) = self.resources.get(&key) {
-                r.clone()
-            } else {
-                born += 1;
-                let resource = topology::resource_prepared(
-                    doc,
-                    config,
-                    &key,
-                    &registry,
-                    self.max_level,
-                    self.settings
-                        .reuse_vertex_samples
-                        .then(|| previous.get(&tile).map(|r| r.as_ref()))
-                        .flatten(),
-                    self.source.sampler(doc),
-                )?;
-                reused_samples += resource.sample_hits as u64;
-                Arc::new(resource)
-            };
-            count += resource.asset.geometry.positions.len();
-            if count > 2_000_000 {
-                return Err(invalid(
-                    "Planet visual atlas exceeds2M vertices; previous coverage is retained",
-                ));
-            }
-            staged.insert(key, resource);
-        }
-        let changed = staged.len() != self.resources.len()
-            || staged
-                .keys()
-                .zip(self.resources.keys())
-                .any(|(a, b)| a != b)
-            || show_body != self.show_body
-            || self.planned_settings.render_group_size != self.settings.render_group_size;
+        let generation::Pending {
+            resources: staged,
+            anchor: planned_anchor,
+            eye: planned_eye,
+            settings: planned_settings,
+            maximum,
+            born,
+            sample_hits: reused_samples,
+            ..
+        } = pending;
         let retired = self
             .resources
             .keys()
             .filter(|k| !staged.contains_key(*k))
             .count() as u64;
-        if changed {
-            let grouped = topology::groups(
-                &staged,
-                self.settings.render_group_size,
-                &self.body,
-                self,
-                anchor,
-                &view,
-            )?;
-            self.group_builds += grouped.built;
-            self.meshes.assets = grouped.assets;
-            self.coordinates = grouped.coordinates;
-            self.normals = grouped.normals;
-            self.groups = grouped.groups;
-            self.meshes.instances = self
-                .meshes
-                .assets
-                .iter()
-                .filter(|a| a.id != "orbit_avatar" || show_body)
-                .map(|a| Instance {
-                    id: a.id.clone(),
-                    asset: a.id.clone(),
-                    position: [0.; 3],
-                    rotation: [0., 0., 0., 1.],
-                    scale: 1.,
-                    color: if a.id == "orbit_avatar" {
-                        self.body_color()
-                    } else {
-                        config.color
-                    },
-                    playback: None,
-                    attachment: None,
-                })
-                .collect();
-        }
-        // A render-only matrix bypasses no authoring validation: authored instances stay identity.
-        self.show_body = show_body;
-        self.planned_anchor = anchor;
-        self.planned_eye = observer(anchor, &view);
-        self.planned_settings = self.settings.clone();
-        self.show_body = show_body;
+        self.update_geometry(config, anchor, &view, &staged)?;
+        self.set_body_visibility(show_body);
+        self.planned_anchor = planned_anchor;
+        self.planned_eye = planned_eye;
+        self.planned_settings = planned_settings;
         self.resources = staged;
+        self.geometry_cache.retain(&self.resources);
         self.reused_samples += reused_samples;
         self.view = view;
         self.anchor = anchor;
@@ -806,6 +797,164 @@ impl Atlas {
         self.update_placements(anchor, &self.view.clone());
         Ok(())
     }
+    fn plan(&self, doc: &Document, anchor: Anchor, view: &View) -> generation::Pending {
+        let mut leaves: BTreeSet<_> = FACES
+            .into_iter()
+            .map(|face| Tile {
+                face,
+                level: 0,
+                xy: [0, 0],
+            })
+            .collect();
+        let mut queue = BinaryHeap::new();
+        for &tile in &leaves {
+            queue.push(Priority {
+                tile,
+                error: projected(doc, tile, self.max_level, anchor, view, &self.settings),
+            });
+        }
+        while let Some(Priority { tile, error }) = queue.pop() {
+            if error <= self.settings.max_error_pixels * 0.8
+                || leaves.len() + 3 > self.tile_budget()
+            {
+                break;
+            }
+            if tile.level >= self.max_level {
+                continue;
+            }
+            leaves.remove(&tile);
+            for tile in tile.children() {
+                leaves.insert(tile);
+                queue.push(Priority {
+                    tile,
+                    error: projected(doc, tile, self.max_level, anchor, view, &self.settings),
+                });
+            }
+        }
+        let maximum = leaves
+            .iter()
+            .map(|t| projected(doc, *t, self.max_level, anchor, view, &self.settings))
+            .fold(0., f64::max);
+        generation::Pending::new(leaves, self, anchor, view, maximum)
+    }
+    fn rebase(
+        &mut self,
+        doc: &Document,
+        anchor: Anchor,
+        view: &View,
+        old: generation::Pending,
+    ) -> Result<generation::Pending> {
+        let mut current = self.plan(doc, anchor, view);
+        if let Err(error) = current.reuse(&old.resources) {
+            self.geometry_cache.retain(&self.resources);
+            return Err(error);
+        }
+        self.geometry_cache
+            .retain_pair(&self.resources, &current.resources);
+        Ok(current)
+    }
+    fn set_body_visibility(&mut self, show_body: bool) {
+        if show_body != self.show_body {
+            // Body visibility changes independently of terrain representation.
+            self.meshes.instances.retain(|i| i.id != "orbit_avatar");
+            if show_body {
+                self.meshes.instances.push(Instance {
+                    id: self.body.asset.id.clone(),
+                    asset: self.body.asset.id.clone(),
+                    position: [0.; 3],
+                    rotation: [0., 0., 0., 1.],
+                    scale: 1.,
+                    color: self.body_color(),
+                    playback: None,
+                    attachment: None,
+                });
+            }
+        }
+        // A render-only matrix bypasses no authoring validation: authored instances stay identity.
+        self.show_body = show_body;
+    }
+    fn place_current(
+        &mut self,
+        config: &super::runtime::Config,
+        anchor: Anchor,
+        view: View,
+        show_body: bool,
+        retained_error: f64,
+    ) -> Result<()> {
+        self.maximum_error = retained_error;
+        self.limited = self.maximum_error > self.settings.max_error_pixels;
+        let resources = std::mem::take(&mut self.resources);
+        let result = self.update_geometry(config, anchor, &view, &resources);
+        self.resources = resources;
+        result?;
+        self.set_body_visibility(show_body);
+        self.update_materials(config, anchor, &view);
+        self.update_placements(anchor, &view);
+        self.view = view;
+        self.anchor = anchor;
+        Ok(())
+    }
+    fn update_geometry(
+        &mut self,
+        config: &super::runtime::Config,
+        anchor: Anchor,
+        view: &View,
+        resources: &BTreeMap<ResourceKey, Arc<Resource>>,
+    ) -> Result<()> {
+        let selected = self.geometry_cache.select(
+            resources.iter(),
+            config,
+            &self.settings,
+            &self.light,
+            self.source.upper,
+            (anchor, view),
+        );
+        let changed = selected.len() != self.selected.len()
+            || selected
+                .iter()
+                .zip(&self.selected)
+                .any(|((a, r), (b, s))| *a != b || !Arc::ptr_eq(r, s))
+            || self.planned_settings.render_group_size != self.settings.render_group_size;
+        if changed {
+            let selected: BTreeMap<_, _> =
+                selected.into_iter().map(|(k, r)| (k.clone(), r)).collect();
+            let grouped = topology::groups(
+                &selected,
+                self.settings.render_group_size,
+                &self.body,
+                self,
+                anchor,
+                view,
+            )?;
+            self.group_builds += grouped.built;
+            self.meshes.assets = grouped.assets;
+            self.coordinates = grouped.coordinates;
+            self.normals = grouped.normals;
+            self.groups = grouped.groups;
+            self.meshes.instances = self
+                .meshes
+                .assets
+                .iter()
+                .filter(|a| a.id != "orbit_avatar" || self.show_body)
+                .map(|a| Instance {
+                    id: a.id.clone(),
+                    asset: a.id.clone(),
+                    position: [0.; 3],
+                    rotation: [0., 0., 0., 1.],
+                    scale: 1.,
+                    color: if a.id == "orbit_avatar" {
+                        self.body_color()
+                    } else {
+                        config.color
+                    },
+                    playback: None,
+                    attachment: None,
+                })
+                .collect();
+            self.selected = selected;
+        }
+        Ok(())
+    }
     fn update_placements(&mut self, _anchor: Anchor, view: &View) {
         self.placements.clear();
         self.placements.resize(self.groups.len(), Mat4::IDENTITY);
@@ -818,6 +967,9 @@ impl Atlas {
         }
     }
     pub fn set_light(&mut self, light: &crate::model::Light) {
+        if self.light != *light {
+            self.geometry_cache.invalidate_rejections();
+        }
         self.scene_air = light.atmosphere.unwrap_or(crate::atmosphere::Atmosphere {
             density: 0.,
             ..Default::default()
@@ -894,7 +1046,11 @@ impl Atlas {
             "planet_center_view_meters":self.view.center.to_array(),"render_origin":"camera","render_units":"meters","clip":self.view.clip,"resident_tiles":self.resources.len(),"vertices":self.resources.values().map(|r|r.asset.geometry.positions.len()).sum::<usize>(),
             "triangles":self.resources.values().map(|r|r.asset.geometry.triangles.len()).sum::<usize>(),"geometry_builds":self.builds,"residence_plans":self.plans,"retired_tiles":self.retired,
             "last_update_ms":self.last_update_ms,"reused_vertex_samples":self.reused_samples,
+            "generation":{"pending_tiles":self.pending.as_ref().map_or(0,|p|p.remaining()),"pending_age_updates":self.pending.as_ref().map_or(0,|p|p.age),"last_generated_tiles":self.last_generated_tiles,"batches":self.generation_batches,"forced_synchronous_for_quality":self.forced_synchronous,"publication":"complete_conforming_atlas","time_budget_is_soft":true},
+            "atmospheric_geometry":self.geometry_cache.inspect(&self.resources, &self.selected),
+            "selected_geometry_error_contract":"source_pixels_or_exact_coverage_and_attenuated_color",
             "max_source_cast_error_meters":self.resources.values().map(|r|r.cast_error).fold(0.,f64::max),"maximum_geometric_bound_pixels":self.maximum_error,"quality_limited":self.limited,
+            "max_consumed_coordinate_cast_error_meters":self.resources.values().map(|r|r.coordinate_error).fold(0.,f64::max),
             "all_six_faces_covered":true,"conforming_edges":true,"shared_high_low_coordinates":true,"depth_contract":"reverse_z_finite","physical_grid_level":self.max_level+self.source.grid.ilog2() as u8,
             "atmosphere_model":"homogeneous_finite_shell","effective_density_per_meter":self.optical_depth()/self.settings.atmosphere_height_meters,"effective_optical_depth":self.optical_depth(),"effective_tile_budget":self.tile_budget(),"finite_atmospheric_materials":self.cheap_materials,"render_groups":self.groups.len(),"group_builds":self.group_builds,"legacy_atmospheric_selector":false,"gpu_occlusion":"fallback_custom_projection"})
     }

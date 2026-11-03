@@ -112,6 +112,7 @@ struct Builder<'a> {
     // map iteration. Randomized lookup does not change the emitted stream.
     indices: std::collections::HashMap<Key, u32>,
     cast_error: f64,
+    coordinate_error: f64,
     previous: Option<&'a Resource>,
     old_indices: std::collections::HashMap<Key, usize>,
     normal_levels: Vec<u8>,
@@ -135,6 +136,7 @@ impl Builder<'_> {
             self.high_low.push(old.coordinates.as_ref().unwrap()[at]);
             self.normal_levels.push(level);
             self.cast_error = self.cast_error.max(old.cast_error);
+            self.coordinate_error = self.coordinate_error.max(old.coordinate_error);
             self.sample_hits += 1;
             return index;
         }
@@ -156,9 +158,14 @@ impl Builder<'_> {
         self.indices.insert(k, index);
         self.positions.push(p.to_array());
         self.normals.push(normal.as_vec3().to_array());
-        self.high_low.push(crate::meshes::SplitPosition::new(
-            d * (1. + h / self.doc.radius()),
-        ));
+        let global = d * (1. + h / self.doc.radius());
+        let split = crate::meshes::SplitPosition::new(global);
+        let reconstructed =
+            DVec3::from(split.high.map(f64::from)) + DVec3::from(split.low.map(f64::from));
+        self.coordinate_error = self
+            .coordinate_error
+            .max((global - reconstructed).length() * self.doc.radius());
+        self.high_low.push(split);
         self.coordinates.push((d * 4096.).as_vec3().to_array());
         self.normal_levels.push(level);
         index
@@ -240,6 +247,7 @@ pub(super) fn resource_prepared<'a>(
         high_low: vec![],
         indices: Default::default(),
         cast_error: 0.,
+        coordinate_error: 0.,
         previous,
         old_indices: previous
             .map(|r| r.keys.iter().enumerate().map(|(i, k)| (*k, i)).collect())
@@ -330,9 +338,12 @@ pub(super) fn resource_prepared<'a>(
         },
         normals: Arc::new(b.normals),
         cast_error: b.cast_error,
+        coordinate_error: b.coordinate_error,
         bounds: global_bounds(doc, t),
         radial_upper: doc.radius() + height_bounds(doc, t.cone().0, t.cone().1).1,
-        error: error(doc, t, max, n) + b.cast_error * 2.,
+        // Planet clip positions consume the common high/low coordinates, not
+        // the local f32 proxy (which remains available for material projection).
+        error: error(doc, t, max, n) + b.coordinate_error * 2.,
     })
 }
 pub(super) fn body(
@@ -397,6 +408,7 @@ pub(super) fn body(
         },
         normals: Arc::new(n),
         cast_error: 0.,
+        coordinate_error: 0.,
         bounds: [DVec3::ZERO; 8],
         radial_upper: 0.,
         error: 0.,

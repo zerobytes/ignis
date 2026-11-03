@@ -19,7 +19,7 @@ def percentile(values, q):
     return sorted(values)[min(len(values)-1, int((len(values)-1)*q))]
 
 
-def run(binary, output, ticks, distance, width, height, cache):
+def run(binary, output, ticks, distance, width, height, cache, paced=True, geometry=True):
     OUT.mkdir(parents=True, exist_ok=True)
     client = Client(binary, log_path=OUT/'stdio.log')
     rows = []
@@ -31,7 +31,8 @@ def run(binary, output, ticks, distance, width, height, cache):
         client.call('step', ticks=120)
         client.call('set_player_view', view=view())
         client.call('set_planet_view', view={'viewport': [width, height], 'distance_meters': distance,
-                                           'reuse_vertex_samples': cache})
+                                           'reuse_vertex_samples': cache, 'incremental_generation': paced,
+                                           'atmosphere_geometry': geometry})
         previous = client.call('inspect_planet_view')
         world = client.call('inspect_planet_runtime')
         build = client.call('inspect')['build_id']
@@ -63,7 +64,14 @@ def run(binary, output, ticks, distance, width, height, cache):
                                 'p95_ms': percentile(samples, .95), 'p99_ms': percentile(samples, .99),
                                 'maximum_ms': max(samples), 'over_33ms': sum(x>33.33 for x in samples),
                                 'over_100ms': sum(x>100 for x in samples)}
-        report = {'build_id': build, 'method': 'one tick per MCP sample, no draw/present; RTT includes IPC',
+        before_sync = client.call('inspect_planet_runtime')
+        final_view = client.call('set_planet_view', view=current['settings'])
+        after_sync = client.call('inspect_planet_runtime')
+        assert before_sync['actual_path_meters'] == after_sync['actual_path_meters']
+        assert before_sync['tick'] == after_sync['tick']
+        assert final_view['generation']['pending_tiles'] == 0
+        report = {'build_id': build, 'incremental_generation': paced, 'atmosphere_geometry': geometry,
+                  'final_view_after_explicit_sync': final_view, 'method': 'one tick per MCP sample, no draw/present; RTT includes IPC',
                   'summary': summary, 'samples': rows}
         (OUT/output).write_text(json.dumps(report, indent=2))
         print(json.dumps(summary, indent=2), flush=True)
@@ -80,7 +88,9 @@ if __name__ == '__main__':
     parser.add_argument('--width', type=int, default=2248)
     parser.add_argument('--height', type=int, default=1580)
     parser.add_argument('--cache-off', action='store_true')
+    parser.add_argument('--eager', action='store_true')
+    parser.add_argument('--geometry-off', action='store_true')
     args = parser.parse_args()
     if not 1 <= args.ticks <= 3600 or Path(args.output).name != args.output:
         parser.error('ticks1..3600 and a local output filename required')
-    run(args.binary, args.output, args.ticks, args.distance, args.width, args.height, not args.cache_off)
+    run(args.binary, args.output, args.ticks, args.distance, args.width, args.height, not args.cache_off, not args.eager, not args.geometry_off)

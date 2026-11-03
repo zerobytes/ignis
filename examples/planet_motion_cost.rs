@@ -13,7 +13,16 @@ use std::{path::Path, time::Instant};
 fn main() -> Result<()> {
     let out = Path::new("artifacts/planet-pacing");
     std::fs::create_dir_all(out)?;
-    let reference = std::env::args().any(|a| a == "--reference");
+    let args: Vec<_> = std::env::args().collect();
+    let reference = args.iter().any(|a| a == "--reference");
+    let synchronous = args.iter().any(|a| a == "--synchronous-reference");
+    let geometry_reference = args.iter().any(|a| a == "--geometry-reference");
+    let distance = args
+        .windows(2)
+        .find(|p| p[0] == "--distance")
+        .map(|p| p[1].parse::<f64>())
+        .transpose()?
+        .unwrap_or(4.);
     let scene: Scene = serde_json::from_slice(&std::fs::read(
         "artifacts/planet-runtime/player.scene.json",
     )?)?;
@@ -44,7 +53,9 @@ fn main() -> Result<()> {
     e.execute(
         Command::SetPlanetView {
             view: Some(Settings {
-                distance_meters: 4.,
+                distance_meters: distance,
+                incremental_generation: !synchronous,
+                atmosphere_geometry: !geometry_reference,
                 viewport: [2248, 1580],
                 reuse_vertex_samples: !reference,
                 canonical_cpu_stream: !reference,
@@ -107,7 +118,30 @@ fn main() -> Result<()> {
         summary[segment] = json!({"samples":n,"p50_ms":values[n/2],"p95_ms":values[(n-1)*95/100],
             "p99_ms":values[(n-1)*99/100],"max_ms":values[n-1],"over_33ms":values.iter().filter(|&&v|v>33.333).count()});
     }
-    let path = out.join(if reference {
+    let before_sync = e.inspect_planet_runtime();
+    e.execute(
+        Command::SetPlanetView {
+            view: Some(e.planet_view_settings()?),
+        }
+        .into(),
+    )?;
+    let after_sync = e.inspect_planet_runtime();
+    anyhow::ensure!(
+        before_sync["tick"] == after_sync["tick"]
+            && before_sync["pose"] == after_sync["pose"]
+            && before_sync["actual_path_meters"] == after_sync["actual_path_meters"],
+        "visual synchronization changed the physical state"
+    );
+    let final_view = e.inspect_planet_view();
+    anyhow::ensure!(
+        final_view["generation"]["pending_tiles"] == 0,
+        "candidate atlas did not finish"
+    );
+    let path = out.join(if synchronous {
+        "cpu-synchronous-reference.json"
+    } else if geometry_reference {
+        "cpu-geometry-reference.json"
+    } else if reference {
         "cpu-reference.json"
     } else {
         "cpu-current.json"
@@ -115,7 +149,7 @@ fn main() -> Result<()> {
     std::fs::write(
         path,
         serde_json::to_vec_pretty(
-            &json!({"build_id":env!("IGNIS_BUILD_ID"),"reference":reference,"method":"one native tick plus frame preparation; no GPU/present/IPC", "summary":summary,"samples":samples}),
+            &json!({"build_id":env!("IGNIS_BUILD_ID"),"reference":reference,"synchronous_reference":synchronous,"geometry_reference":geometry_reference,"distance_meters":distance,"explicit_sync_outside_measurement":true,"final_view":final_view,"method":"one native tick plus frame preparation; no GPU/present/IPC", "summary":summary,"samples":samples}),
         )?,
     )?;
     println!("{summary:#}");

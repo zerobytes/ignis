@@ -3092,7 +3092,7 @@ impl Engine {
                 let mut view = self.planet_view_settings()?;
                 view.yaw_degrees = (view.yaw_degrees + yaw_delta_degrees).rem_euclid(360.);
                 view.tilt_degrees = (view.tilt_degrees + tilt_delta_degrees).clamp(-85., 165.);
-                self.set_planet_view(Some(view))?;
+                self.set_planet_view_paced(Some(view), true)?;
                 return Ok(self.inspect_planet_view());
             }
             Command::SetPlanetViewport { width, height } => {
