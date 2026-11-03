@@ -29,7 +29,7 @@ def main():
   c.call('open_character_panel',open=True,prefix='female');c.call('load_character_editor_source',prefix='female')
   c.call('set_character_handle_view',view={'enabled':False,'symmetry':True,'selected':None,'group':None})
   c.call('set_viewport_performance',settings={'enabled':False,'vsync':True})
-  state=c.call('inspect_character_editor');assert state['ready'] and len(state['binding']['recipe']['configuration']['parameters'])==304
+  state=c.call('inspect_character_editor');assert state['ready'] and all(name in state['binding']['recipe']['configuration']['parameters'] for name in ['eye_L_red','eye_R_red'])
   c.call('save_editor',path='artifacts/character-eyes/current.layout.json');c.call('capture_editor',path='artifacts/character-eyes/editor.png',width=1440,height=1000)
   report={'pid':c.process.pid,'scene':scene,'build':c.call('inspect')['build_id'],'ready':state['ready'],'source':state['binding']['recipe']['source_path']}
   launch.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))

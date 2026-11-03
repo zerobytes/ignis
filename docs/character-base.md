@@ -1,6 +1,8 @@
 # Base humana feminina — EAF-187
 
-Incremento atual: [íris procedural e editor ocular](character-eyes.md).
+Incremento atual: [cadeia de pontos da mandíbula](character-jaw.md).
+
+[Íris procedural e editor ocular](character-eyes.md).
 
 [Base inferior da asa do nariz](character-nose.md).
 
