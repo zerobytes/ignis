@@ -73,6 +73,7 @@ pub fn compile(document: &Document) -> Result<Arc<Vec<Pack>>> {
     for a in &document.assets {
         if a.rig.is_none()
             && a.material.surface.is_none()
+            && a.material.procedural.is_none()
             && a.clips.is_empty()
             && a.material
                 .reflectance

@@ -122,6 +122,9 @@ fn default_session_capacity() -> usize {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Material {
+        operation: Box<crate::materials::library::Operation>,
+    },
     Botany {
         operation: Box<crate::botany::Operation>,
     },
@@ -929,7 +932,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 121;
+pub const REPLAY_VERSION: u32 = 122;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1228,6 +1231,11 @@ impl Engine {
                         || matches!(&edit, crate::meshes::Edit::PutAsset { asset } if asset.material.surface.is_some())
                     {
                         scene.version = scene.version.max(110);
+                    }
+                    if matches!(&edit, crate::meshes::Edit::SetMaterial { material, .. } if material.procedural.is_some())
+                        || matches!(&edit, crate::meshes::Edit::PutAsset { asset } if asset.material.procedural.is_some())
+                    {
+                        scene.version = scene.version.max(112);
                     }
                     scene.plants.apply_mesh(edit, &mut scene.meshes)?;
                 }

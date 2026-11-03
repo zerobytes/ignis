@@ -6,6 +6,7 @@ use crate::{
 use serde_json::{Value, json};
 mod botany;
 mod characters;
+mod materials;
 use std::{
     io::{BufReader, BufWriter, Read, Write},
     path::{Component, Path, PathBuf},
@@ -494,6 +495,7 @@ impl Service {
         }
         let pause_audio = matches!(&request.command, Command::Pause | Command::Exit);
         let data = match &request.command {
+            Command::Material { operation } => self.material_command(operation)?,
             Command::Botany { operation } => self.botany_command(operation)?,
             Command::InspectCharacterSource { .. }
             | Command::PublishCharacter { .. }

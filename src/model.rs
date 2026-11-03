@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 111;
+pub const SCENE_VERSION: u32 = 112;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -620,6 +620,22 @@ impl Scene {
             return Err(invalid(
                 "Environment/direct intensity require scene version76",
             ));
+        }
+        if self.version < 112 {
+            let procedural = |a: &crate::meshes::Asset| a.material.procedural.is_some();
+            if self.meshes.assets.iter().any(procedural)
+                || self.plants.entries.iter().any(|e| {
+                    procedural(&e.source)
+                        || e.assembly.as_ref().is_some_and(|a| {
+                            procedural(&a.context)
+                                || a.context_grafts.iter().any(|g| procedural(&g.source))
+                        })
+                })
+            {
+                return Err(invalid(
+                    "Procedural material recipes require scene version112",
+                ));
+            }
         }
         if self.version < 111
             && self

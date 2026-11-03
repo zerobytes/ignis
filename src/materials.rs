@@ -3,12 +3,16 @@ use crate::model::{Result, invalid};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+pub mod library;
+pub mod recipe;
 mod surface;
 pub use surface::{BlendMode, Coverage, Glass, Surface};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Material {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub procedural: Option<Arc<recipe::Procedural>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub surface: Option<Surface>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -25,7 +29,11 @@ pub struct Material {
 
 impl PartialEq for Material {
     fn eq(&self, other: &Self) -> bool {
-        self.surface == other.surface
+        (match (&self.procedural, &other.procedural) {
+            (None, None) => true,
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b) || a == b,
+            _ => false,
+        }) && self.surface == other.surface
             && self.pattern == other.pattern
             && self.secondary_pattern == other.secondary_pattern
             && self.transmission == other.transmission
@@ -214,20 +222,72 @@ impl Detail {
 }
 
 impl Material {
+    /// Resource identity changes invalidate derived caches once, even when a
+    /// newly loaded file happens to contain equal sample values.
+    pub(crate) fn resources_match(&self, other: &Self) -> bool {
+        let procedural = match (&self.procedural, &other.procedural) {
+            (None, None) => true,
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+            _ => false,
+        };
+        let detail = match (&self.detail, &other.detail) {
+            (None, None) => true,
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+            _ => false,
+        };
+        procedural && detail
+    }
     pub fn transparent(&self) -> bool {
         self.surface.as_ref().is_some_and(Surface::transparent)
     }
     pub(crate) fn opaque_occluder(&self) -> bool {
         self.transmission == 0.
+            && self.procedural.is_none()
             && self
                 .surface
                 .as_ref()
                 .is_none_or(|s| s.mode == BlendMode::Opaque)
     }
     pub fn has_coverage(&self) -> bool {
-        self.surface.as_ref().is_some_and(|s| s.coverage.is_some())
+        self.procedural.is_some() || self.surface.as_ref().is_some_and(|s| s.coverage.is_some())
     }
     pub fn validate(&self) -> Result<()> {
+        if let Some(p) = &self.procedural {
+            p.validate()?;
+            if self.pattern.is_some()
+                || self.secondary_pattern.is_some()
+                || self.detail.is_some()
+                || self.reflectance.is_some()
+                || self.transmission != 0.
+                || self.surface.as_ref().is_some_and(|s| {
+                    s.glass.is_some() || s.coverage.is_some() || s.emissive != [0.; 3]
+                })
+            {
+                return Err(invalid(
+                    "Procedural recipe owns its channels; remove legacy patterns, detail, reflectance, transmission, coverage, emission and glass",
+                ));
+            }
+            if p.recipe.relief == recipe::Relief::Parallax
+                && self
+                    .surface
+                    .as_ref()
+                    .is_some_and(|s| s.mode != BlendMode::Opaque)
+            {
+                return Err(invalid(
+                    "Parallax currently requires opaque composition; use bump for masked/translucent materials",
+                ));
+            }
+            if p.translucent()
+                && self
+                    .surface
+                    .as_ref()
+                    .is_none_or(|s| s.mode == BlendMode::Opaque)
+            {
+                return Err(invalid(
+                    "Procedural opacity requires mask, blend or additive surface mode",
+                ));
+            }
+        }
         if let Some(s) = &self.surface {
             s.validate()?;
             if s.glass.is_some() && (self.reflectance.is_some() || self.transmission != 0.) {
@@ -358,6 +418,7 @@ pub(crate) struct GpuMaterial {
     glass: [f32; 4],
     attenuation: [f32; 4],
     coverage: GpuPattern,
+    pub(crate) procedural: [u32; 4],
 }
 impl From<&Material> for GpuMaterial {
     fn from(material: &Material) -> Self {
@@ -380,6 +441,7 @@ impl From<&Material> for GpuMaterial {
             glass: [0.; 4],
             attenuation: [1.; 4],
             coverage: GpuPattern::default(),
+            procedural: [0; 4],
         };
         if let Some(p) = &material.pattern {
             let p = GpuPattern::from(p);
@@ -472,7 +534,7 @@ mod tests {
     use super::*;
     #[test]
     fn gpu_detail_table_matches_uniform_layout_and_zero_count_legacy() {
-        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1376);
+        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1392);
         let old: Material = serde_json::from_str(r#"{"transmission":0.3}"#).unwrap();
         let gpu = GpuMaterial::from(&old);
         assert_eq!(gpu.detail_control, [0.; 4]);
@@ -519,7 +581,7 @@ mod tests {
         expected.high[3] = 0.85;
         assert_eq!(GpuMaterial::from(&a), expected);
         assert_ne!(a, before);
-        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1376);
+        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1392);
     }
 
     #[test]

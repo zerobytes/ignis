@@ -1,5 +1,9 @@
 # Materiais procedurais de superfície — incremento EAF-80
 
+Reusable layered recipes, fixed-map assets and per-instance runtime variation are
+documented in [material-recipes.md](material-recipes.md). This page retains the
+original procedural-pattern contract and its historical limits.
+
 ## Motivação, alternativas e contrato antes do código
 
 Após smooth e sombra, o close da árvore continua com uma superfície marrom lisa

@@ -57,6 +57,9 @@ struct Marquee {
 }
 
 struct Properties {
+    material_displacement_id: String,
+    material_path: String,
+    material_resolution: u16,
     object: String,
     object_original: String,
     object_members: usize,
@@ -940,6 +943,12 @@ pub(super) fn properties(
             .find(|o| o.members.contains(&instance.id));
         let object = owner.map_or_else(String::new, |o| o.id.clone());
         state.properties = Some(Properties {
+            material_displacement_id: format!(
+                "{}-relief",
+                asset.id.chars().take(24).collect::<String>()
+            ),
+            material_path: format!("assets/materials/{}.ignis-material", asset.id),
+            material_resolution: 128,
             object_original: object.clone(),
             object,
             object_members: owner.map_or(0, |o| o.members.len()),
@@ -1054,40 +1063,43 @@ pub(super) fn properties(
                 ui.selectable_value(&mut p.shading, meshes::Shading::Smooth, "Suave");
                 ui.selectable_value(&mut p.shading, meshes::Shading::Flat, "Plano");
             });
+            material_recipe_ui(ui, p, asset, service.engine.mesh_reference(), commands);
             surface_material_ui(ui, &mut p.material);
-            let mut procedural = p.material.pattern.is_some();
-            if ui
-                .checkbox(&mut procedural, "Material procedural")
-                .changed()
-            {
-                p.material.pattern = procedural.then_some(crate::materials::Pattern {
-                    frequency: [2.; 3],
-                    low: [0.45; 3],
-                    high: [1.; 3],
-                    bump: 0.005,
-                    warp: 0.1,
-                    octaves: 3,
-                    seed: 1,
-                    contrast: 1.,
-                    kind: crate::materials::PatternKind::Noise,
-                });
-            }
-            if let Some(pattern) = &mut p.material.pattern {
-                design_ui::field(ui, "Cor escura", |ui| {
-                    design_ui::color(ui, &mut pattern.low)
-                });
-                design_ui::field(ui, "Cor clara", |ui| {
-                    design_ui::color(ui, &mut pattern.high)
-                });
-                let mut frequency = pattern.frequency[0];
+            ui.add_enabled_ui(p.material.procedural.is_none(), |ui| {
+                let mut procedural = p.material.pattern.is_some();
                 if ui
-                    .add(egui::Slider::new(&mut frequency, 0.1..=20.).text("Frequência"))
+                    .checkbox(&mut procedural, "Material procedural")
                     .changed()
                 {
-                    pattern.frequency = [frequency; 3];
+                    p.material.pattern = procedural.then_some(crate::materials::Pattern {
+                        frequency: [2.; 3],
+                        low: [0.45; 3],
+                        high: [1.; 3],
+                        bump: 0.005,
+                        warp: 0.1,
+                        octaves: 3,
+                        seed: 1,
+                        contrast: 1.,
+                        kind: crate::materials::PatternKind::Noise,
+                    });
                 }
-                ui.add(egui::Slider::new(&mut pattern.bump, 0.0..=0.05).text("Relevo visual"));
-            }
+                if let Some(pattern) = &mut p.material.pattern {
+                    design_ui::field(ui, "Cor escura", |ui| {
+                        design_ui::color(ui, &mut pattern.low)
+                    });
+                    design_ui::field(ui, "Cor clara", |ui| {
+                        design_ui::color(ui, &mut pattern.high)
+                    });
+                    let mut frequency = pattern.frequency[0];
+                    if ui
+                        .add(egui::Slider::new(&mut frequency, 0.1..=20.).text("Frequência"))
+                        .changed()
+                    {
+                        pattern.frequency = [frequency; 3];
+                    }
+                    ui.add(egui::Slider::new(&mut pattern.bump, 0.0..=0.05).text("Relevo visual"));
+                }
+            });
         });
         ui.add_space(12.);
         let changed =
@@ -1098,7 +1110,8 @@ pub(super) fn properties(
             .is_none_or(|(instance, material, shading)| {
                 instance != &p.instance || material != &p.material || shading != &p.shading
             });
-        if changed && unattempted {
+        let material_action=commands.iter().any(|c|matches!(c,Command::Material {operation} if !matches!(operation.as_ref(),crate::materials::library::Operation::Inspect {..} | crate::materials::library::Operation::Save {..})));
+        if changed && unattempted && !material_action {
             commands.push(live_edit(
                 ui,
                 vec![
@@ -2292,6 +2305,214 @@ fn feedback_message(feedback: crate::mesh_sculpt_shapes::Feedback, radius: f32) 
     messages.join(" ")
 }
 
+fn material_recipe_ui(
+    ui: &mut egui::Ui,
+    p: &mut Properties,
+    asset: &meshes::Asset,
+    reference: crate::mesh_topology::Reference,
+    commands: &mut Vec<Command>,
+) {
+    use crate::materials::{
+        library::{Execution, Operation as Op, Preset},
+        recipe::{Field, Layer, MAX_LAYERS, Relief},
+    };
+    let command = |op| Command::Material {
+        operation: Box::new(op),
+    };
+    ui.collapsing("Biblioteca de materiais", |ui| {
+        ui.horizontal_wrapped(|ui| {
+            for preset in Preset::ALL {
+                if ui.button(preset.label()).clicked() {
+                    commands.push(command(Op::Preset {
+                        asset: asset.id.clone(),
+                        preset,
+                        seed: Some(1),
+                        unique_instances: false,
+                        execution: Execution::Runtime,
+                    }));
+                }
+            }
+        });
+        ui.text_edit_singleline(&mut p.material_path);
+        ui.horizontal(|ui| {
+            if ui.button("Salvar material").clicked() {
+                commands.push(command(Op::Save {
+                    asset: asset.id.clone(),
+                    path: p.material_path.clone(),
+                }));
+            }
+            if ui.button("Carregar e aplicar").clicked() {
+                commands.push(command(Op::Load {
+                    path: p.material_path.clone(),
+                    asset: Some(asset.id.clone()),
+                }));
+            }
+        });
+        let Some(source) = &p.material.procedural else {
+            return;
+        };
+        ui.text_edit_singleline(&mut p.material_displacement_id);
+        if ui.button("Gerar malha com relevo").on_hover_text("Cria outro asset e aplica à peça selecionada. A resolução depende dos vértices existentes.").clicked() {
+            commands.push(command(Op::BakeDisplacement {instance:p.instance.id.clone(),id:p.material_displacement_id.clone(),reference}));
+        }
+        let fixed = source.fixed.is_some();
+        ui.label(if fixed {
+            "Asset fixo · mapas calculados"
+        } else {
+            "Runtime · receita na GPU"
+        });
+        egui::ComboBox::from_id_salt("material_resolution")
+            .selected_text(format!(
+                "{} × {}",
+                p.material_resolution, p.material_resolution
+            ))
+            .show_ui(ui, |ui| {
+                for size in [16, 32, 64, 128, 256] {
+                    ui.selectable_value(
+                        &mut p.material_resolution,
+                        size,
+                        format!("{size} × {size}"),
+                    );
+                }
+            });
+        ui.horizontal(|ui| {
+            if ui.button("Gerar asset fixo").clicked() {
+                commands.push(command(Op::SetExecution {
+                    asset: asset.id.clone(),
+                    execution: Execution::Fixed {
+                        resolution: p.material_resolution,
+                    },
+                }));
+            }
+            if fixed && ui.button("Editar receita em runtime").clicked() {
+                commands.push(command(Op::SetExecution {
+                    asset: asset.id.clone(),
+                    execution: Execution::Runtime,
+                }));
+            }
+        });
+        if fixed {
+            ui.small("A receita foi preservada. Volte a runtime para editá-la.");
+            return;
+        }
+        let source = std::sync::Arc::make_mut(p.material.procedural.as_mut().unwrap());
+        let r = &mut source.recipe;
+        design_ui::field(ui, "Semente", |ui| {
+            ui.add(egui::DragValue::new(&mut r.seed));
+        });
+        ui.checkbox(&mut r.unique_instances, "Variação estável por objeto");
+        egui::ComboBox::from_id_salt("recipe_plane")
+            .selected_text(format!("{:?}", r.plane))
+            .show_ui(ui, |ui| {
+                for plane in [
+                    crate::materials::Plane::Xy,
+                    crate::materials::Plane::Xz,
+                    crate::materials::Plane::Yz,
+                ] {
+                    ui.selectable_value(&mut r.plane, plane, format!("{plane:?}"));
+                }
+            });
+        design_ui::field(ui, "Tamanho do padrão", |ui| {
+            for v in &mut r.tile_size {
+                ui.add(egui::DragValue::new(v).range(0.001..=10000.).speed(0.01));
+            }
+        });
+        ui.add(egui::Slider::new(&mut r.height_m, 0. ..=0.25).text("Profundidade · m"));
+        ui.horizontal(|ui| {
+            ui.selectable_value(&mut r.relief, Relief::Bump, "Bump");
+            ui.selectable_value(&mut r.relief, Relief::Parallax, "Parallax");
+        });
+        if r.relief == Relief::Parallax {
+            ui.add(egui::Slider::new(&mut r.view_steps, 8..=48).text("Passos de profundidade"));
+            ui.add(egui::Slider::new(&mut r.shadow_steps, 0..=24).text("Passos de sombra própria"));
+        }
+        ui.collapsing("Superfície base", |ui| {
+            recipe_sample_ui(ui, &mut r.base);
+        });
+        let mut remove = None;
+        for (index, layer) in r.layers.iter_mut().enumerate() {
+            ui.push_id(index, |ui| {
+                ui.collapsing(format!("Camada {}", index + 1), |ui| {
+                    egui::ComboBox::from_id_salt("field")
+                        .selected_text(format!("{:?}", layer.field))
+                        .show_ui(ui, |ui| {
+                            for field in [
+                                Field::Noise,
+                                Field::Ridged,
+                                Field::Cells,
+                                Field::Bricks,
+                                Field::Waves,
+                            ] {
+                                ui.selectable_value(&mut layer.field, field, format!("{field:?}"));
+                            }
+                        });
+                    design_ui::field(ui, "Frequência", |ui| {
+                        for v in &mut layer.frequency {
+                            ui.add(egui::DragValue::new(v).range(1..=64));
+                        }
+                    });
+                    design_ui::field(ui, "Semente da camada", |ui| {
+                        ui.add(egui::DragValue::new(&mut layer.seed));
+                    });
+                    ui.add(egui::Slider::new(&mut layer.octaves, 1..=4).text("Oitavas"));
+                    ui.add(egui::Slider::new(&mut layer.warp, 0. ..=1.).text("Distorção"));
+                    let high = layer.threshold[1];
+                    ui.add(
+                        egui::Slider::new(&mut layer.threshold[0], 0. ..=(high - 0.001).max(0.))
+                            .text("Máscara · início"),
+                    );
+                    let low = layer.threshold[0];
+                    ui.add(
+                        egui::Slider::new(&mut layer.threshold[1], (low + 0.001).min(1.)..=1.)
+                            .text("Máscara · fim"),
+                    );
+                    ui.add(egui::Slider::new(&mut layer.strength, 0. ..=1.).text("Intensidade"));
+                    ui.checkbox(&mut layer.invert, "Inverter máscara");
+                    recipe_sample_ui(ui, &mut layer.target);
+                    if ui.button("Remover camada").clicked() {
+                        remove = Some(index);
+                    }
+                });
+            });
+        }
+        if let Some(index) = remove {
+            r.layers.remove(index);
+        }
+        if r.layers.len() < MAX_LAYERS && ui.button("Adicionar camada").clicked() {
+            r.layers.push(Layer::default());
+        }
+    });
+}
+fn recipe_sample_ui(ui: &mut egui::Ui, s: &mut crate::materials::recipe::Sample) {
+    design_ui::field(ui, "Cor", |ui| {
+        let mut c = [
+            s.color_roughness[0],
+            s.color_roughness[1],
+            s.color_roughness[2],
+        ];
+        design_ui::color(ui, &mut c);
+        s.color_roughness[..3].copy_from_slice(&c);
+    });
+    ui.add(egui::Slider::new(&mut s.color_roughness[3], 0.2..=1.).text("Rugosidade"));
+    for (index, label) in [
+        "Metalicidade",
+        "Altura",
+        "Opacidade",
+        "Luz ambiente recebida",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        ui.add(egui::Slider::new(&mut s.response[index], 0. ..=1.).text(label));
+    }
+    design_ui::field(ui, "Emissão RGB", |ui| {
+        for v in &mut s.emission[..3] {
+            ui.add(egui::DragValue::new(v).range(0. ..=64.).speed(0.05));
+        }
+    });
+    ui.add(egui::Slider::new(&mut s.emission[3], 0. ..=1.).text("Transmissão fina"));
+}
+
 fn surface_material_ui(ui: &mut egui::Ui, material: &mut crate::materials::Material) {
     use crate::materials::{BlendMode, Coverage, Glass, Surface};
     let mut enabled = material.surface.is_some();
@@ -2338,42 +2559,47 @@ fn surface_material_ui(ui: &mut egui::Ui, material: &mut crate::materials::Mater
         if surface.mode == BlendMode::Mask {
             ui.add(egui::Slider::new(&mut surface.cutoff, 0. ..=1.).text("Limiar do recorte"));
         }
-        let mut patterned = surface.coverage.is_some();
-        if ui
-            .checkbox(&mut patterned, "Cobertura procedural")
-            .changed()
-        {
-            surface.coverage = patterned.then(Coverage::default);
+        if material.procedural.is_none() {
+            let mut patterned = surface.coverage.is_some();
+            if ui
+                .checkbox(&mut patterned, "Cobertura procedural")
+                .changed()
+            {
+                surface.coverage = patterned.then(Coverage::default);
+            }
+            if let Some(c) = &mut surface.coverage {
+                design_ui::field(ui, "Padrão de cobertura", |ui| {
+                    egui::ComboBox::from_id_salt("coverage_kind")
+                        .selected_text(match c.kind {
+                            crate::materials::PatternKind::Noise => "Ruído",
+                            crate::materials::PatternKind::Ridged => "Cristas",
+                            crate::materials::PatternKind::Cellular => "Células",
+                        })
+                        .show_ui(ui, |ui| {
+                            for (kind, label) in [
+                                (crate::materials::PatternKind::Noise, "Ruído"),
+                                (crate::materials::PatternKind::Ridged, "Cristas"),
+                                (crate::materials::PatternKind::Cellular, "Células"),
+                            ] {
+                                ui.selectable_value(&mut c.kind, kind, label);
+                            }
+                        });
+                });
+                design_ui::field(ui, "Frequência XYZ", |ui| {
+                    for v in &mut c.frequency {
+                        ui.add(egui::DragValue::new(v).range(0.01..=2048.).speed(0.1));
+                    }
+                });
+                ui.add(egui::Slider::new(&mut c.low, 0. ..=1.).text("Cobertura mínima"));
+                ui.add(egui::Slider::new(&mut c.high, 0. ..=1.).text("Cobertura máxima"));
+                design_ui::field(ui, "Semente", |ui| {
+                    ui.add(egui::DragValue::new(&mut c.seed));
+                });
+            }
         }
-        if let Some(c) = &mut surface.coverage {
-            design_ui::field(ui, "Padrão de cobertura", |ui| {
-                egui::ComboBox::from_id_salt("coverage_kind")
-                    .selected_text(match c.kind {
-                        crate::materials::PatternKind::Noise => "Ruído",
-                        crate::materials::PatternKind::Ridged => "Cristas",
-                        crate::materials::PatternKind::Cellular => "Células",
-                    })
-                    .show_ui(ui, |ui| {
-                        for (kind, label) in [
-                            (crate::materials::PatternKind::Noise, "Ruído"),
-                            (crate::materials::PatternKind::Ridged, "Cristas"),
-                            (crate::materials::PatternKind::Cellular, "Células"),
-                        ] {
-                            ui.selectable_value(&mut c.kind, kind, label);
-                        }
-                    });
-            });
-            design_ui::field(ui, "Frequência XYZ", |ui| {
-                for v in &mut c.frequency {
-                    ui.add(egui::DragValue::new(v).range(0.01..=2048.).speed(0.1));
-                }
-            });
-            ui.add(egui::Slider::new(&mut c.low, 0. ..=1.).text("Cobertura mínima"));
-            ui.add(egui::Slider::new(&mut c.high, 0. ..=1.).text("Cobertura máxima"));
-            design_ui::field(ui, "Semente", |ui| {
-                ui.add(egui::DragValue::new(&mut c.seed));
-            });
-        }
+    }
+    if material.procedural.is_some() {
+        return;
     }
     design_ui::field(ui, "Emissão RGB", |ui| {
         for v in &mut surface.emissive {

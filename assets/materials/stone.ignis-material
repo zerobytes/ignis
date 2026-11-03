@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "material": {
+    "procedural": {
+      "version": 1,
+      "recipe": {
+        "seed": 93,
+        "unique_instances": false,
+        "plane": "xy",
+        "tile_size": [
+          1.0,
+          1.0
+        ],
+        "base": {
+          "color_roughness": [
+            0.12,
+            0.105,
+            0.085,
+            0.95
+          ],
+          "response": [
+            0.0,
+            0.05,
+            1.0,
+            1.0
+          ],
+          "emission": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "layers": [
+          {
+            "field": "cells",
+            "frequency": [
+              4,
+              4
+            ],
+            "seed": 0,
+            "octaves": 1,
+            "warp": 0.0,
+            "threshold": [
+              0.05,
+              0.8
+            ],
+            "strength": 1.0,
+            "invert": false,
+            "target": {
+              "color_roughness": [
+                0.65,
+                0.55,
+                0.4,
+                0.72
+              ],
+              "response": [
+                0.0,
+                0.95,
+                1.0,
+                1.0
+              ],
+              "emission": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "field": "noise",
+            "frequency": [
+              26,
+              26
+            ],
+            "seed": 0,
+            "octaves": 3,
+            "warp": 0.0,
+            "threshold": [
+              0.0,
+              1.0
+            ],
+            "strength": 0.18,
+            "invert": false,
+            "target": {
+              "color_roughness": [
+                0.3,
+                0.28,
+                0.25,
+                0.9
+              ],
+              "response": [
+                0.0,
+                0.5,
+                1.0,
+                1.0
+              ],
+              "emission": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        ],
+        "height_m": 0.018,
+        "relief": "parallax",
+        "view_steps": 16,
+        "shadow_steps": 8
+      }
+    },
+    "transmission": 0.0
+  }
+}

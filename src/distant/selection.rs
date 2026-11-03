@@ -12,6 +12,7 @@ pub(crate) struct Draw {
     pub range: Range<usize>,
     pub instance: String,
     pub asset: usize,
+    pub material: u32,
     pub world: Mat4,
     pub color: [f32; 3],
     pub eligible: bool,
@@ -410,7 +411,7 @@ impl Selection {
         }
         for (draw, choice) in frame.meshes.draws.iter().zip(&self.plan) {
             if draw.shared && choice.visible != 0 && choice.color.is_none() {
-                used[draw.asset + 1] = true;
+                used[draw.material as usize] = true;
             }
         }
         for v in &self.full {

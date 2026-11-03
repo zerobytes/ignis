@@ -1302,6 +1302,7 @@ impl Document {
                     instance: i.id.clone(),
                     range: range.clone(),
                     asset: slot,
+                    material: (slot + 1) as u32,
                     world: prepared.worlds[index],
                     color: i.color,
                     eligible: true,
@@ -1359,6 +1360,7 @@ impl Document {
                 instance: i.id.clone(),
                 range: start..out.len(),
                 asset: slot,
+                material: (slot + 1) as u32,
                 world: prepared.worlds[index],
                 color: i.color,
                 shared,
@@ -1497,6 +1499,7 @@ pub struct Frame {
     pub vertices: Vec<crate::render::Vertex>,
     pub(crate) shared_vertices: Vec<crate::render::Vertex>,
     pub materials: Vec<crate::materials::Material>,
+    material_instances: std::collections::BTreeMap<String, u32>,
     hierarchy: Hierarchy,
     projection_cache: crate::mesh_projection::Cache,
     consumed: Vec<String>,
@@ -1587,6 +1590,7 @@ impl Frame {
                     a.id == b.id
                         && Arc::ptr_eq(&a.geometry, &b.geometry)
                         && a.shading == b.shading
+                        && a.material.resources_match(&b.material)
                         && a.material == b.material
                         && a.rig.is_none()
                         && b.rig.is_none()
@@ -1621,7 +1625,13 @@ impl Frame {
             }
             return;
         }
-        let changed = self.source != *document;
+        let changed = self
+            .source
+            .assets
+            .iter()
+            .zip(&document.assets)
+            .any(|(a, b)| !a.material.resources_match(&b.material))
+            || self.source != *document;
         if self.tick == Some(effective_tick) && !changed && !mask_changed {
             return;
         }
@@ -1660,6 +1670,32 @@ impl Frame {
             self.materials.push(Default::default());
             self.materials
                 .extend(document.assets.iter().map(|a| a.material.clone()));
+            self.material_instances.clear();
+            for (index, i) in document.instances.iter().enumerate() {
+                let a = &document.assets[self.hierarchy.assets[index]];
+                if let Some(p) = a
+                    .material
+                    .procedural
+                    .as_ref()
+                    .and_then(|p| p.instance(&i.id))
+                {
+                    let mut m = a.material.clone();
+                    m.procedural = Some(Arc::new(p));
+                    self.material_instances
+                        .insert(i.id.clone(), self.materials.len() as u32);
+                    self.materials.push(m);
+                }
+            }
+        }
+        for draw in &mut self.draws {
+            if let Some(&slot) = self.material_instances.get(&draw.instance) {
+                draw.material = slot;
+                if !draw.shared {
+                    for v in &mut self.vertices[draw.range.clone()] {
+                        v.material = slot;
+                    }
+                }
+            }
         }
         self.base_vertices = self.vertices.len();
         self.tick = Some(effective_tick);

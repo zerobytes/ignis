@@ -109,7 +109,7 @@ fn scene_bindings(
     uniform: &wgpu::Buffer,
     map: &wgpu::TextureView,
     sampler: &wgpu::Sampler,
-    materials: &wgpu::Buffer,
+    materials: (&wgpu::Buffer, &wgpu::Buffer),
     environment: &crate::environment_gpu::Gpu,
 ) -> wgpu::BindGroup {
     device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -130,7 +130,7 @@ fn scene_bindings(
             },
             wgpu::BindGroupEntry {
                 binding: 3,
-                resource: materials.as_entire_binding(),
+                resource: materials.0.as_entire_binding(),
             },
             wgpu::BindGroupEntry {
                 binding: 4,
@@ -148,6 +148,10 @@ fn scene_bindings(
                 binding: 7,
                 resource: wgpu::BindingResource::Sampler(&environment.sampler),
             },
+            wgpu::BindGroupEntry {
+                binding: 8,
+                resource: materials.1.as_entire_binding(),
+            },
         ],
     })
 }
@@ -157,6 +161,7 @@ fn depth_bindings(
     layout: &wgpu::BindGroupLayout,
     uniform: &wgpu::Buffer,
     materials: &wgpu::Buffer,
+    procedural: &wgpu::Buffer,
 ) -> wgpu::BindGroup {
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("shadow uniforms and surface coverage"),
@@ -169,6 +174,10 @@ fn depth_bindings(
             wgpu::BindGroupEntry {
                 binding: 3,
                 resource: materials.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 8,
+                resource: procedural.as_entire_binding(),
             },
         ],
     })
@@ -384,6 +393,8 @@ pub struct Renderer {
     guide_capacity: usize,
     uniform: wgpu::Buffer,
     material_buffer: wgpu::Buffer,
+    procedural_buffer: wgpu::Buffer,
+    procedural_uploads: u64,
     material_cache: Option<Vec<crate::materials::GpuMaterial>>,
     material_source: Vec<crate::materials::Material>,
     environment: crate::environment_gpu::Gpu,
@@ -518,6 +529,16 @@ impl Renderer {
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 8,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
         });
         let map = shadow_map(&device, 1);
@@ -536,6 +557,12 @@ impl Renderer {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let procedural_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("procedural programs and fixed samples"),
+            size: 16,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let environment = crate::environment_gpu::Gpu::new(&device);
         let bind_group = scene_bindings(
             &device,
@@ -543,7 +570,7 @@ impl Renderer {
             &uniform,
             &map,
             &shadow_sampler,
-            &material_buffer,
+            (&material_buffer, &procedural_buffer),
             &environment,
         );
         // Separate depth-only bindings avoid sampling the map while rendering into it.
@@ -570,9 +597,25 @@ impl Renderer {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 8,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
         });
-        let shadow_bind_group = depth_bindings(&device, &depth_layout, &uniform, &material_buffer);
+        let shadow_bind_group = depth_bindings(
+            &device,
+            &depth_layout,
+            &uniform,
+            &material_buffer,
+            &procedural_buffer,
+        );
         let depth_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("shadow depth layout"),
@@ -878,6 +921,8 @@ impl Renderer {
         Ok(Self {
             environment,
             material_buffer,
+            procedural_buffer,
+            procedural_uploads: 0,
             material_cache: None,
             material_source: Vec::new(),
             transparent_pipeline,
@@ -1044,7 +1089,7 @@ impl Renderer {
     }
     pub fn info(&self) -> serde_json::Value {
         let info = self.adapter.get_info();
-        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info(),"transparency":self.transparency.info()})
+        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info(),"transparency":self.transparency.info(),"procedural_materials":{"storage_bytes":self.procedural_buffer.size(),"uploads":self.procedural_uploads,"materials":self.material_source.iter().filter(|m|m.procedural.is_some()).count()}})
     }
     pub fn draw(
         &mut self,
@@ -1139,7 +1184,7 @@ impl Renderer {
                 &self.uniform,
                 &self.shadow_map.1,
                 &self.shadow_sampler,
-                &self.material_buffer,
+                (&self.material_buffer, &self.procedural_buffer),
                 &self.environment,
             );
         }
@@ -1197,44 +1242,68 @@ impl Renderer {
         } else {
             &scene.meshes.materials
         };
-        // The table grows with authored assets, bounded by the active device's
-        // binding size rather than a fixed number of models.
-        if self.material_cache.is_none() || self.material_source != *selected_materials {
-            let mut material_table: Vec<crate::materials::GpuMaterial> =
-                selected_materials.iter().map(Into::into).collect();
+        if self.material_cache.is_none()
+            || self.material_source.len() != selected_materials.len()
+            || !self
+                .material_source
+                .iter()
+                .zip(selected_materials)
+                .all(|(a, b)| a.resources_match(b) && a == b)
+        {
+            let limit = u64::from(self.device.limits().max_storage_buffer_binding_size);
+            let table_bytes = selected_materials.len().max(1) as u64
+                * std::mem::size_of::<crate::materials::GpuMaterial>() as u64;
+            let sample_bytes = crate::materials::recipe::storage_bytes(selected_materials);
+            anyhow::ensure!(
+                table_bytes <= limit && sample_bytes <= limit,
+                "Material tables require {}+{} bytes; this GPU supports {} bytes per storage binding",
+                table_bytes,
+                sample_bytes,
+                limit
+            );
+            let (mut material_table, procedural) =
+                crate::materials::recipe::pack(selected_materials);
             if material_table.is_empty() {
                 material_table.push((&crate::materials::Material::default()).into());
             }
             let bytes = bytemuck::cast_slice(&material_table);
+            let procedural_bytes = bytemuck::cast_slice(&procedural);
+            let limit = u64::from(self.device.limits().max_storage_buffer_binding_size);
             anyhow::ensure!(
-                bytes.len() as u64
-                    <= u64::from(self.device.limits().max_storage_buffer_binding_size),
-                "Material storage requires {} bytes; this GPU binding supports {} bytes",
+                bytes.len() as u64 <= limit && procedural_bytes.len() as u64 <= limit,
+                "Material tables require {}+{} bytes; this GPU supports {} bytes per storage binding",
                 bytes.len(),
-                self.device.limits().max_storage_buffer_binding_size
+                procedural_bytes.len(),
+                limit
             );
-            if self.material_buffer.size()
-                != bytes
-                    .len()
-                    .max(std::mem::size_of::<crate::materials::GpuMaterial>())
-                    as u64
-            {
+            let mut bindings_changed = false;
+            if self.material_buffer.size() != bytes.len() as u64 {
                 self.material_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
                     label: Some("surface material storage"),
-                    size: bytes
-                        .len()
-                        .max(std::mem::size_of::<crate::materials::GpuMaterial>())
-                        as u64,
+                    size: bytes.len() as u64,
                     usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
                     mapped_at_creation: false,
                 });
+                bindings_changed = true;
+                self.material_cache = None;
+            }
+            if self.procedural_buffer.size() != procedural_bytes.len() as u64 {
+                self.procedural_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("procedural programs and fixed samples"),
+                    size: procedural_bytes.len() as u64,
+                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                });
+                bindings_changed = true;
+            }
+            if bindings_changed {
                 self.bind_group = scene_bindings(
                     &self.device,
                     &self.shadow_layout,
                     &self.uniform,
                     &self.shadow_map.1,
                     &self.shadow_sampler,
-                    &self.material_buffer,
+                    (&self.material_buffer, &self.procedural_buffer),
                     &self.environment,
                 );
                 self.shadow_bind_group = depth_bindings(
@@ -1242,8 +1311,12 @@ impl Renderer {
                     &self.depth_layout,
                     &self.uniform,
                     &self.material_buffer,
+                    &self.procedural_buffer,
                 );
             }
+            self.queue
+                .write_buffer(&self.procedural_buffer, 0, procedural_bytes);
+            self.procedural_uploads += 1;
             if self.material_cache.as_ref() != Some(&material_table) {
                 self.queue.write_buffer(&self.material_buffer, 0, bytes);
                 self.material_cache = Some(material_table);

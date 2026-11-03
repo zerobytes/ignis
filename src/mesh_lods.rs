@@ -274,6 +274,7 @@ fn eligible(a: &Asset) -> bool {
         && a.geometry.triangles.len() <= MAX_FACES
         && a.geometry.positions.len() <= MAX_FACES * 3
         && (a.shading == Shading::Smooth || a.geometry.triangles.len() * 3 < 65534)
+        && a.material.procedural.is_none()
         && a.material.pattern.is_none()
         && a.material.secondary_pattern.is_none()
         && a.material.detail.is_none()

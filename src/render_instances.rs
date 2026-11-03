@@ -1001,7 +1001,7 @@ impl Gpu {
             instances.push(Instance {
                 world: draw.world.to_cols_array_2d(),
                 color: color.unwrap_or(draw.color),
-                material: (draw.asset + 1) as u32,
+                material: draw.material,
             });
             if let Some(last) = batches.last_mut()
                 && last.mask == mask

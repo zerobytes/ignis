@@ -42,6 +42,7 @@ struct SurfaceMaterial {
     glass: vec4<f32>,
     attenuation: vec4<f32>,
     coverage: SurfacePattern,
+    procedural: vec4<u32>,
 };
 struct MaterialTable { items: array<SurfaceMaterial>, };
 @group(0) @binding(3) var<storage, read> materials: MaterialTable;
@@ -296,11 +297,134 @@ fn glass_transmission(base: vec3<f32>, normal: vec3<f32>, world: vec3<f32>, mate
     let absorption = select(vec3<f32>(0.0), pow(max(tint,vec3<f32>(1e-30)), vec3<f32>(path)), tint > vec3<f32>(0.0));
     return absorption * (1.0-fresnel);
 }
+// Recipe1. Packed immutable programs and fixed, box-filtered periodic mip maps.
+struct ProceduralData { items: array<vec4<f32>>, };
+@group(0) @binding(8) var<storage,read> procedural_data: ProceduralData;
+struct SurfaceSample { color:vec4<f32>, response:vec4<f32>, emission:vec4<f32>, };
+fn sample_mix(a:SurfaceSample,b:SurfaceSample,t:f32)->SurfaceSample {
+    return SurfaceSample(mix(a.color,b.color,t),mix(a.response,b.response,t),mix(a.emission,b.emission,t));
+}
+fn sample_load(at:u32)->SurfaceSample {return SurfaceSample(procedural_data.items[at],procedural_data.items[at+1u],procedural_data.items[at+2u]);}
+fn periodic_hash(p:vec2<i32>,n:vec2<i32>,seed:u32)->f32 {
+    let w=((p%n)+n)%n;let q=vec2<u32>(w);
+    var h=q.x*1597334677u ^ q.y*3812015801u ^ seed;
+    h=(h^(h>>16u))*2246822519u;h=(h^(h>>13u))*3266489917u;h=h^(h>>16u);
+    return f32(h&16777215u)/16777215.0;
+}
+fn periodic_noise(uv:vec2<f32>,n:vec2<i32>,seed:u32)->f32 {
+    let p=uv*vec2<f32>(n);let b=vec2<i32>(floor(p));let f=fract(p);let w=f*f*(3.0-2.0*f);
+    return mix(mix(periodic_hash(b,n,seed),periodic_hash(b+vec2<i32>(1,0),n,seed),w.x),
+        mix(periodic_hash(b+vec2<i32>(0,1),n,seed),periodic_hash(b+vec2<i32>(1,1),n,seed),w.x),w.y);
+}
+fn recipe_field(uv:vec2<f32>,n:vec2<i32>,seed:u32,kind:f32,aa:f32)->f32 {
+    if kind<0.5 {return periodic_noise(uv,n,seed);}
+    if kind<1.5 {return 1.0-abs(2.0*periodic_noise(uv,n,seed)-1.0);}
+    if kind>3.5 {return 0.5+0.5*sin(6.28318530718*(uv.x*f32(n.x)+periodic_noise(uv,vec2<i32>(2),seed)));}
+    var p=uv*vec2<f32>(n);
+    if kind>2.5 {
+        p.x+=0.5*f32(((i32(floor(p.y))%2)+2)%2)*select(0.0,1.0,n.y%2==0);
+        let b=vec2<i32>(floor(p));let f=fract(p);let edge=min(min(f.x,1.0-f.x),min(f.y,1.0-f.y));
+        return smoothstep(0.035-aa,0.065+aa,edge)*(0.7+0.3*periodic_hash(b,n,seed));
+    }
+    let b=vec2<i32>(floor(p));var first=100.0;var second=100.0;
+    for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){
+        let c=b+vec2<i32>(x,y);
+        let delta=p-vec2<f32>(c)-vec2<f32>(periodic_hash(c,n,seed),periodic_hash(c,n,seed+11u));
+        let d=length(delta);if d<first {second=first;first=d;}else if d<second {second=d;}
+    }}
+    return smoothstep(0.02-aa,0.12+aa,second-first);
+}
+fn fixed_texel(at:u32,size:u32,p:vec2<i32>)->SurfaceSample {
+    let n=i32(size);let q=((p%n)+n)%n;
+    return sample_load(at+3u*(u32(q.y)*size+u32(q.x)));
+}
+fn fixed_level(info:vec4<u32>,uv:vec2<f32>,level:u32)->SurfaceSample {
+    var size=info.z;var at=info.y+6u;
+    for(var l=0u;l<level;l++){at+=3u*size*size;size/=2u;}
+    let p=fract(uv)*f32(size)-0.5;let b=vec2<i32>(floor(p));let f=fract(p);
+    return sample_mix(sample_mix(fixed_texel(at,size,b),fixed_texel(at,size,b+vec2<i32>(1,0)),f.x),
+        sample_mix(fixed_texel(at,size,b+vec2<i32>(0,1)),fixed_texel(at,size,b+vec2<i32>(1,1)),f.x),f.y);
+}
+fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
+    if info.x==2u {
+        let last=u32(log2(f32(info.z)));let lod=clamp(log2(max(1.0,footprint*f32(info.z))),0.0,f32(last));
+        let level=u32(floor(lod));
+        return sample_mix(fixed_level(info,uv,level),fixed_level(info,uv,min(level+1u,last)),fract(lod));
+    }
+    var sample=sample_load(info.y+2u);let metadata=procedural_data.items[info.y+5u];let uv0=fract(uv);
+    for(var layer=0u;layer<8u;layer++) {
+        if layer>=u32(metadata.y) {break;}
+        let at=info.y+6u+6u*layer;let f=procedural_data.items[at];let settings=procedural_data.items[at+1u];let mask=procedural_data.items[at+2u];
+        let seed=(u32(metadata.x)|(u32(metadata.z)<<16u))+(u32(f.w)|(u32(settings.z)<<16u));var q=uv0;
+        if settings.y>0.0 {q+=settings.y*(vec2<f32>(periodic_noise(uv0,vec2<i32>(2),seed+11u),periodic_noise(uv0,vec2<i32>(2),seed+23u))-0.5);}
+        var value=0.0;var total=0.0;var weight=0.5;var n=vec2<i32>(f.yz);
+        for(var octave=0u;octave<4u;octave++) {
+            if octave>=u32(settings.x) {break;}
+            let fp=footprint*f32(max(n.x,n.y))*(1.0+settings.y*4.0);let coverage=1.0-smoothstep(0.25,0.75,fp);
+            var v=0.5;if coverage>0.0 {v=recipe_field(q,n,seed+octave*1013u,f.x,fp*0.5);}
+            value+=weight*mix(0.5,v,coverage);total+=weight;weight*=0.5;n*=2;
+        }
+        var t=smoothstep(mask.x,mask.y,value/total);if mask.w>0.5 {t=1.0-t;}
+        sample=sample_mix(sample,sample_load(at+3u),t*mask.z);
+    }
+    return sample;
+}
+fn recipe_uv(rest:vec3<f32>,domain:vec4<f32>)->vec2<f32> {
+    return detail_coordinate(rest,domain.z)/domain.xy;
+}
+struct ReliefSample { sample:SurfaceSample, shadow:f32, };
+fn recipe_relief(info:vec4<u32>,uv:vec2<f32>,footprint:f32,du:vec3<f32>,dv:vec3<f32>,normal:vec3<f32>,world:vec3<f32>)->ReliefSample {
+    let domain=procedural_data.items[info.y];let relief=procedural_data.items[info.y+1u];
+    var q=uv;var depth=0.0;var shadow=1.0;
+    let delta=globals.view_position.xyz-world;let view=delta/max(length(delta),0.000001);let no_v=dot(normal,view);
+    // Bound grazing offsets and fade when the relief becomes subpixel.
+    let world_pixel=footprint*max(domain.x,domain.y);
+    let depth_scale=max(relief.x,1e-8);
+    let fade=smoothstep(0.05,0.2,no_v)*(1.0-smoothstep(depth_scale*0.5,depth_scale*2.0,max(world_pixel,1e-8)));
+    if domain.w>0.5 && relief.x>0.0 && fade>0.0 {
+        let shift=vec2<f32>(dot(du,view),dot(dv,view))*relief.x*fade/max(no_v,0.05);
+        let steps=u32(relief.y);var previous=0.0;var lo=0.0;var hi=1.0;
+        for(var i=0u;i<=48u;i++) {
+            if i>steps {break;}
+            let t=f32(i)/f32(steps);let h=1.0-recipe_sample(info,uv-shift*t,footprint).response.y;
+            if t>=h {lo=previous;hi=t;break;}previous=t;
+        }
+        for(var i=0u;i<4u;i++) {let t=(lo+hi)*0.5;let h=1.0-recipe_sample(info,uv-shift*t,footprint).response.y;if t>=h {hi=t;}else{lo=t;}}
+        depth=(lo+hi)*0.5;q=uv-shift*depth;
+        let light=-normalize(globals.light.xyz);let no_l=dot(normal,light);
+        if relief.z>0.0 && no_l>0.05 {
+            let light_shift=vec2<f32>(dot(du,light),dot(dv,light))*relief.x*fade/no_l;
+            for(var i=1u;i<=24u;i++) {
+                if i>u32(relief.z) {break;}
+                let t=depth*f32(i)/relief.z;let surface_depth=1.0-recipe_sample(info,q+light_shift*t,footprint).response.y;
+                if surface_depth+0.015<depth-t {shadow=1.0-fade;break;}
+            }
+        }
+    }
+    return ReliefSample(recipe_sample(info,q,footprint),shadow);
+}
+
 struct ShadedSurface { color: vec3<f32>, normal: vec3<f32>, base: vec3<f32>, };
 fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
-    let material = materials.items[in.material];
+    var material = materials.items[in.material];
     let px = dpdx(in.world);
     let py = dpdy(in.world);
+    let geometric_normal = normalize(in.normal)*select(-1.0,1.0,front);
+    var recipe_color=vec3<f32>(1.0);var recipe_height=0.0;var recipe_shadow=1.0;var recipe_ao=1.0;
+    let rest_dx=dpdx(in.rest);let rest_dy=dpdy(in.rest);
+    if material.procedural.x>0u {
+        let info=material.procedural;let domain=procedural_data.items[info.y];
+        let uv=recipe_uv(in.rest,domain);let dx=recipe_uv(rest_dx,domain);let dy=recipe_uv(rest_dy,domain);
+        let r1=cross(py,geometric_normal);let r2=cross(geometric_normal,px);let determinant=dot(px,r1);
+        var du=vec3<f32>(0.0);var dv=vec3<f32>(0.0);
+        if abs(determinant)>1e-12 {du=(dx.x*r1+dy.x*r2)/determinant;dv=(dx.y*r1+dy.y*r2)/determinant;}
+        let result=recipe_relief(info,uv,max(length(dx),length(dy)),du,dv,geometric_normal,in.world);
+        recipe_color=result.sample.color.xyz;recipe_height=result.sample.response.y*procedural_data.items[info.y+1u].x;
+        recipe_shadow=result.shadow;recipe_ao=result.sample.response.w;
+        material.low.w=result.sample.color.w;material.high.w=result.sample.response.x;material.response.w=0.04;
+        material.response.x=result.sample.emission.w;material.emissive=vec4<f32>(result.sample.emission.xyz,0.0);
+    }
+    let recipe_hx=dpdx(recipe_height);let recipe_hy=dpdy(recipe_height);
     var tint = vec3<f32>(1.0);
     var hx = 0.0;
     var hy = 0.0;
@@ -358,6 +482,8 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
             hy += material.detail_control.x * dot(projection_weights, projected_dy);
         }
     }
+    hx+=recipe_hx;hy+=recipe_hy;
+    tint*=recipe_color;
     var normal = normalize(in.normal);
     if (material.response.x > 0.0 || material.surface.x >= 1.0 || material.surface.w > 0.5) && !front { normal = -normal; }
     let r1 = cross(py, normal);
@@ -368,7 +494,7 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
     }
     let light = -normalize(globals.light.xyz);
     let diffuse = max(dot(normal, light), 0.0) + material.response.x * max(dot(-normal, light), 0.0);
-    let visible = visibility(in.world);
+    let visible = visibility(in.world)*recipe_shadow;
     let base = in.color * tint;
     var color = base * (globals.light.w + (1.0 - globals.light.w) * diffuse * visible);
     if material.high.w > 0.0 {
@@ -388,12 +514,13 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
         let response = dielectric(normal, light, in.world, material.low.w, material.response.w);
         color += (1.0 - globals.light.w) * visible * (vec3<f32>(response.y) - base * response.x);
     }
+    if material.procedural.x>0u {color-=base*globals.light.w*(1.0-recipe_ao);}
     if globals.environment.z != 1.0 {
-        let ambient_color = base * globals.light.w;
+        let ambient_color = base * globals.light.w * recipe_ao;
         color = ambient_color + (color-ambient_color) * globals.environment.z;
     }
     if globals.environment.x > 0.0 {
-        color += globals.environment.x * environment_light(base,normal,in.world,material);
+        color += globals.environment.x * recipe_ao * environment_light(base,normal,in.world,material);
     }
     if material.surface.w > 0.5 {
         // Thin-sheet glass has reflection, no diffuse lobe or invented ambient.
@@ -427,7 +554,12 @@ fn surface_opacity(rest: vec3<f32>, material: SurfaceMaterial) -> f32 {
     if uniform_material { return material.surface.y; }
     let p = rest * material.coverage.frequency.xyz;
     let footprint = max(length(dpdx(p)), length(dpdy(p)));
+    let domain0=procedural_data.items[material.procedural.y];
+    let domain=vec4<f32>(max(domain0.xy,vec2<f32>(0.000001)),domain0.zw);
+    let uv=recipe_uv(rest,domain);
+    let dx=recipe_uv(dpdx(rest),domain);let dy=recipe_uv(dpdy(rest),domain);
     var opacity = material.surface.y;
+    if material.procedural.x>0u {opacity*=recipe_sample(material.procedural,uv,max(length(dx),length(dy))).response.z;}
     if material.coverage.frequency.w > 0.5 {
         let field = pattern_field(p, footprint, material.coverage.control, material.coverage.response);
         opacity *= mix(material.coverage.low.x, material.coverage.high.x, field);
@@ -609,7 +741,7 @@ fn shared_world(i: StaticInstance, p: vec3<f32>) -> vec3<f32> {
     out.world = shared_world(i,position);
     out.clip = globals.view_projection * vec4<f32>(out.world,1.0);
     out.normal = normalize(mat3x3<f32>(i.x.xyz,i.y.xyz,i.z.xyz) * normal);
-    out.color = color*i.tint.xyz; out.rest = rest; out.material = material; out.material_projection_weights = weights;
+    out.color = color*i.tint.xyz; out.rest = rest; out.material = i.material; out.material_projection_weights = weights;
     return out;
 }
 fn shared_shadow(position: vec3<f32>, rest: vec3<f32>, material: u32, i: StaticInstance) -> ShadowOut {
@@ -619,7 +751,7 @@ fn shared_shadow(position: vec3<f32>, rest: vec3<f32>, material: u32, i: StaticI
     return out;
 }
 @vertex fn vs_shared_shadow(@location(0) position: vec3<f32>, @location(3) rest: vec3<f32>, @location(4) material: u32, i: StaticInstance) -> ShadowOut {
-    return shared_shadow(position, rest, material, i);
+    return shared_shadow(position, rest, i.material, i);
 }
 @vertex fn vs_shared_shadow_compact(@location(0) position: vec3<f32>, @location(3) rest: vec3<f32>, i: StaticInstance) -> ShadowOut {
     return shared_shadow(position, rest, i.material, i);
