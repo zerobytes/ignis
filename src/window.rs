@@ -116,6 +116,11 @@ impl App {
         } else {
             self.accumulator = 0.;
         }
+        if let Some(config) = &self.config {
+            service
+                .engine
+                .prepare_planet_viewport(config.width.max(64), config.height.max(64))?;
+        }
         if let Some(frame) = &mut self.frame {
             service.update_game_frame(frame);
         } else {
@@ -158,7 +163,9 @@ impl App {
                     title_state.1
                 ))
             } else {
-                let help = if guides.npc_routes {
+                let help = if service.engine.planet_active() {
+                    "WASD mover · Shift correr · roda: superfície/globo · G globo/voltar · F superfície · Tab 1ª/3ª · clique olhar · Esc soltar · P pausa"
+                } else if guides.npc_routes {
                     "J: rotas | branco: caminho/destino | lilas: patrulha | vermelho: inacessivel"
                 } else if guides.npc_hearing || guides.noise_events {
                     "H: audicao | roxo: alcance nominal | laranja: ruido | V: visao | N: emitir"
@@ -377,16 +384,25 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseWheel { delta, .. } => {
                 let mut service = self.service.lock().unwrap();
-                if !service.remote_client()
+                let amount = match delta {
+                    MouseScrollDelta::LineDelta(_, y) => f64::from(y),
+                    MouseScrollDelta::PixelDelta(p) => p.y / 40.,
+                };
+                if service.engine.planet_active() {
+                    if let Err(e) = service.execute(
+                        Command::ZoomPlanetView {
+                            factor: (-amount.clamp(-20., 20.) * 0.35).exp(),
+                        }
+                        .into(),
+                    ) {
+                        eprintln!("{}: {}", e.code, e.message);
+                    }
+                } else if !service.remote_client()
                     && let Some(mut view) = service.engine.player_view_config()
                     && view.mode == crate::player_view::Mode::ThirdPerson
                 {
-                    let amount = match delta {
-                        MouseScrollDelta::LineDelta(_, y) => y,
-                        MouseScrollDelta::PixelDelta(p) => p.y as f32 / 40.,
-                    };
                     view.third_person.distance_meters =
-                        (view.third_person.distance_meters - amount * 0.5).clamp(0.25, 100.);
+                        (view.third_person.distance_meters - amount as f32 * 0.5).clamp(0.25, 100.);
                     if let Err(e) =
                         service.execute(Command::SetPlayerView { view: Some(view) }.into())
                     {
@@ -591,6 +607,44 @@ impl ApplicationHandler for App {
                                     },
                                 });
                             }
+                            KeyCode::KeyG
+                                if self.service.lock().unwrap().engine.planet_active() =>
+                            {
+                                let mut s = self.service.lock().unwrap();
+                                if let Ok(mut view) = s.engine.planet_view_settings() {
+                                    let radius = s
+                                        .engine
+                                        .simulation
+                                        .planet
+                                        .as_ref()
+                                        .unwrap()
+                                        .config
+                                        .document
+                                        .radius();
+                                    let command = if view.distance_meters > radius {
+                                        view.distance_meters = 0.;
+                                        view.tilt_degrees = 0.;
+                                        Command::SetPlanetView { view: Some(view) }
+                                    } else {
+                                        Command::FramePlanetView
+                                    };
+                                    if let Err(e) = s.execute(command.into()) {
+                                        eprintln!("{}: {}", e.code, e.message);
+                                    }
+                                }
+                            }
+                            KeyCode::KeyF
+                                if self.service.lock().unwrap().engine.planet_active() =>
+                            {
+                                let mut s = self.service.lock().unwrap();
+                                if let Ok(mut view) = s.engine.planet_view_settings() {
+                                    view.distance_meters = 0.;
+                                    view.tilt_degrees = 0.;
+                                    let _ = s.execute(
+                                        Command::SetPlanetView { view: Some(view) }.into(),
+                                    );
+                                }
+                            }
                             KeyCode::KeyF => {
                                 let view = {
                                     let s = self.service.lock().unwrap();
@@ -625,6 +679,16 @@ impl ApplicationHandler for App {
                                 self.keys.clear();
                                 let _ = self.keyboard.release(&mut self.service.lock().unwrap());
                                 self.command(Command::SetPlayerView { view });
+                            }
+                            KeyCode::Tab if self.service.lock().unwrap().engine.planet_active() => {
+                                let mut s = self.service.lock().unwrap();
+                                if let Ok(mut view) = s.engine.planet_view_settings() {
+                                    view.distance_meters =
+                                        if view.distance_meters < 1. { 4. } else { 0. };
+                                    let _ = s.execute(
+                                        Command::SetPlanetView { view: Some(view) }.into(),
+                                    );
+                                }
                             }
                             KeyCode::Tab => {
                                 let mut s = self.service.lock().unwrap();

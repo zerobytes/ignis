@@ -30,6 +30,15 @@ struct MinimalVertex {
     position: [f32; 3],
     normal: [f32; 3],
 }
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct PlanetVertex {
+    high: [f32; 3],
+    normal: [f32; 3],
+    low: [f32; 3],
+    rest: [f32; 3],
+    weights: [f32; 3],
+}
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Key {
     source: usize,
@@ -44,6 +53,7 @@ struct Key {
 }
 #[derive(Default)]
 struct Representations {
+    planet: Option<Arc<Vec<crate::meshes::SplitPosition>>>,
     normals: Option<Arc<Vec<[f32; 3]>>>,
     atmosphere: Option<Arc<Vec<u8>>>,
     lod: Option<Arc<crate::mesh_lods::Pack>>,
@@ -52,6 +62,8 @@ struct Geometry {
     // Own the identity behind pointer keys: allocator address reuse cannot alias
     // an old payload while its GPU entry survives.
     _source: Arc<crate::meshes::Geometry>,
+    _planet: Option<Arc<Vec<crate::meshes::SplitPosition>>>,
+    planet: bool,
     _normals: Option<Arc<Vec<[f32; 3]>>>,
     _atmosphere: Option<Arc<Vec<u8>>>,
     _lod: Option<Arc<crate::mesh_lods::Pack>>,
@@ -68,24 +80,33 @@ struct Batch {
     key: Key,
     asset: usize,
     mask: u8,
+    transparent: bool,
     instances: Range<usize>,
 }
 enum Command {
     Shared(usize),
-    Legacy(bool, Range<u32>, u8),
+    Legacy(bool, Range<u32>, u8, bool),
 }
-fn legacy(commands: &mut Vec<Command>, cheap: bool, range: Range<u32>, mask: u8) {
+fn legacy(
+    commands: &mut Vec<Command>,
+    cheap: bool,
+    range: Range<u32>,
+    mask: u8,
+    transparent: bool,
+) {
     if range.is_empty() || mask == 0 {
         return;
     }
-    if let Some(Command::Legacy(last_cheap, last, last_mask)) = commands.last_mut()
+    if let Some(Command::Legacy(last_cheap, last, last_mask, last_transparent)) =
+        commands.last_mut()
+        && *last_transparent == transparent
         && *last_mask == mask
         && *last_cheap == cheap
         && last.end == range.start
     {
         last.end = range.end;
     } else {
-        commands.push(Command::Legacy(cheap, range, mask));
+        commands.push(Command::Legacy(cheap, range, mask, transparent));
     }
 }
 #[derive(Default, serde::Serialize)]
@@ -118,6 +139,11 @@ pub(crate) struct Stats {
     pub geometry_uploads: u64,
     pub instance_uploads: u64,
 }
+pub(crate) enum Pass {
+    Opaque,
+    Shadow,
+    Transparent,
+}
 pub(crate) struct Gpu {
     occluder_pipelines: [wgpu::RenderPipeline; 6],
     pub occlusion: crate::render_occlusion::Gpu,
@@ -127,7 +153,11 @@ pub(crate) struct Gpu {
     occlusion_jobs: Vec<crate::render_occlusion::Job>,
     empty_occlusion_input: Option<wgpu::Buffer>,
     source_ids: Vec<usize>,
+    transparent: [wgpu::RenderPipeline; 3],
     full: wgpu::RenderPipeline,
+    full_reverse: [wgpu::RenderPipeline; 3],
+    planet: wgpu::RenderPipeline,
+    reverse_z: bool,
     full_compact: wgpu::RenderPipeline,
     full_minimal: wgpu::RenderPipeline,
     cheap: wgpu::RenderPipeline,
@@ -163,8 +193,21 @@ impl Gpu {
         let attrs = wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,2=>Float32x3,3=>Float32x3,4=>Uint32,5=>Float32x3];
         let compact_attrs =
             wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,3=>Float32x3,5=>Float32x3];
+        let planet_attrs = wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,3=>Float32x3,5=>Float32x3,12=>Float32x3];
         let transforms = wgpu::vertex_attr_array![6=>Float32x4,7=>Float32x4,8=>Float32x4,9=>Float32x4,10=>Float32x3,11=>Uint32];
-        let pipeline = |cheap: bool, shadow: bool, compact: bool, minimal: bool| {
+        let pipeline = |cheap: bool,
+                        shadow: bool,
+                        compact: bool,
+                        minimal: bool,
+                        transparent: bool,
+                        reverse: bool,
+                        planet: bool| {
+            let opaque_targets = [Some(wgpu::ColorTargetState {
+                format,
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })];
+            let transparent_targets = crate::render_transparency::targets();
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some(if shadow {
                     "shared static shadow"
@@ -176,8 +219,16 @@ impl Gpu {
                 layout: Some(if shadow { shadow_layout } else { layout }),
                 vertex: wgpu::VertexState {
                     module: shader,
-                    entry_point: Some(if shadow {
-                        "vs_shared_shadow"
+                    entry_point: Some(if planet {
+                        "vs_shared_planet"
+                    } else if shadow {
+                        if minimal {
+                            "vs_shared_shadow_minimal"
+                        } else if compact {
+                            "vs_shared_shadow_compact"
+                        } else {
+                            "vs_shared_shadow"
+                        }
                     } else if cheap {
                         "vs_shared_distant"
                     } else if minimal {
@@ -190,7 +241,9 @@ impl Gpu {
                     compilation_options: Default::default(),
                     buffers: &[
                         wgpu::VertexBufferLayout {
-                            array_stride: if cheap {
+                            array_stride: if planet {
+                                60
+                            } else if cheap {
                                 12
                             } else if minimal {
                                 24
@@ -200,7 +253,9 @@ impl Gpu {
                                 64
                             },
                             step_mode: wgpu::VertexStepMode::Vertex,
-                            attributes: if cheap {
+                            attributes: if planet {
+                                &planet_attrs
+                            } else if cheap {
                                 &attrs[..1]
                             } else if minimal {
                                 &attrs[..2]
@@ -217,9 +272,17 @@ impl Gpu {
                         },
                     ],
                 },
-                fragment: (!shadow).then_some(wgpu::FragmentState {
+                fragment: Some(wgpu::FragmentState {
                     module: shader,
-                    entry_point: Some(if cheap { "fs_distant" } else { "fs_main" }),
+                    entry_point: Some(if shadow {
+                        "fs_shadow"
+                    } else if transparent {
+                        "fs_transparent"
+                    } else if cheap {
+                        "fs_distant"
+                    } else {
+                        "fs_main"
+                    }),
                     compilation_options: wgpu::PipelineCompilationOptions {
                         constants: if minimal {
                             &[("uniform_material", 1.0)]
@@ -228,11 +291,13 @@ impl Gpu {
                         },
                         ..Default::default()
                     },
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format,
-                        blend: None,
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
+                    targets: if shadow {
+                        &[]
+                    } else if transparent {
+                        &transparent_targets
+                    } else {
+                        &opaque_targets
+                    },
                 }),
                 primitive: wgpu::PrimitiveState {
                     cull_mode: None,
@@ -240,8 +305,12 @@ impl Gpu {
                 },
                 depth_stencil: Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth32Float,
-                    depth_write_enabled: true,
-                    depth_compare: wgpu::CompareFunction::Less,
+                    depth_write_enabled: !transparent,
+                    depth_compare: if reverse {
+                        wgpu::CompareFunction::Greater
+                    } else {
+                        wgpu::CompareFunction::Less
+                    },
                     stencil: Default::default(),
                     bias: if shadow {
                         wgpu::DepthBiasState {
@@ -322,13 +391,25 @@ impl Gpu {
             occlusion_jobs: Vec::new(),
             empty_occlusion_input: None,
             source_ids: Vec::new(),
-            full: pipeline(false, false, false, false),
-            full_compact: pipeline(false, false, true, false),
-            full_minimal: pipeline(false, false, true, true),
-            cheap: pipeline(true, false, false, false),
-            shadow: pipeline(false, true, false, false),
-            shadow_compact: pipeline(false, true, true, false),
-            shadow_minimal: pipeline(false, true, true, true),
+            transparent: [
+                pipeline(false, false, false, false, true, false, false),
+                pipeline(false, false, true, false, true, false, false),
+                pipeline(false, false, true, true, true, false, false),
+            ],
+            full: pipeline(false, false, false, false, false, false, false),
+            full_reverse: [
+                pipeline(false, false, false, false, false, true, false),
+                pipeline(false, false, true, false, false, true, false),
+                pipeline(false, false, true, true, false, true, false),
+            ],
+            planet: pipeline(false, false, false, false, false, true, true),
+            reverse_z: false,
+            full_compact: pipeline(false, false, true, false, false, false, false),
+            full_minimal: pipeline(false, false, true, true, false, false, false),
+            cheap: pipeline(true, false, false, false, false, false, false),
+            shadow: pipeline(false, true, false, false, false, false, false),
+            shadow_compact: pipeline(false, true, true, false, false, false, false),
+            shadow_minimal: pipeline(false, true, true, true, false, false, false),
             geometry: BTreeMap::new(),
             generation: None,
             representations: Vec::new(),
@@ -381,6 +462,7 @@ impl Gpu {
         selected: &Selection,
         visibility: &crate::render_visibility::Visibility,
     ) -> Result<()> {
+        self.reverse_z = frame.clip.is_some_and(|c| c.reverse_z);
         let lod_changed = self
             .lods
             .as_ref()
@@ -397,6 +479,16 @@ impl Gpu {
                 let source = Arc::as_ptr(&asset.geometry) as usize;
                 let smooth = asset.shading == crate::meshes::Shading::Smooth;
                 let normals = frame.meshes.normal_overrides.get(slot).cloned().flatten();
+                let planet = frame.meshes.planet_coordinates.get(slot).cloned().flatten();
+                if let Some(p) = &planet {
+                    live.insert((
+                        source,
+                        smooth,
+                        normals.as_ref().map_or(0, |n| Arc::as_ptr(n) as usize),
+                        Arc::as_ptr(p) as usize,
+                        0,
+                    ));
+                }
                 let normal = normals.as_ref().map_or(0, |n| Arc::as_ptr(n) as usize);
                 live.insert((source, smooth, normal, 0, 0));
                 live.insert((source, smooth, normal, 0, slot + 1));
@@ -420,6 +512,7 @@ impl Gpu {
                     live.insert((source, smooth, normal, Arc::as_ptr(p) as usize, slot + 1));
                 }
                 self.representations.push(Representations {
+                    planet,
                     atmosphere,
                     lod,
                     normals,
@@ -499,7 +592,15 @@ impl Gpu {
         }
         for &n in &self.order {
             let draw = &frame.meshes.draws[n];
-            let mask = visibility.masks[n];
+            let transparent = frame.meshes.source.assets[draw.asset]
+                .material
+                .transparent();
+            let mask = visibility.masks[n]
+                & if transparent {
+                    crate::render_visibility::CAMERA
+                } else {
+                    u8::MAX
+                };
             if !draw.shared {
                 end = draw.range.end;
                 let (cheap, range) = if selected.active {
@@ -507,7 +608,7 @@ impl Gpu {
                 } else {
                     (false, draw.range.start as u32..draw.range.end as u32)
                 };
-                legacy(&mut self.commands, cheap, range, mask);
+                legacy(&mut self.commands, cheap, range, mask, transparent);
                 continue;
             }
             if mask == 0 {
@@ -534,14 +635,26 @@ impl Gpu {
                     || (draw.repeated
                         && material.pattern.is_none()
                         && material.secondary_pattern.is_none()
-                        && material.detail.is_none()));
+                        && material.detail.is_none()
+                        && !material.has_coverage()));
+            let planet = frame
+                .meshes
+                .planet_coordinates
+                .get(draw.asset)
+                .and_then(|p| p.as_ref());
             let minimal_material = self.minimal_vertices
+                // Finite planet optics also consumes the canonical radial domain,
+                // even when the authored material has no procedural channels.
+                && !frame.planet_air.is_some_and(|p| draw.asset < p.terrain_materials as usize)
                 && material.pattern.is_none()
                 && material.secondary_pattern.is_none()
-                && material.detail.is_none();
+                && material.detail.is_none()
+                && !material.has_coverage();
             let asset = &frame.meshes.source.assets[draw.asset];
             let representations = &self.representations[draw.asset];
-            let representation = if level.is_none() {
+            let representation = if let Some(p) = planet {
+                Arc::as_ptr(p) as usize
+            } else if level.is_none() {
                 0
             } else if color.is_some() {
                 representations
@@ -566,12 +679,15 @@ impl Gpu {
                 representation,
                 level,
                 cheap: color.is_some(),
-                full_material_slot: if color.is_none() && !self.compact_vertices {
+                full_material_slot: if planet.is_none() && color.is_none() && !self.compact_vertices
+                {
                     draw.asset + 1
                 } else {
                     0
                 },
-                layout: if color.is_some() {
+                layout: if planet.is_some() {
+                    4
+                } else if color.is_some() {
                     0
                 } else if !self.compact_vertices {
                     3
@@ -627,15 +743,37 @@ impl Gpu {
                     &frame.meshes.shared_vertices[draw.range.clone()]
                 };
                 let cheap_positions: Vec<[f32; 3]>;
-                let compact = color.is_none()
+                let compact = planet.is_none()
+                    && color.is_none()
                     && self.compact_vertices
                     && source_vertices
                         .iter()
                         .all(|v| v.color == [1.; 3] && v.material as usize == draw.asset + 1);
                 let minimal = compact && minimal_material;
+                let planet_data: Vec<PlanetVertex>;
                 let minimal_data: Vec<MinimalVertex>;
                 let compact_data: Vec<CompactVertex>;
-                let bytes = if color.is_some() {
+                let bytes = if let Some(p) = planet {
+                    anyhow::ensure!(
+                        source_vertices.len() == asset.geometry.triangles.len() * 3,
+                        "Planet payload requires the full canonical triangle stream"
+                    );
+                    planet_data = source_vertices
+                        .iter()
+                        .zip(asset.geometry.triangles.iter().flatten())
+                        .map(|(v, &i)| {
+                            let c = p[i as usize];
+                            PlanetVertex {
+                                high: c.high,
+                                normal: v.normal,
+                                low: c.low,
+                                rest: v.rest_position,
+                                weights: v.material_projection_weights,
+                            }
+                        })
+                        .collect();
+                    bytemuck::cast_slice(&planet_data)
+                } else if color.is_some() {
                     if let Some(level) = level {
                         let level = selected.level(draw.asset, level);
                         cheap_positions = level
@@ -674,7 +812,9 @@ impl Gpu {
                 } else {
                     bytemuck::cast_slice(source_vertices)
                 };
-                let stride = if color.is_some() {
+                let stride = if planet.is_some() {
+                    60
+                } else if color.is_some() {
                     12
                 } else if minimal {
                     24
@@ -691,7 +831,9 @@ impl Gpu {
                 // discrepancy on Metal with indexing. Retain their stream until
                 // interpolation/derivative stability is demonstrated; atmospheric
                 // substitution no longer evaluates that material.
-                let pages = if let Some(indices) = compiled_indices {
+                let pages = if planet.is_some() {
+                    crate::render_geometry::upload::<15>(device, bytes, false)
+                } else if let Some(indices) = compiled_indices {
                     vec![crate::render_geometry::compiled(
                         device,
                         bytes,
@@ -714,6 +856,8 @@ impl Gpu {
                     .map(|b| b.buffer.size() as usize)
                     .sum();
                 entry.insert(Geometry {
+                    _planet: representations.planet.clone(),
+                    planet: planet.is_some(),
                     _source: asset.geometry.clone(),
                     _normals: representations.normals.clone(),
                     _atmosphere: if key.cheap && key.level.is_some() {
@@ -781,20 +925,42 @@ impl Gpu {
                     key,
                     asset: draw.asset,
                     mask,
+                    transparent,
                     instances: start..start + 1,
                 });
             }
         }
-        legacy(
-            &mut self.commands,
-            false,
-            if selected.active {
-                selected.tail.clone()
-            } else {
-                end as u32..frame.meshes.vertices.len() as u32
-            },
-            visibility.tail,
-        );
+        let tail = if selected.active {
+            selected.tail.clone()
+        } else {
+            end as u32..frame.meshes.vertices.len() as u32
+        };
+        if frame
+            .meshes
+            .materials
+            .iter()
+            .any(crate::materials::Material::transparent)
+        {
+            // Avatar tails may mix materials. Partition runs without changing vertex order.
+            for at in (tail.start..tail.end).step_by(3) {
+                let vertices = if selected.active {
+                    &selected.full
+                } else {
+                    &frame.meshes.vertices
+                };
+                let material = vertices[at as usize].material as usize;
+                let transparent = frame.meshes.materials[material].transparent();
+                let mask = visibility.tail
+                    & if transparent {
+                        crate::render_visibility::CAMERA
+                    } else {
+                        u8::MAX
+                    };
+                legacy(&mut self.commands, false, at..at + 3, mask, transparent);
+            }
+        } else {
+            legacy(&mut self.commands, false, tail, visibility.tail, false);
+        }
         if instances != self.instances {
             let page_count = instances.len().div_ceil(self.per_page);
             self.instance_pages.truncate(page_count);
@@ -912,7 +1078,9 @@ impl Gpu {
         for (n, draw) in frame.meshes.draws.iter().enumerate() {
             if draw.shared
                 || visibility.masks[n] & crate::render_visibility::CAMERA == 0
-                || frame.meshes.source.assets[draw.asset].material.transmission > 0.
+                || !frame.meshes.source.assets[draw.asset]
+                    .material
+                    .opaque_occluder()
             {
                 continue;
             }
@@ -949,10 +1117,9 @@ impl Gpu {
             });
             if (!batch.key.cheap && batch.key.level.is_some())
                 || batch.mask & crate::render_visibility::CAMERA == 0
-                || frame.meshes.source.assets[batch.asset]
+                || !frame.meshes.source.assets[batch.asset]
                     .material
-                    .transmission
-                    > 0.
+                    .opaque_occluder()
             {
                 continue;
             }
@@ -1070,17 +1237,40 @@ impl Gpu {
         }
         self.occlusion.encode(encoder);
     }
+    pub fn transparent_draw_units(&self) -> usize {
+        self.commands
+            .iter()
+            .map(|c| match c {
+                Command::Shared(i) => {
+                    let b = &self.batches[*i];
+                    if b.transparent && b.mask & crate::render_visibility::CAMERA != 0 {
+                        b.instances.len()
+                    } else {
+                        0
+                    }
+                }
+                Command::Legacy(_, _, mask, true)
+                    if mask & crate::render_visibility::CAMERA != 0 =>
+                {
+                    1
+                }
+                _ => 0,
+            })
+            .sum()
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn draw<'a>(
         &'a self,
         pass: &mut wgpu::RenderPass<'a>,
-        shadow: bool,
+        kind: Pass,
         full: &'a wgpu::RenderPipeline,
         cheap: &'a wgpu::RenderPipeline,
         vertices: &'a wgpu::Buffer,
         cheap_vertices: &'a wgpu::Buffer,
         indices: &'a wgpu::Buffer,
     ) {
+        let shadow = matches!(kind, Pass::Shadow);
+        let transparent = matches!(kind, Pass::Transparent);
         let view_mask = if shadow {
             crate::render_visibility::SHADOW
         } else {
@@ -1089,8 +1279,8 @@ impl Gpu {
         for command in &self.commands {
             let batch = match command {
                 Command::Shared(index) => &self.batches[*index],
-                Command::Legacy(is_cheap, range, mask) => {
-                    if mask & view_mask == 0 {
+                Command::Legacy(is_cheap, range, mask, is_transparent) => {
+                    if *is_transparent != transparent || mask & view_mask == 0 {
                         continue;
                     }
                     if *is_cheap && !shadow {
@@ -1106,12 +1296,30 @@ impl Gpu {
                     continue;
                 }
             };
-            if batch.mask & view_mask == 0 {
+            if batch.transparent != transparent || batch.mask & view_mask == 0 {
                 continue;
             }
             let compact = self.geometry[&batch.key].compact;
             let minimal = self.geometry[&batch.key].minimal;
-            pass.set_pipeline(if shadow && minimal {
+            pass.set_pipeline(if self.geometry[&batch.key].planet && !shadow {
+                &self.planet
+            } else if !shadow && !transparent && self.reverse_z {
+                &self.full_reverse[if minimal {
+                    2
+                } else if compact {
+                    1
+                } else {
+                    0
+                }]
+            } else if transparent {
+                &self.transparent[if minimal {
+                    2
+                } else if compact {
+                    1
+                } else {
+                    0
+                }]
+            } else if shadow && minimal {
                 &self.shadow_minimal
             } else if shadow && compact {
                 &self.shadow_compact

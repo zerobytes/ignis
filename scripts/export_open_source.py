@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Export one committed source snapshot without private history or local files.
+"""Historical snapshot exporter; normal development uses the public Git origin.
+
+Export one committed source snapshot without private history or local files.
 
 This never creates a GitHub repository, pushes refs or changes the source tree.
 The destination is a disposable, stable directory under this checkout's Git

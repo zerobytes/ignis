@@ -30,12 +30,27 @@ struct Globals {
     atmosphere_sky: [f32; 4],
     atmosphere_base: [f32; 4],
     atmosphere_detail: [f32; 4],
+    planet_optics: [f32; 4],
+    planet_radial: [f32; 4],
+    planet_space: [f32; 4],
+    planet_eye_high: [f32; 4],
+    planet_eye_low: [f32; 4],
+    planet_axis0: [f32; 4],
+    planet_axis1: [f32; 4],
+    planet_axis2: [f32; 4],
 }
 
 #[cfg(test)]
 #[test]
 fn globals_match_wgsl_camera_layout() {
-    assert_eq!(std::mem::size_of::<Globals>(), 320);
+    assert_eq!(std::mem::size_of::<Globals>(), 448);
+    assert_eq!(std::mem::offset_of!(Globals, planet_optics), 320);
+    assert_eq!(std::mem::offset_of!(Globals, planet_radial), 336);
+    assert_eq!(std::mem::offset_of!(Globals, planet_space), 352);
+    assert_eq!(std::mem::offset_of!(Globals, planet_eye_high), 368);
+    assert_eq!(std::mem::offset_of!(Globals, planet_eye_low), 384);
+    assert_eq!(std::mem::offset_of!(Globals, planet_axis0), 400);
+    assert_eq!(std::mem::offset_of!(Globals, planet_axis2), 432);
     assert_eq!(std::mem::offset_of!(Globals, view_position), 160);
     assert_eq!(std::mem::offset_of!(Globals, environment), 176);
     assert_eq!(std::mem::offset_of!(Globals, atmosphere), 192);
@@ -137,8 +152,33 @@ fn scene_bindings(
     })
 }
 
+fn depth_bindings(
+    device: &wgpu::Device,
+    layout: &wgpu::BindGroupLayout,
+    uniform: &wgpu::Buffer,
+    materials: &wgpu::Buffer,
+) -> wgpu::BindGroup {
+    device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("shadow uniforms and surface coverage"),
+        layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: materials.as_entire_binding(),
+            },
+        ],
+    })
+}
+
 /// Compact, reusable snapshot. No authoring IDs, scripts or NPC configuration.
 pub struct RenderFrame {
+    /// Render-only projection. None preserves the legacy main/depth contract.
+    pub clip: Option<Clip>,
+    pub planet_air: Option<PlanetAir>,
     /// A transported frame has no stationary diagnostic plane in world XZ.
     pub suppress_diagnostic_grid: bool,
     pub meshes: crate::meshes::Frame,
@@ -155,6 +195,39 @@ pub struct RenderFrame {
     pub truncated_navigation_paths: u8,
     pub selection: Option<RenderBox>,
     pub selection_mesh: Option<String>,
+}
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct Clip {
+    pub near: f32,
+    pub far: f32,
+    pub reverse_z: bool,
+}
+impl Clip {
+    pub(crate) fn validate(self) -> crate::model::Result<()> {
+        if !self.near.is_finite()
+            || !self.far.is_finite()
+            || self.near <= 0.
+            || self.far <= self.near
+        {
+            return Err(crate::model::invalid(
+                "Render clipping requires finite0<near<far",
+            ));
+        }
+        Ok(())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct PlanetAir {
+    pub radius: f64,
+    pub altitude: f64,
+    pub radial: [f32; 3],
+    pub height: f64,
+    pub optical_depth: f64,
+    pub space_color: [f32; 3],
+    /// Consecutive generated terrain materials, excluding the avatar proxy.
+    pub terrain_materials: u32,
+    pub(crate) eye: crate::meshes::SplitPosition,
+    pub(crate) axes: [[f32; 3]; 3],
 }
 #[derive(Clone, Copy, PartialEq)]
 pub struct RenderBox {
@@ -280,6 +353,9 @@ pub struct Renderer {
     pub adapter: wgpu::Adapter,
     pub format: wgpu::TextureFormat,
     pipeline: wgpu::RenderPipeline,
+    transparent_pipeline: wgpu::RenderPipeline,
+    transparency: crate::render_transparency::Transparency,
+    depth_layout: wgpu::BindGroupLayout,
     shadow_pipeline: wgpu::RenderPipeline,
     shadow_bind_group: wgpu::BindGroup,
     shadow_layout: wgpu::BindGroupLayout,
@@ -287,6 +363,7 @@ pub struct Renderer {
     shadow_sampler: wgpu::Sampler,
     guide_pipeline: wgpu::RenderPipeline,
     atmosphere_pipeline: wgpu::RenderPipeline,
+    atmosphere_reverse: wgpu::RenderPipeline,
     distant_pipeline: wgpu::RenderPipeline,
     distant: crate::distant::selection::Selection,
     instanced: crate::render_instances::Gpu,
@@ -471,26 +548,31 @@ impl Renderer {
         );
         // Separate depth-only bindings avoid sampling the map while rendering into it.
         let depth_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("shadow depth uniforms"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
+            label: Some("shadow uniforms and surface coverage"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
         });
-        let shadow_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("shadow depth uniforms"),
-            layout: &depth_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform.as_entire_binding(),
-            }],
-        });
+        let shadow_bind_group = depth_bindings(&device, &depth_layout, &uniform, &material_buffer);
         let depth_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("shadow depth layout"),
@@ -523,7 +605,12 @@ impl Renderer {
                     attributes: &attrs,
                 }],
             },
-            fragment: None,
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_shadow"),
+                compilation_options: Default::default(),
+                targets: &[],
+            }),
             primitive: wgpu::PrimitiveState {
                 cull_mode: None,
                 ..Default::default()
@@ -573,6 +660,40 @@ impl Renderer {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: Default::default(),
+                bias: Default::default(),
+            }),
+            multisample: Default::default(),
+            multiview: None,
+            cache: None,
+        });
+        let transparent_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("native transparent surfaces"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<Vertex>() as u64,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &attrs,
+                }],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_transparent"),
+                compilation_options: Default::default(),
+                targets: &crate::render_transparency::targets(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                cull_mode: None,
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: false,
                 depth_compare: wgpu::CompareFunction::Less,
                 stencil: Default::default(),
                 bias: Default::default(),
@@ -662,6 +783,37 @@ impl Renderer {
             multiview: None,
             cache: None,
         });
+        let atmosphere_reverse = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("atmosphere background"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_atmosphere"),
+                compilation_options: Default::default(),
+                buffers: &[],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_atmosphere"),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: Default::default(),
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::GreaterEqual,
+                stencil: Default::default(),
+                bias: Default::default(),
+            }),
+            multisample: Default::default(),
+            multiview: None,
+            cache: None,
+        });
         // Opaque diagnostic lines drawn on top: nominal limits, not an occlusion mask.
         let guide_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("NPC vision guides"),
@@ -728,6 +880,9 @@ impl Renderer {
             material_buffer,
             material_cache: None,
             material_source: Vec::new(),
+            transparent_pipeline,
+            transparency: Default::default(),
+            depth_layout,
             shadow_pipeline,
             shadow_bind_group,
             shadow_layout: layout,
@@ -743,6 +898,7 @@ impl Renderer {
             pipeline,
             guide_pipeline,
             atmosphere_pipeline,
+            atmosphere_reverse,
             distant_pipeline,
             distant_buffer,
             distant_capacity: 1,
@@ -888,7 +1044,7 @@ impl Renderer {
     }
     pub fn info(&self) -> serde_json::Value {
         let info = self.adapter.get_info();
-        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info()})
+        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info(),"transparency":self.transparency.info()})
     }
     pub fn draw(
         &mut self,
@@ -898,6 +1054,39 @@ impl Renderer {
         height: u32,
     ) -> Result<()> {
         anyhow::ensure!(width > 0 && height > 0, "Viewport cannot be empty");
+        if let Some(clip) = scene.clip {
+            clip.validate()?;
+        }
+        let reverse = scene.clip.is_some_and(|c| c.reverse_z);
+        if reverse {
+            anyhow::ensure!(
+                scene.boxes.is_empty()
+                    && scene.meshes.draws.iter().all(|d| d.shared)
+                    && scene.light.shadow.is_none()
+                    && scene.selection.is_none()
+                    && scene.selection_mesh.is_none()
+                    && scene
+                        .light
+                        .atmosphere
+                        .and_then(|a| a.edge_softness)
+                        .is_none_or(|a| !a.active())
+                    && scene
+                        .meshes
+                        .source
+                        .assets
+                        .iter()
+                        .all(|a| a.material.opaque_occluder())
+                    && scene.vision_guides.is_empty()
+                    && scene.hearing_guides.is_empty()
+                    && scene.noise_guides.is_empty()
+                    && scene.route_guides.is_empty(),
+                "Reverse planet view requires opaque mesh-only geometry without shadows, selection, guides or depth-edge filtering"
+            );
+            if let Some(gpu) = &mut self.collective {
+                gpu.stats = Default::default();
+            }
+        }
+
         let edge_settings = scene
             .light
             .atmosphere
@@ -938,7 +1127,7 @@ impl Renderer {
         self.environment
             .prepare(&self.queue, scene.light.environment.as_ref());
         let camera = &scene.camera;
-        let vp = crate::picking::view_projection(camera, width, height);
+        let vp = crate::picking::view_projection_clip(camera, width, height, scene.clip);
         let light = scene.light.direction;
         let shadow = scene.light.shadow.as_ref();
         let resolution = shadow.map_or(1, |s| s.resolution);
@@ -956,7 +1145,9 @@ impl Renderer {
         }
         self.visibility
             .update(scene, vp, width, height, self.visibility_enabled);
-        if let Some(gpu) = &mut self.collective {
+        if let Some(gpu) = &mut self.collective
+            && !reverse
+        {
             gpu.prepare(
                 &self.device,
                 &self.queue,
@@ -982,12 +1173,14 @@ impl Renderer {
             &self.visibility,
             width,
             height,
-            self.occlusion_enabled,
+            self.occlusion_enabled && scene.clip.is_none(),
             self.collective
                 .as_ref()
                 .map_or(0, |g| g.stats.candidate_triangles_replaced),
         );
-        if let Some(gpu) = &mut self.collective {
+        if let Some(gpu) = &mut self.collective
+            && !reverse
+        {
             gpu.set_seed(
                 &self.device,
                 &self.queue,
@@ -1043,6 +1236,12 @@ impl Renderer {
                     &self.shadow_sampler,
                     &self.material_buffer,
                     &self.environment,
+                );
+                self.shadow_bind_group = depth_bindings(
+                    &self.device,
+                    &self.depth_layout,
+                    &self.uniform,
+                    &self.material_buffer,
                 );
             }
             if self.material_cache.as_ref() != Some(&material_table) {
@@ -1110,6 +1309,40 @@ impl Renderer {
                 atmosphere_detail: atmosphere
                     .and_then(|a| a.layers)
                     .map_or([0.; 4], |l| [l.detail_start, l.detail_end, 0., 0.]),
+                planet_optics: scene.planet_air.map_or([0.; 4], |p| {
+                    [
+                        1.,
+                        (p.altitude / p.radius) as f32,
+                        (p.height / p.radius) as f32,
+                        (p.optical_depth * p.radius / p.height) as f32,
+                    ]
+                }),
+                planet_radial: scene.planet_air.map_or([0.; 4], |p| {
+                    [p.radial[0], p.radial[1], p.radial[2], p.radius as f32]
+                }),
+                planet_space: scene.planet_air.map_or([0.; 4], |p| {
+                    [
+                        p.space_color[0],
+                        p.space_color[1],
+                        p.space_color[2],
+                        p.terrain_materials as f32,
+                    ]
+                }),
+                planet_eye_high: scene.planet_air.map_or([0.; 4], |p| {
+                    [p.eye.high[0], p.eye.high[1], p.eye.high[2], 0.]
+                }),
+                planet_eye_low: scene
+                    .planet_air
+                    .map_or([0.; 4], |p| [p.eye.low[0], p.eye.low[1], p.eye.low[2], 0.]),
+                planet_axis0: scene
+                    .planet_air
+                    .map_or([0.; 4], |p| [p.axes[0][0], p.axes[0][1], p.axes[0][2], 0.]),
+                planet_axis1: scene
+                    .planet_air
+                    .map_or([0.; 4], |p| [p.axes[1][0], p.axes[1][1], p.axes[1][2], 0.]),
+                planet_axis2: scene
+                    .planet_air
+                    .map_or([0.; 4], |p| [p.axes[2][0], p.axes[2][1], p.axes[2][2], 0.]),
                 environment: [
                     scene.light.environment.map_or(0., |e| e.intensity),
                     6.,
@@ -1295,7 +1528,16 @@ impl Renderer {
             &scene.camera,
             edge_settings,
         );
-        let scene_view = self.atmosphere_edges.source().unwrap_or(view);
+        let transparent_draw_units = self.instanced.transparent_draw_units();
+        self.transparency.prepare(
+            &self.device,
+            self.format,
+            width,
+            height,
+            transparent_draw_units,
+        );
+        let composed_view = self.transparency.background().unwrap_or(view);
+        let scene_view = self.atmosphere_edges.source().unwrap_or(composed_view);
         let mut encoder = self.device.create_command_encoder(&Default::default());
         self.instanced.encode_occlusion(
             &mut encoder,
@@ -1327,7 +1569,7 @@ impl Renderer {
             }
             self.instanced.draw(
                 &mut pass,
-                true,
+                crate::render_instances::Pass::Shadow,
                 &self.shadow_pipeline,
                 &self.distant_pipeline,
                 &self.mesh_buffer,
@@ -1355,8 +1597,9 @@ impl Renderer {
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.depth.as_ref().unwrap().2,
                     depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.),
+                        load: wgpu::LoadOp::Clear(if reverse { 0. } else { 1. }),
                         store: if soft
+                            || transparent_draw_units > 0
                             || scene.selection.is_some()
                             || scene.selection_mesh.is_some()
                         {
@@ -1378,28 +1621,73 @@ impl Renderer {
             }
             self.instanced.draw(
                 &mut pass,
-                false,
+                crate::render_instances::Pass::Opaque,
                 &self.pipeline,
                 &self.distant_pipeline,
                 &self.mesh_buffer,
                 &self.distant_buffer,
                 &self.distant_index_buffer,
             );
-            if let Some(gpu) = &self.collective {
+            if let Some(gpu) = &self.collective
+                && !reverse
+            {
                 gpu.draw(&mut pass, &self.bind_group);
             }
             if atmosphere.is_some() {
-                pass.set_pipeline(&self.atmosphere_pipeline);
+                pass.set_pipeline(if reverse {
+                    &self.atmosphere_reverse
+                } else {
+                    &self.atmosphere_pipeline
+                });
                 pass.draw(0..3, 0..1);
             }
-            if guide_count > 0 && !soft {
+            if guide_count > 0 && !soft && transparent_draw_units == 0 {
                 pass.set_pipeline(&self.guide_pipeline);
                 pass.set_vertex_buffer(0, self.guide_buffer.slice(..));
                 pass.draw(0..guide_count as u32, 0..1);
             }
         }
-        self.atmosphere_edges.draw(&mut encoder, view);
-        if soft && guide_count > 0 {
+        self.atmosphere_edges.draw(&mut encoder, composed_view);
+        if let Some(layers) = self.transparency.layers() {
+            let attachments: [_; 3] = std::array::from_fn(|i| {
+                Some(wgpu::RenderPassColorAttachment {
+                    view: &layers[i],
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(if i == 1 {
+                            wgpu::Color::WHITE
+                        } else {
+                            wgpu::Color::TRANSPARENT
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })
+            });
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("order-independent transparent surfaces"),
+                color_attachments: &attachments,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth.as_ref().unwrap().2,
+                    depth_ops: None,
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            pass.set_bind_group(0, &self.bind_group, &[]);
+            self.instanced.draw(
+                &mut pass,
+                crate::render_instances::Pass::Transparent,
+                &self.transparent_pipeline,
+                &self.distant_pipeline,
+                &self.mesh_buffer,
+                &self.distant_buffer,
+                &self.distant_index_buffer,
+            );
+        }
+        self.transparency.composite(&mut encoder, view);
+        if (soft || transparent_draw_units > 0) && guide_count > 0 {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("sharp diagnostic overlays"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {

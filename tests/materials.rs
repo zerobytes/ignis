@@ -81,6 +81,7 @@ fn invalid_recipes_and_coordinates_are_atomic() {
                     edit: Edit::SetMaterial {
                         asset: "sheet".into(),
                         material: Material {
+                            surface: None,
                             detail: None,
                             secondary_pattern: None,
                             reflectance: None,
@@ -113,6 +114,7 @@ fn invalid_recipes_and_coordinates_are_atomic() {
     }
     assert!(
         Material {
+            surface: None,
             detail: None,
             secondary_pattern: None,
             reflectance: None,
@@ -124,6 +126,7 @@ fn invalid_recipes_and_coordinates_are_atomic() {
     );
     assert!(
         Material {
+            surface: None,
             detail: None,
             secondary_pattern: None,
             reflectance: None,
@@ -142,6 +145,7 @@ fn material_setter_preserves_pose_and_shared_geometry_and_undo() {
     let pose = e.scene.meshes.pose("one", 0).unwrap();
     let before = e.scene.clone();
     let material = Material {
+        surface: None,
         detail: None,
         secondary_pattern: None,
         reflectance: None,
@@ -287,6 +291,7 @@ fn subdivision_interpolates_the_channel_and_preserves_recipe() {
         Edit::SetMaterial {
             asset: "sheet".into(),
             material: Material {
+                surface: None,
                 detail: None,
                 secondary_pattern: None,
                 reflectance: None,

@@ -22,6 +22,7 @@ fn main() -> anyhow::Result<()> {
     let mut command = None;
     let mut continuous = false;
     let mut planet_runtime = None;
+    let mut planet_view_distance = None;
     let mut first_person = None;
     let mut third_person = None;
     let mut args = std::env::args().skip(1);
@@ -55,6 +56,13 @@ fn main() -> anyhow::Result<()> {
                     )
                 })?)
             }
+            "--planet-view-distance" => {
+                planet_view_distance = Some(
+                    args.next()
+                        .ok_or_else(|| anyhow::anyhow!("--planet-view-distance requires metres"))?
+                        .parse::<f64>()?,
+                );
+            }
             "--first-person" => {
                 first_person = Some(
                     args.next()
@@ -79,7 +87,7 @@ fn main() -> anyhow::Result<()> {
             }
             "--help" | "-h" => {
                 println!(
-                    "ignis [--root DIRECTORY] [--scene RELATIVE_JSON] [--window | --editor] [--mcp]\nignis [--root DIRECTORY] [--scene RELATIVE_JSON] --command '{{\"command\":{{\"op\":\"inspect\"}}}}'\n\n--server IP:port: authoritative headless QUIC host; default roster comes from --scene.\n--mcp: newline-delimited MCP stdio. Combine with --window to see the same world.\n--editor: native editor with menus, workspaces and dockable areas.\n--continuous: unbounded offline runtime without recording input history.\n--planet-runtime CONFIG: offline single-player transported surface runtime (requires --continuous).\n--first-person PLAYER: session camera at the player eyes; click to look, Esc releases mouse.\n--third-person PLAYER: orbital player camera with physical obstruction handling.\nNative: F toggles player view; Tab first/third; wheel zooms third; C execution mode at paused tick0.\nDefault: native playable window, paused. WASD/arrows move; P play/pause; R reset; Esc close.\nAll game controls use the same command API exposed by MCP.\nFile paths are confined to --root. Closing stdin does not close an open window."
+                    "ignis [--root DIRECTORY] [--scene RELATIVE_JSON] [--window | --editor] [--mcp]\nignis [--root DIRECTORY] [--scene RELATIVE_JSON] --command '{{\"command\":{{\"op\":\"inspect\"}}}}'\n\n--server IP:port: authoritative headless QUIC host; default roster comes from --scene.\n--mcp: newline-delimited MCP stdio. Combine with --window to see the same world.\n--editor: native editor with menus, workspaces and dockable areas.\n--continuous: unbounded offline runtime without recording input history.\n--planet-runtime CONFIG: offline single-player transported surface runtime (requires --continuous).\n--planet-view-distance METRES: surface-to-globe session camera (requires planet runtime).\n--first-person PLAYER: session camera at the player eyes; click to look, Esc releases mouse.\n--third-person PLAYER: orbital player camera with physical obstruction handling.\nNative planet: wheel continuous zoom; G globe/surface; mouse look.\nNative: F toggles player view; Tab first/third; wheel zooms third; C execution mode at paused tick0.\nDefault: native playable window, paused. WASD/arrows move; P play/pause; R reset; Esc close.\nAll game controls use the same command API exposed by MCP.\nFile paths are confined to --root. Closing stdin does not close an open window."
                 );
                 return Ok(());
             }
@@ -164,6 +172,11 @@ fn main() -> anyhow::Result<()> {
             third_person: Default::default(),
         };
         service.execute(Command::SetPlayerView { view: Some(view) }.into())?;
+    }
+    if let Some(distance_meters) = planet_view_distance {
+        let mut view = service.engine.planet_view_settings()?;
+        view.distance_meters = distance_meters;
+        service.execute(Command::SetPlanetView { view: Some(view) }.into())?;
     }
     if let Some(address) = &server {
         anyhow::ensure!(!window, "--server runs headless; use MCP to inspect it");

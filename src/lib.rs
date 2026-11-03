@@ -35,6 +35,7 @@ pub mod player_view;
 pub mod projectiles;
 pub mod recognition;
 pub mod render;
+mod render_transparency;
 pub mod scenario;
 pub mod service;
 pub mod sound_attention;

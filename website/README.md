@@ -44,9 +44,9 @@ Browser review covers both languages at 320/390/768/1440 px, real WebGL renderin
 
 ## Engine chapters
 
-The expanded `#reality` chapter contains the shared MCP contract, five illustrative command phases, a searchable/filterable atlas of 20 implemented domains, all 56 current dispatcher operations, the interactive 16-domain roadmap and an actual laboratory capture. EN/PT content and provenance are in `dist/engine-data.js`, `dist/engine-chapters.js` and `CONTENT.md`. Roadmap selection supports arrows/Home/End; native details expose system boundaries and command names. Search, filter, open rows and selected roadmap/command phase survive language changes. The presentation does not execute engine commands. SVG motion pauses offscreen, when hidden, with the global pause control and under reduced-motion preferences; no additional animation loop or dependency is introduced.
+The expanded `#reality` chapter contains the shared MCP contract, five illustrative command phases, a searchable/filterable atlas of 65 reviewed capabilities, 235 top-level dispatcher operations from the reviewed engine snapshot, the interactive 16-domain roadmap and an actual laboratory capture. EN/PT content and provenance are in `dist/engine-data.js`, `dist/engine-chapters.js` and `CONTENT.md`. Roadmap selection supports arrows/Home/End; native details expose system boundaries and command names. Search, filter, open rows and selected roadmap/command phase survive language changes. The presentation does not execute engine commands. SVG motion pauses offscreen, when hidden, with the global pause control and under reduced-motion preferences; no additional animation loop or dependency is introduced.
 
-The capability atlas now uses a joined rectangular tab strip for Combat, NPCs, Character, World, Rendering and Tools, plus Everything. Membership may overlap for shared systems; the 20 source records remain unchanged. CSS perspective gives fine-pointer hover depth, disabled by global pause/reduced motion. ARIA tabs use roving focus and Left/Right/Home/End; the horizontal strip scrolls internally on mobile. Search is scoped to the selected system.
+The capability atlas uses a joined rectangular tab strip for Rendering, Botany, World, Characters, Modeling, NPCs, Combat, Multiplayer and Tools, plus Everything. Membership may overlap for shared systems; shared source records are reused across relevant domains. CSS perspective gives fine-pointer hover depth, disabled by global pause/reduced motion. ARIA tabs use roving focus and Left/Right/Home/End; the horizontal strip scrolls internally on mobile. Search is scoped to the selected system.
 
 The capability rows use layered 3D surfaces, bounded decorative wireframe SVGs, cursor-position lighting and independent glyph/title depth. Native details unfold a second content layer. Finite entrance animations are gated by intersection; cached pointer bounds avoid repeated layout reads. Motion respects global pause, hidden documents and reduced preferences; no additional render loop or runtime dependency is introduced.
 
@@ -57,9 +57,30 @@ Published with explicit authorization on 3 November 2026: **https://ignis.web.ap
 From `website/`, publish authorized future updates with:
 
 ```sh
-npx -y firebase-tools@latest deploy --only hosting:website --project ignisengine --account zerobyte30k@gmail.com --non-interactive
+python3 deploy.py
 ```
 
 `firebase.json` keeps existing `.html` links and missing-asset 404s intact. Non-fingerprinted content revalidates through Cache-Control. The first release is `1793716375631000`, version `57fb38fd345f6841`. The native deploy connector reported success without creating a release; explicit CLI deployment uploaded 21 files and produced the verified live release. Browser EN/PT, WebGL and pulse interactions passed, with no console errors. Key served assets matched local SHA-256 using system curl TLS validation; Python's independent certificate store could not validate this environment's certificate chain and was not weakened.
 
-The engine catalog remains the explicitly dated 24 October content snapshot; publishing this presentation does not update its capability inventory, distribute the engine, or implement a WASM runtime. Custom domain and downloads remain separate work.
+The first public release used the 24 October snapshot. The 3 November catalog below supersedes it. Website publication does not distribute the engine or implement a WASM runtime. Custom domain and downloads remain separate work.
+
+## Current native engine catalog (3 November 2026)
+
+The current engine chapter replaces the earlier20-system snapshot with65 source-backed entries across Rendering, Botany, World, Characters, Modeling, NPCs, Combat, Multiplayer and Tools. It includes235 top-level commands and an updated16-domain roadmap. Counts describe editorial entries and first-level operations, not complete production systems or every nested suboperation.
+
+The native gallery contains16 project captures, with thumbnail selection and a keyboard-accessible enlargement dialog. Per-capability disclosures add implementation facets, MCP names, explicit boundaries and relevant images. Captions distinguish experimental/historical imagery, including planetary appearance and CC0 MakeHuman-based character data. `media-provenance.json` records originals/hashes; public WebP copies total approximately705KiB. Core catalog sources and rendering/experimental distinctions are in `CONTENT.md`.
+
+No video was fabricated from stills and no live engine session was manipulated. The approved Three.js opening remains identified separately. Apache-2.0, technically closed NPCv1, QUIC/loopback scope, portable saves, botanical sources and planetary limits are reflected in current copy. Publishing the current site supersedes the historical24October catalog note above; engine downloads/web export remain separate deliveries.
+
+The product-story revision introduces the proposed Ignis Horizon name, two creator-selected native landscapes, a dedicated procedural plant-generation story and a five-view curated gallery. Diagnostic captures remain in the technical atlas. Copy and claim provenance: CONTENT.md; originals: media/ (outside Hosting public root).
+
+
+## Paired publication: Firebase + GitHub Pages
+
+User direction: every website publication must update both https://ignis.web.app/ and https://zerobytes.github.io/ignis/.
+
+From this checkout run `python3 website/deploy.py` (or `python3 deploy.py` inside website). Requires authenticated gh/Firebase CLI, Node and system curl. `--prepare` only regenerates deterministic dist/version.json and performs no external writes; run this before the scoped local commit. The release ID hashes every public file except the version manifest itself.
+
+First run `--prepare`, commit the intended website files and push them to the public `main` through the normal Git workflow. The command captures the static bytes once and requires **website/dist/** in public `main` to match exactly. It then dispatches/awaits the existing Pages workflow and publishes the same bytes to Firebase through an automatically removed staging directory. A source mismatch stops deployment before either destination is published. The command creates no remote-only source commits and does not push unrelated local changes. No credentials are written to source.
+
+Completion requires matching version.json and SHA256 of every served file on both domains; cache propagation retries are bounded. A failed destination is reported as incomplete, and rerunning reconciles the same snapshot. Publication across two services is sequential, not an atomic distributed transaction. Use this paired command for normal releases; the Firebase-only command is reserved for explicit destination-specific recovery.

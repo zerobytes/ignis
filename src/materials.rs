@@ -3,10 +3,14 @@ use crate::model::{Result, invalid};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+mod surface;
+pub use surface::{BlendMode, Coverage, Glass, Surface};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Material {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub surface: Option<Surface>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pattern: Option<Pattern>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -21,7 +25,8 @@ pub struct Material {
 
 impl PartialEq for Material {
     fn eq(&self, other: &Self) -> bool {
-        self.pattern == other.pattern
+        self.surface == other.surface
+            && self.pattern == other.pattern
             && self.secondary_pattern == other.secondary_pattern
             && self.transmission == other.transmission
             && self.reflectance == other.reflectance
@@ -209,7 +214,28 @@ impl Detail {
 }
 
 impl Material {
+    pub fn transparent(&self) -> bool {
+        self.surface.as_ref().is_some_and(Surface::transparent)
+    }
+    pub(crate) fn opaque_occluder(&self) -> bool {
+        self.transmission == 0.
+            && self
+                .surface
+                .as_ref()
+                .is_none_or(|s| s.mode == BlendMode::Opaque)
+    }
+    pub fn has_coverage(&self) -> bool {
+        self.surface.as_ref().is_some_and(|s| s.coverage.is_some())
+    }
     pub fn validate(&self) -> Result<()> {
+        if let Some(s) = &self.surface {
+            s.validate()?;
+            if s.glass.is_some() && (self.reflectance.is_some() || self.transmission != 0.) {
+                return Err(invalid(
+                    "Glass owns IOR/roughness; remove legacy reflectance and diffuse transmission",
+                ));
+            }
+        }
         if let Some(r) = self.reflectance
             && (!r.roughness.is_finite()
                 || !(0.2..=1.).contains(&r.roughness)
@@ -327,6 +353,11 @@ pub(crate) struct GpuMaterial {
     pub detail_domain: [f32; 4],
     pub segments: [[[f32; 4]; 2]; MAX_SEGMENTS],
     secondary: GpuPattern,
+    surface: [f32; 4],
+    emissive: [f32; 4],
+    glass: [f32; 4],
+    attenuation: [f32; 4],
+    coverage: GpuPattern,
 }
 impl From<&Material> for GpuMaterial {
     fn from(material: &Material) -> Self {
@@ -344,6 +375,11 @@ impl From<&Material> for GpuMaterial {
                 .secondary_pattern
                 .as_ref()
                 .map_or_else(Default::default, GpuPattern::from),
+            surface: [0., 1., 0.5, 0.],
+            emissive: [0.; 4],
+            glass: [0.; 4],
+            attenuation: [1.; 4],
+            coverage: GpuPattern::default(),
         };
         if let Some(p) = &material.pattern {
             let p = GpuPattern::from(p);
@@ -394,6 +430,39 @@ impl From<&Material> for GpuMaterial {
                 ];
             }
         }
+        if let Some(s) = &material.surface {
+            out.surface = [
+                match s.mode {
+                    BlendMode::Opaque => 0.,
+                    BlendMode::Mask => 1.,
+                    BlendMode::Blend => 2.,
+                    BlendMode::Additive => 3.,
+                },
+                s.opacity,
+                s.cutoff,
+                if s.glass.is_some() { 1. } else { 0. },
+            ];
+            out.emissive[..3].copy_from_slice(&s.emissive);
+            if let Some(g) = s.glass {
+                out.glass = [g.ior, g.thickness_m, g.attenuation_distance_m, g.roughness];
+                out.attenuation[..3].copy_from_slice(&g.attenuation_color);
+                out.low[3] = g.roughness;
+                out.response[3] = ((g.ior - 1.) / (g.ior + 1.)).powi(2);
+            }
+            if let Some(c) = &s.coverage {
+                out.coverage = GpuPattern::from(&Pattern {
+                    frequency: c.frequency,
+                    low: [c.low; 3],
+                    high: [c.high; 3],
+                    bump: 0.,
+                    warp: 0.,
+                    octaves: 1,
+                    seed: c.seed,
+                    contrast: 1.,
+                    kind: c.kind,
+                });
+            }
+        }
         out
     }
 }
@@ -403,7 +472,7 @@ mod tests {
     use super::*;
     #[test]
     fn gpu_detail_table_matches_uniform_layout_and_zero_count_legacy() {
-        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1232);
+        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1376);
         let old: Material = serde_json::from_str(r#"{"transmission":0.3}"#).unwrap();
         let gpu = GpuMaterial::from(&old);
         assert_eq!(gpu.detail_control, [0.; 4]);
@@ -414,6 +483,8 @@ mod tests {
         assert_eq!(gpu.detail_domain, [0.; 4]);
         assert_eq!(std::mem::offset_of!(GpuMaterial, detail_domain), 112);
         assert_eq!(std::mem::offset_of!(GpuMaterial, segments), 128);
+        assert_eq!(std::mem::offset_of!(GpuMaterial, surface), 1232);
+        assert_eq!(std::mem::offset_of!(GpuMaterial, coverage), 1296);
     }
 
     #[test]
@@ -448,7 +519,7 @@ mod tests {
         expected.high[3] = 0.85;
         assert_eq!(GpuMaterial::from(&a), expected);
         assert_ne!(a, before);
-        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1232);
+        assert_eq!(std::mem::size_of::<GpuMaterial>(), 1376);
     }
 
     #[test]

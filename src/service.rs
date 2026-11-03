@@ -1515,6 +1515,7 @@ impl Service {
                 height,
             } => {
                 self.validate_capture(path, *width, *height)?;
+                self.engine.prepare_planet_viewport(*width,*height)?;
                 let mut reply =
                     self.capture_frame(&self.game_frame(), path, *width, *height)?;
                 reply.data["tick"] = json!(self.engine.simulation.tick);

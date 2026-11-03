@@ -4,6 +4,10 @@ Proposta de requisitos, 03/11/2026. Pedido: criar efeitos de propósito geral,
 com ambição comparável ao Niagara da Unreal. Este levantamento não implementa
 o sistema nem certifica paridade, desempenho ou qualidade artística.
 
+Continuidade autorizada em 03/11: iniciar pelo alicerce geral de materiais e
+transparência, incluindo vidro e usos em outros sistemas, antes de emissores.
+Contrato de implementação separado em [materiais/transparência — EAF-203](material-transparency.md).
+
 ## 1. Resultado esperado
 
 Um artista, desenvolvedor ou agente deve conseguir criar, combinar, parametrizar,

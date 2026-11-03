@@ -85,7 +85,7 @@ fn occlusion_preserves_holes_order_motion_near_plane_resize_and_shadows() {
     let mut renderer = pollster::block_on(Renderer::new(&gpu, None)).unwrap();
     let source = scene();
     let mut evidence = vec![];
-    for n in 0..11 {
+    for n in 0..13 {
         let mut s = source.clone();
         match n {
             1 => s.meshes.instances[0].position[0] = 8., // reveal on the very next frame
@@ -120,6 +120,18 @@ fn occlusion_preserves_holes_order_motion_near_plane_resize_and_shadows() {
                 other.id = "offscreen-wall".into();
                 other.position[0] = 100.;
                 s.meshes.instances.push(other);
+            }
+            11 | 12 => {
+                // A broad transparent/cutout wall must not seed opaque depth.
+                s.meshes.assets[0].material.surface = Some(ignis::materials::Surface {
+                    mode: if n == 11 {
+                        ignis::materials::BlendMode::Blend
+                    } else {
+                        ignis::materials::BlendMode::Mask
+                    },
+                    opacity: 0.25,
+                    ..Default::default()
+                });
             }
             _ => {}
         }

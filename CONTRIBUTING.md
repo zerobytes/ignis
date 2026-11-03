@@ -16,6 +16,11 @@ Ignis is early research software; small, reproducible contributions help most.
 
 ## Development rules
 
+The canonical development repository is **https://github.com/zerobytes/ignis**.
+Clone it directly, create a branch, and submit changes through a pull request.
+There is no separate private development tree or snapshot-export step. See the
+[Git workflow](docs/development.md) for maintainer and website publication steps.
+
 1. Keep offline single-player working without an account or remote service.
 2. Use the shared command API. Authoring controls must be available through
    MCP before or alongside their visual editor controls.

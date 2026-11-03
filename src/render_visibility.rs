@@ -13,6 +13,22 @@ fn absolute(m: Mat4) -> Mat4 {
         m.w_axis.abs(),
     )
 }
+fn render_world(frame: &RenderFrame, draw: &crate::distant::selection::Draw) -> Mat4 {
+    if frame
+        .meshes
+        .planet_coordinates
+        .get(draw.asset)
+        .is_some_and(|p| p.is_some())
+        && let Some(p) = frame.planet_air
+    {
+        let axes = glam::Mat3::from_cols_array_2d(&p.axes);
+        let eye = Vec3::from(p.eye.high) + Vec3::from(p.eye.low);
+        let mut world = Mat4::from_mat3(axes) * Mat4::from_scale(Vec3::splat(p.radius as f32));
+        world.w_axis = (-axes * (eye * p.radius as f32)).extend(1.);
+        return world;
+    }
+    draw.world
+}
 #[derive(Clone, Copy)]
 struct Bounds {
     lo: Vec3,
@@ -279,7 +295,7 @@ impl Visibility {
                 let n = lookup[member.as_str()];
                 let draw = &frame.meshes.draws[n];
                 let b = if draw.shared {
-                    self.bounds[n].world(draw.world)
+                    self.bounds[n].world(render_world(frame, draw))
                 } else {
                     Some(self.bounds[n])
                 };
@@ -390,7 +406,22 @@ impl Visibility {
                     .source
                     .assets
                     .iter()
-                    .map(|a| {
+                    .enumerate()
+                    .map(|(index, a)| {
+                        if let Some(p) = frame
+                            .meshes
+                            .planet_coordinates
+                            .get(index)
+                            .and_then(|p| p.as_ref())
+                        {
+                            let mut b = Bounds::points(p.iter().map(|v| v.high));
+                            // Enclose low parts, float subtraction/scale and the
+                            // coarser CPU bound transform. Ambiguous edges fail open.
+                            let pad = Vec3::splat(128. * f32::EPSILON);
+                            b.lo -= pad;
+                            b.hi += pad;
+                            return b;
+                        }
                         let mut b = Bounds::points(a.geometry.positions.iter().copied());
                         if let Some(pack) = frame.distant_meshes.iter().find(|p| p.asset == a.id)
                             && pack.matches(a)
@@ -495,7 +526,7 @@ impl Visibility {
         self.shadow_rects.clear();
         for (n, (draw, b)) in frame.meshes.draws.iter().zip(&self.bounds).enumerate() {
             let world = if draw.shared {
-                draw.world
+                render_world(frame, draw)
             } else {
                 Mat4::IDENTITY
             };
@@ -524,7 +555,7 @@ impl Visibility {
             let mask = (u8::from(camera) * CAMERA) | (u8::from(light) * SHADOW);
             self.masks.push(mask);
             let world = if draw.shared {
-                draw.world
+                render_world(frame, draw)
             } else {
                 Mat4::IDENTITY
             };

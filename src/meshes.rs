@@ -1459,6 +1459,21 @@ fn evaluate(asset: &Asset, skeleton: &Skeleton, world: Mat4, positions: &mut Vec
     }
 }
 
+/// Two f32 parts of a normalized geocentric coordinate, never an authored point.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct SplitPosition {
+    pub high: [f32; 3],
+    pub low: [f32; 3],
+}
+impl SplitPosition {
+    pub(crate) fn new(value: glam::DVec3) -> Self {
+        let high = value.as_vec3();
+        Self {
+            high: high.to_array(),
+            low: (value - high.as_dvec3()).as_vec3().to_array(),
+        }
+    }
+}
 /// Reusable frame preparation; a paused/static document does not redo skinning.
 fn next_frame_generation() -> u64 {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
@@ -1472,6 +1487,7 @@ pub struct Frame {
     /// Shared vertex payload/layout changes, independent of static placements.
     pub(crate) geometry_generation: u64,
     pub(crate) normal_overrides: Vec<Option<Arc<Vec<[f32; 3]>>>>,
+    pub(crate) planet_coordinates: Vec<Option<Arc<Vec<SplitPosition>>>>,
     pub(crate) draws: Vec<crate::distant::selection::Draw>,
     base_vertices: usize,
     pub omitted_avatars: u32,
@@ -1616,6 +1632,7 @@ impl Frame {
         self.generation = next_frame_generation();
         self.geometry_generation = self.generation;
         self.normal_overrides.clear();
+        self.planet_coordinates.clear();
         if changed || mask_changed {
             self.static_generation = self.generation;
         }
@@ -1650,6 +1667,87 @@ impl Frame {
 }
 
 impl Frame {
+    /// Shared geocentric coordinates split before GPU conversion. Identical
+    /// surface keys use identical bits in every tile, independent of its anchor.
+    pub(crate) fn apply_planet_coordinates(
+        &mut self,
+        coordinates: &[Option<Arc<Vec<SplitPosition>>>],
+    ) -> Result<()> {
+        if self.planet_coordinates.len() == coordinates.len()
+            && self
+                .planet_coordinates
+                .iter()
+                .zip(coordinates)
+                .all(|(a, b)| match (a, b) {
+                    (None, None) => true,
+                    (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+                    _ => false,
+                })
+        {
+            return Ok(());
+        }
+        if coordinates.len() != self.source.assets.len()
+            || coordinates.iter().zip(&self.source.assets).any(|(v, a)| {
+                v.as_ref().is_some_and(|v| {
+                    v.len() != a.geometry.positions.len()
+                        || v.iter()
+                            .flat_map(|p| p.high.iter().chain(&p.low))
+                            .any(|x| !x.is_finite())
+                })
+            })
+        {
+            return Err(invalid(
+                "Planet coordinate overrides must match immutable source vertices",
+            ));
+        }
+        self.planet_coordinates = coordinates.to_vec();
+        self.generation = next_frame_generation();
+        self.geometry_generation = self.generation;
+        Ok(())
+    }
+    /// Ephemeral camera-relative visual placements, never authored Instance transforms.
+    /// Only uniform positive static transforms are admitted; geometry stays immutable.
+    pub(crate) fn apply_render_placements(&mut self, matrices: &[Mat4]) -> Result<()> {
+        if matrices.len() != self.draws.len()
+            || self.draws.iter().any(|d| !d.shared)
+            || matrices.iter().any(|m| {
+                !m.is_finite()
+                    || m.x_axis.w != 0.
+                    || m.y_axis.w != 0.
+                    || m.z_axis.w != 0.
+                    || m.w_axis.w != 1.
+                    || {
+                        let axes = [
+                            m.x_axis.truncate(),
+                            m.y_axis.truncate(),
+                            m.z_axis.truncate(),
+                        ];
+                        let scale = axes[0].length();
+                        !scale.is_finite()
+                            || scale <= 0.
+                            || axes
+                                .iter()
+                                .any(|a| (a.length() / scale - 1.).abs() > 0.0001)
+                            || (axes[0] / scale)
+                                .cross(axes[1] / scale)
+                                .dot(axes[2] / scale)
+                                < 0.9999
+                    }
+            })
+        {
+            return Err(invalid(
+                "Visual placement needs matching shared draws and finite positive affine transforms",
+            ));
+        }
+        if self.draws.iter().zip(matrices).any(|(d, m)| d.world != *m) {
+            for (d, m) in self.draws.iter_mut().zip(matrices) {
+                d.world = *m;
+            }
+            self.generation = next_frame_generation();
+            self.static_generation = self.generation;
+        }
+        Ok(())
+    }
     /// Derived immutable vertex normals, e.g. a continuous procedural surface.
     /// Kept separate from authored geometry and part of GPU payload identity.
     pub(crate) fn apply_smooth_normals(&mut self, normals: &[Arc<Vec<[f32; 3]>>]) -> Result<()> {

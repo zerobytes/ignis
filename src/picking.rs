@@ -22,6 +22,24 @@ fn view(camera: &Camera) -> Mat4 {
 pub fn view_projection(camera: &Camera, width: u32, height: u32) -> Mat4 {
     projection(camera, width, height) * view(camera)
 }
+pub(crate) fn view_projection_clip(
+    camera: &Camera,
+    width: u32,
+    height: u32,
+    clip: Option<crate::render::Clip>,
+) -> Mat4 {
+    clip.map_or_else(
+        || view_projection(camera, width, height),
+        |c| {
+            Mat4::perspective_rh(
+                camera.fov_degrees.to_radians(),
+                width as f32 / height as f32,
+                if c.reverse_z { c.far } else { c.near },
+                if c.reverse_z { c.near } else { c.far },
+            ) * view(camera)
+        },
+    )
+}
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct Hit {
     #[serde(skip)]

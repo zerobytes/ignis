@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 109;
+pub const SCENE_VERSION: u32 = 110;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -614,6 +614,20 @@ impl Scene {
             return Err(invalid(
                 "Environment/direct intensity require scene version76",
             ));
+        }
+        if self.version < 110 {
+            let surface = |a: &crate::meshes::Asset| a.material.surface.is_some();
+            if self.meshes.assets.iter().any(surface)
+                || self.plants.entries.iter().any(|e| {
+                    surface(&e.source)
+                        || e.assembly.as_ref().is_some_and(|a| {
+                            surface(&a.context)
+                                || a.context_grafts.iter().any(|g| surface(&g.source))
+                        })
+                })
+            {
+                return Err(invalid("Surface composition requires scene version110"));
+            }
         }
         let metallic =
             |a: &crate::meshes::Asset| a.material.reflectance.is_some_and(|r| r.metallic > 0.);

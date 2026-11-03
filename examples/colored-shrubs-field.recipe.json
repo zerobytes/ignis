@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "seed": 205,
+  "size": 12.0,
+  "count": 48,
+  "path": true,
+  "weights": {
+    "pingo_ouro": 0.30,
+    "berberis_vinho": 0.25,
+    "loropetalo_roxo": 0.25,
+    "cotinus_roxo": 0.20
+  }
+}

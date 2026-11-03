@@ -1192,7 +1192,7 @@ fn source6_expanded_configuration_versions_are_atomic_and_durable() {
         )
         .unwrap();
     let after = service.engine.scene.clone();
-    assert_eq!(after.version, 109);
+    assert_eq!(after.version, ignis::model::SCENE_VERSION);
     assert_eq!(after.characters[0].recipe.version, 2);
     assert_eq!(
         after.characters[0].recipe.configuration.parameters.len(),

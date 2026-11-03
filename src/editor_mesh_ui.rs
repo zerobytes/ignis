@@ -1054,6 +1054,7 @@ pub(super) fn properties(
                 ui.selectable_value(&mut p.shading, meshes::Shading::Smooth, "Suave");
                 ui.selectable_value(&mut p.shading, meshes::Shading::Flat, "Plano");
             });
+            surface_material_ui(ui, &mut p.material);
             let mut procedural = p.material.pattern.is_some();
             if ui
                 .checkbox(&mut procedural, "Material procedural")
@@ -2289,6 +2290,127 @@ fn feedback_message(feedback: crate::mesh_sculpt_shapes::Feedback, radius: f32) 
         messages.push("Movimento limitado para preservar a superfície.".to_owned());
     }
     messages.join(" ")
+}
+
+fn surface_material_ui(ui: &mut egui::Ui, material: &mut crate::materials::Material) {
+    use crate::materials::{BlendMode, Coverage, Glass, Surface};
+    let mut enabled = material.surface.is_some();
+    if ui
+        .checkbox(&mut enabled, "Composição de superfície")
+        .changed()
+    {
+        material.surface = enabled.then(Surface::default);
+    }
+    let Some(surface) = &mut material.surface else {
+        return;
+    };
+    let previous = surface.mode;
+    design_ui::field(ui, "Composição", |ui| {
+        egui::ComboBox::from_id_salt("surface_mode")
+            .selected_text(match surface.mode {
+                BlendMode::Opaque => "Opaca",
+                BlendMode::Mask => "Recorte",
+                BlendMode::Blend => "Translúcida",
+                BlendMode::Additive => "Aditiva",
+            })
+            .show_ui(ui, |ui| {
+                for (mode, label) in [
+                    (BlendMode::Opaque, "Opaca"),
+                    (BlendMode::Mask, "Recorte"),
+                    (BlendMode::Blend, "Translúcida"),
+                    (BlendMode::Additive, "Aditiva"),
+                ] {
+                    ui.selectable_value(&mut surface.mode, mode, label);
+                }
+            });
+    });
+    if surface.mode != previous {
+        if surface.mode == BlendMode::Opaque {
+            surface.opacity = 1.;
+            surface.coverage = None;
+        }
+        if surface.mode != BlendMode::Blend {
+            surface.glass = None;
+        }
+    }
+    if surface.mode != BlendMode::Opaque {
+        ui.add(egui::Slider::new(&mut surface.opacity, 0. ..=1.).text("Opacidade / cobertura"));
+        if surface.mode == BlendMode::Mask {
+            ui.add(egui::Slider::new(&mut surface.cutoff, 0. ..=1.).text("Limiar do recorte"));
+        }
+        let mut patterned = surface.coverage.is_some();
+        if ui
+            .checkbox(&mut patterned, "Cobertura procedural")
+            .changed()
+        {
+            surface.coverage = patterned.then(Coverage::default);
+        }
+        if let Some(c) = &mut surface.coverage {
+            design_ui::field(ui, "Padrão de cobertura", |ui| {
+                egui::ComboBox::from_id_salt("coverage_kind")
+                    .selected_text(match c.kind {
+                        crate::materials::PatternKind::Noise => "Ruído",
+                        crate::materials::PatternKind::Ridged => "Cristas",
+                        crate::materials::PatternKind::Cellular => "Células",
+                    })
+                    .show_ui(ui, |ui| {
+                        for (kind, label) in [
+                            (crate::materials::PatternKind::Noise, "Ruído"),
+                            (crate::materials::PatternKind::Ridged, "Cristas"),
+                            (crate::materials::PatternKind::Cellular, "Células"),
+                        ] {
+                            ui.selectable_value(&mut c.kind, kind, label);
+                        }
+                    });
+            });
+            design_ui::field(ui, "Frequência XYZ", |ui| {
+                for v in &mut c.frequency {
+                    ui.add(egui::DragValue::new(v).range(0.01..=2048.).speed(0.1));
+                }
+            });
+            ui.add(egui::Slider::new(&mut c.low, 0. ..=1.).text("Cobertura mínima"));
+            ui.add(egui::Slider::new(&mut c.high, 0. ..=1.).text("Cobertura máxima"));
+            design_ui::field(ui, "Semente", |ui| {
+                ui.add(egui::DragValue::new(&mut c.seed));
+            });
+        }
+    }
+    design_ui::field(ui, "Emissão RGB", |ui| {
+        for v in &mut surface.emissive {
+            ui.add(egui::DragValue::new(v).range(0. ..=64.).speed(0.05));
+        }
+    });
+    if surface.mode == BlendMode::Blend {
+        let mut glass = surface.glass.is_some();
+        if ui.checkbox(&mut glass, "Vidro fino").changed() {
+            surface.glass = glass.then(Glass::default);
+            if glass {
+                material.reflectance = None;
+                material.transmission = 0.;
+            }
+        }
+        if let Some(g) = &mut surface.glass {
+            ui.add(egui::Slider::new(&mut g.ior, 1. ..=2.5).text("Índice óptico"));
+            ui.add(egui::Slider::new(&mut g.roughness, 0.2..=1.).text("Rugosidade da reflexão"));
+            design_ui::field(ui, "Espessura · m", |ui| {
+                ui.add(
+                    egui::DragValue::new(&mut g.thickness_m)
+                        .range(0. ..=10.)
+                        .speed(0.001),
+                );
+            });
+            design_ui::field(ui, "Cor transmitida", |ui| {
+                design_ui::color(ui, &mut g.attenuation_color);
+            });
+            design_ui::field(ui, "Distância da absorção · m", |ui| {
+                ui.add(
+                    egui::DragValue::new(&mut g.attenuation_distance_m)
+                        .range(0.0001..=10000.)
+                        .speed(0.001),
+                );
+            });
+        }
+    }
 }
 
 #[cfg(test)]

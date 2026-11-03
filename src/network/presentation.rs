@@ -6,6 +6,8 @@ use crate::{
 };
 pub fn empty(camera: Camera, light: Light) -> RenderFrame {
     RenderFrame {
+        clip: None,
+        planet_air: None,
         suppress_diagnostic_grid: false,
         meshes: Default::default(),
         distant_meshes: Default::default(),

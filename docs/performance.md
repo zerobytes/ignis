@@ -1,3 +1,19 @@
+## EAF-204 — arbustos densos, abertos e floridos
+
+Contrato em [shrub-assets.md](shrub-assets.md).8famílias/24variações/42fontes,
+madeira+folhagem nos dois canais existentes por corpo, sem ampliar quota64.
+66meshes vegetais fechados/orientados; biblioteca com chão592448v/1114758tri,
+fonte13432710bytes.90arbustos/16×16m:233instâncias/4094778tri antes do descarte;
+sem flores181/3929846tri. Exemplar compacto941folhas/77eixos; aberto216/45,
+não apenas mudança de cor. Instâncias compartilham assets, mas o trabalho por
+cópia permanece; sem FPS/GPU/memória total/LOD próprios inferidos. Seed/hash/
+composição/identidade e fontes/imagens anteriores preservadas verificados no
+builde46d5879c672aec9. Primeiro save/load final1pixel/1RGB8 diferente; valores
+de cena iguais/segundo par PNG exato, guarda existente mantida. Sem alteração
+de Rust/renderer/formato/solver ou build por esta entrega. Galeria em
+artifacts/shrubs/review.html; aceite artístico/terreno/vento/gameplay separados.
+Mundo/janela e trabalho paralelo em materiais/planeta/website preservados.
+
 ## EAF-200 — coleção adicional de mato alto
 
 Contrato em [tallgrass-assets.md](tallgrass-assets.md).8tipos/24variações/39fontes

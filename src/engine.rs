@@ -1,5 +1,7 @@
 #[path = "engine_planet.rs"]
 mod planet;
+#[path = "engine_planet_view.rs"]
+mod planet_view;
 #[path = "engine_portable.rs"]
 mod portable;
 use crate::{
@@ -649,6 +651,22 @@ pub enum Command {
         path: String,
     },
     InspectPlanetRuntime,
+    SetPlanetView {
+        view: Option<crate::planet::orbit::Settings>,
+    },
+    InspectPlanetView,
+    FramePlanetView,
+    ZoomPlanetView {
+        factor: f64,
+    },
+    LookPlanetView {
+        yaw_delta_degrees: f64,
+        tilt_delta_degrees: f64,
+    },
+    SetPlanetViewport {
+        width: u32,
+        height: u32,
+    },
     LookPlayerView {
         yaw_delta_degrees: f32,
         pitch_delta_degrees: f32,
@@ -911,7 +929,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 119;
+pub const REPLAY_VERSION: u32 = 120;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -993,6 +1011,7 @@ pub struct Engine {
     pub view_revision: u64,
     player_view: Option<crate::player_view::State>,
     player_view_serial: u64,
+    planet_view: Option<crate::planet::orbit::Atlas>,
     pub(crate) mesh_lods: std::sync::Arc<crate::mesh_lods::Document>,
     pub mesh_lod_settings: crate::mesh_lods::Settings,
     selection: Option<Selected>,
@@ -1040,6 +1059,7 @@ impl Engine {
             view_revision: 0,
             player_view: None,
             player_view_serial: 0,
+            planet_view: None,
             mesh_lods: Default::default(),
             mesh_lod_settings: Default::default(),
             selection: None,
@@ -1204,6 +1224,11 @@ impl Engine {
                     for asset in edit.changed_assets().into_iter().flatten() {
                         changed_meshes.insert(asset.to_owned());
                     }
+                    if matches!(&edit, crate::meshes::Edit::SetMaterial { material, .. } if material.surface.is_some())
+                        || matches!(&edit, crate::meshes::Edit::PutAsset { asset } if asset.material.surface.is_some())
+                    {
+                        scene.version = scene.version.max(110);
+                    }
                     scene.plants.apply_mesh(edit, &mut scene.meshes)?;
                 }
                 SceneEdit::Plant { edit } => {
@@ -1318,6 +1343,7 @@ impl Engine {
         self.replace(scene)
     }
     pub fn reset(&mut self) {
+        self.planet_view = None;
         let planet = self.simulation.planet.as_ref().map(|w| w.config.clone());
         let planet_view = planet
             .as_ref()
@@ -1449,6 +1475,7 @@ impl Engine {
                 self.consumed_population_inputs = 0;
             }
         }
+        self.prepare_planet_view()?;
         Ok(())
     }
     pub fn selected_mesh_components(&self) -> Option<&crate::mesh_topology::Selection> {
@@ -1497,6 +1524,8 @@ impl Engine {
     }
     pub fn render_frame(&self) -> crate::render::RenderFrame {
         let mut frame = crate::render::RenderFrame {
+            clip: None,
+            planet_air: None,
             suppress_diagnostic_grid: self.planet_active(),
             meshes: Default::default(),
             distant_meshes: self.scene.distant_meshes.clone(),
@@ -1524,7 +1553,20 @@ impl Engine {
         frame: &mut crate::render::RenderFrame,
         meshes: &crate::meshes::Document,
     ) {
+        frame.clip = None;
+        frame.planet_air = None;
         frame.suppress_diagnostic_grid = self.planet_active();
+        if let Some(view) = &self.planet_view {
+            frame.light = self.scene.light.clone();
+            frame.light.direction = self
+                .simulation
+                .planet
+                .as_ref()
+                .expect("planet view source")
+                .local_light();
+            view.apply(frame);
+            return;
+        }
         let meshes = self
             .simulation
             .planet
@@ -2928,8 +2970,73 @@ impl Engine {
                 "Disable planet runtime before editing authoring state",
             ));
         }
+        if self.planet_view.is_some()
+            && matches!(
+                &request.command,
+                Command::SelectAt { .. } | Command::PickEditorMesh { .. }
+            )
+        {
+            return Err(invalid(
+                "Authoring picking is unavailable in the session-only planet view",
+            ));
+        }
         match request.command {
+            Command::SetPlanetView { view } => {
+                self.set_planet_view(view)?;
+                return Ok(self.inspect_planet_view());
+            }
+            Command::InspectPlanetView => return Ok(self.inspect_planet_view()),
+            Command::FramePlanetView => {
+                let mut view = self.planet_view_settings()?;
+                let doc = &self.simulation.planet.as_ref().unwrap().config.document;
+                let (_, height) =
+                    crate::planet::orbit::height_bounds(doc, glam::DVec3::Y, std::f64::consts::PI);
+                let outer = doc.radius() + height.max(view.atmosphere_height_meters);
+                let half = (view.fov_degrees.to_radians() * 0.5).tan();
+                let angle = half
+                    .min(half * f64::from(view.viewport[0]) / f64::from(view.viewport[1]))
+                    .atan();
+                view.distance_meters = doc.radius() + outer / angle.sin() * 1.15;
+                view.tilt_degrees = 0.;
+                self.set_planet_view(Some(view))?;
+                return Ok(self.inspect_planet_view());
+            }
+            Command::ZoomPlanetView { factor } => {
+                if !factor.is_finite() || factor <= 0. {
+                    return Err(invalid("Zoom requires a finite positive distance ratio"));
+                }
+                let mut view = self.planet_view_settings()?;
+                view.distance_meters = if view.distance_meters == 0. && factor > 1. {
+                    0.5
+                } else {
+                    ((view.distance_meters + 1.) * factor - 1.).max(0.)
+                };
+                self.set_planet_view(Some(view))?;
+                return Ok(self.inspect_planet_view());
+            }
+            Command::LookPlanetView {
+                yaw_delta_degrees,
+                tilt_delta_degrees,
+            } => {
+                if !yaw_delta_degrees.is_finite() || !tilt_delta_degrees.is_finite() {
+                    return Err(invalid("Planet look requires finite deltas"));
+                }
+                let mut view = self.planet_view_settings()?;
+                view.yaw_degrees = (view.yaw_degrees + yaw_delta_degrees).rem_euclid(360.);
+                view.tilt_degrees = (view.tilt_degrees + tilt_delta_degrees).clamp(-85., 165.);
+                self.set_planet_view(Some(view))?;
+                return Ok(self.inspect_planet_view());
+            }
+            Command::SetPlanetViewport { width, height } => {
+                self.prepare_planet_viewport(width, height)?;
+                return Ok(self.inspect_planet_view());
+            }
             Command::SetPlanetRuntime { config } => {
+                if self.planet_view.is_some() {
+                    return Err(invalid(
+                        "Disable planet view before replacing its source runtime",
+                    ));
+                }
                 if self.playing {
                     return Err(invalid("Pause before changing planet runtime"));
                 }
@@ -2959,6 +3066,11 @@ impl Engine {
                 );
             }
             Command::SetPlayerView { view } => {
+                if self.planet_view.is_some() {
+                    return Err(invalid(
+                        "Disable planet view before replacing the player camera",
+                    ));
+                }
                 if self.planet_active() && view.is_none() {
                     return Err(invalid(
                         "Planet runtime requires a player camera inside its coverage envelope",
@@ -3008,6 +3120,15 @@ impl Engine {
                 yaw_delta_degrees,
                 pitch_delta_degrees,
             } => {
+                if self.planet_view.is_some() {
+                    return self.execute(
+                        Command::LookPlanetView {
+                            yaw_delta_degrees: f64::from(yaw_delta_degrees),
+                            tilt_delta_degrees: f64::from(pitch_delta_degrees),
+                        }
+                        .into(),
+                    );
+                }
                 if !yaw_delta_degrees.is_finite() || !pitch_delta_degrees.is_finite() {
                     return Err(invalid("Player look requires finite angle deltas"));
                 }
@@ -3027,7 +3148,13 @@ impl Engine {
                 self.player_view_actor()
                     .ok_or_else(|| invalid("No current player view"))?;
                 let v = self.player_view.as_ref().unwrap();
-                let input = v.config.world_input(input);
+                let input = if let Some(view) = &self.planet_view {
+                    let mut config = v.config.clone();
+                    config.yaw_degrees = view.settings.yaw_degrees as f32;
+                    config.world_input(input)
+                } else {
+                    v.config.world_input(input)
+                };
                 let command = if let Some(control) = control {
                     let id = self.control_id(&control)?;
                     if self.controls.binding(id)?.actor != v.reference {

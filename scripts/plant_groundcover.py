@@ -15,7 +15,7 @@ from pathlib import Path
 
 from demo_groundcover import field_scene, relative, scene_stats, validate_recipe
 from groundcover_assets import atomic_json, source_fingerprint
-from botany_collections import collection
+from botany_collections import COLLECTIONS, collection
 from verify_lab import Client, ROOT
 
 
@@ -47,7 +47,7 @@ def compose(original,patch,prefix,x,z,ground_y):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--collection',choices=['groundcover','tallgrass'],default='groundcover')
+    p.add_argument('--collection',choices=COLLECTIONS,default='groundcover')
     p.add_argument('--scene',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--recipe',type=Path)
     p.add_argument('--prefix',default='meadow');p.add_argument('--x',type=float,default=0.)

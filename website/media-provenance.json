@@ -1,0 +1,173 @@
+[
+  {
+    "id": "landscape",
+    "source": "docs/media/terrain.png",
+    "sourceSha256": "4bdb19a143fcbd1229ccf5b90940a8a423728091420504ebbd3608fe50797014",
+    "output": "assets/engine/landscape.webp",
+    "width": 1280,
+    "height": 800,
+    "bytes": 16490
+  },
+  {
+    "id": "botany",
+    "source": "docs/media/botany.png",
+    "sourceSha256": "497ce821e03aac19759fd7b2e94058c34c360db62b21d9f47155fa83f987de12",
+    "output": "assets/engine/botany.webp",
+    "width": 1200,
+    "height": 1000,
+    "bytes": 75098
+  },
+  {
+    "id": "editor",
+    "source": "docs/media/editor.png",
+    "sourceSha256": "afb744781340617217d65b23ec89e63cf374a1c042c88592d0f1ef6d05fc2e41",
+    "output": "assets/engine/editor.webp",
+    "width": 1440,
+    "height": 900,
+    "bytes": 45312
+  },
+  {
+    "id": "roots",
+    "source": "artifacts/botany-collar/adult-front.png",
+    "sourceSha256": "07821fd7e4f04acee4bb95aef42374f176fce68dee5eb274bb7d16c6228935f8",
+    "output": "assets/engine/roots.webp",
+    "width": 1200,
+    "height": 1000,
+    "bytes": 106906
+  },
+  {
+    "id": "character",
+    "source": "artifacts/character-nose/editor.png",
+    "sourceSha256": "661a4f039e32288ce95c02b053c26c56643173fee9117152eef36ea1d583d48c",
+    "output": "assets/engine/character.webp",
+    "width": 1440,
+    "height": 900,
+    "bytes": 57646
+  },
+  {
+    "id": "face",
+    "source": "artifacts/character-smoothing/face-pointed.png",
+    "sourceSha256": "3b438eaa548ad7935621fcffee85f49bd3e6b28e2f893b783a0782bc7030a2c4",
+    "output": "assets/engine/face.webp",
+    "width": 1100,
+    "height": 1200,
+    "bytes": 15166
+  },
+  {
+    "id": "modeling",
+    "source": "artifacts/editor-modeling/Bevel.png",
+    "sourceSha256": "458b609b7134dfd212efabd7322db22f9144f79f59c24dbdff845cb059a3ed88",
+    "output": "assets/engine/modeling.webp",
+    "width": 1440,
+    "height": 900,
+    "bytes": 51754
+  },
+  {
+    "id": "sculpt",
+    "source": "artifacts/editor-sculpt-quality/brush-Crease.png",
+    "sourceSha256": "d33c1eda4839d30cd6e5af9939e0217619eb475a55891de15edc1658eff817b5",
+    "output": "assets/engine/sculpt.webp",
+    "width": 1440,
+    "height": 900,
+    "bytes": 46004
+  },
+  {
+    "id": "forest",
+    "source": "artifacts/fine-occlusion/pose0-lod.png",
+    "sourceSha256": "ec14f7b041f707c3e87016259d87ed45039e61a9759948578e8776a33f12557d",
+    "output": "assets/engine/forest.webp",
+    "width": 1280,
+    "height": 800,
+    "bytes": 118408
+  },
+  {
+    "id": "planet",
+    "source": "artifacts/planet-runtime/eye-start.png",
+    "sourceSha256": "3dc05e45b80663324d8a7520a48475eb2748a84508896e24ed5499474b1ab432",
+    "output": "assets/engine/planet.webp",
+    "width": 1280,
+    "height": 800,
+    "bytes": 7066
+  },
+  {
+    "id": "network",
+    "source": "artifacts/network-thousand.png",
+    "sourceSha256": "ed0d5a8d74b016f8136214fc0781f847c435780bfde78e138e5ae33c5601396a",
+    "output": "assets/engine/network.webp",
+    "width": 960,
+    "height": 640,
+    "bytes": 33142
+  },
+  {
+    "id": "npc",
+    "source": "artifacts/npc-presentation-morphologies.png",
+    "sourceSha256": "583332d83be8215964e5b7a0f8eebb68512d21b69c53d6c8bfc30f50c618b54f",
+    "output": "assets/engine/npc.webp",
+    "width": 1200,
+    "height": 850,
+    "bytes": 29008
+  },
+  {
+    "id": "groundcover",
+    "source": "artifacts/groundcover/gallery.png",
+    "sourceSha256": "bdbc301eb6a45b71b089384c09ec28ff01fb48281e6ed2c75e608d21f19af583",
+    "output": "assets/engine/groundcover.webp",
+    "width": 1600,
+    "height": 1111,
+    "bytes": 15538
+  },
+  {
+    "id": "grass",
+    "source": "artifacts/groundcover/flores_roxas.png",
+    "sourceSha256": "2634f5fb270f05485b5791bf85e73a183b9733530399d16d25498336fc26cb73",
+    "output": "assets/engine/grass.webp",
+    "width": 850,
+    "height": 750,
+    "bytes": 10628
+  },
+  {
+    "id": "young",
+    "source": "artifacts/botany-age/figueira-young.png",
+    "sourceSha256": "59bb796f810ad977ebb06770c2eef3482ef309eba2a4679d5fd96934dd5f4d23",
+    "output": "assets/engine/young.webp",
+    "width": 1200,
+    "height": 1100,
+    "bytes": 17544
+  },
+  {
+    "id": "mature",
+    "source": "artifacts/botany-age/figueira-adult.png",
+    "sourceSha256": "c3346d89af69a808e322b7a70ca987260bcb4703ca5614135cb750f4edb31b95",
+    "output": "assets/engine/mature.webp",
+    "width": 1200,
+    "height": 1100,
+    "bytes": 76410
+  },
+  {
+    "id": "horizon",
+    "source": "website/media/horizon-forest.png",
+    "sourceSha256": "9c8b694fbecb39ca3c3eec640a3de56b9e169a8f64b19de23471f476ee4eb417",
+    "output": "assets/engine/horizon.webp",
+    "width": 1600,
+    "height": 890,
+    "bytes": 176888
+  },
+  {
+    "id": "sunset",
+    "source": "website/media/horizon-sunset.png",
+    "sourceSha256": "2604eb2f8aceb793fab5a4b47ad4aaed49a3fcfaf67bf426b6bd1fea28106c34",
+    "output": "assets/engine/sunset.webp",
+    "width": 1600,
+    "height": 1034,
+    "bytes": 23266
+  },
+  {
+    "id": "cottage",
+    "source": "artifacts/cottage-normals/artifacts/joined-hero.png",
+    "sourceSha256": "cc68683839efa6aaa6f7bafbe8ac38b8d48f2423ad3e9e958ed7703a30e44349",
+    "output": "assets/engine/cottage.webp",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 159224
+  }
+]

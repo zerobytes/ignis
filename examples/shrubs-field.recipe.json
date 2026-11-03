@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "seed": 202,
+  "size": 16.0,
+  "count": 90,
+  "path": true,
+  "weights": {
+    "compacto": 0.19,
+    "aberto": 0.13,
+    "espalhado": 0.13,
+    "vertical": 0.10,
+    "folha_grande": 0.10,
+    "flores_brancas": 0.13,
+    "flores_rosas": 0.12,
+    "flores_amarelas": 0.10
+  }
+}

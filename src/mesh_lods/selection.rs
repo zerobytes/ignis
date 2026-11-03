@@ -109,6 +109,10 @@ impl Selection {
             || frame.mesh_lods.packs.is_empty()
             || !draw.shared
             || !draw.eligible
+            || frame.meshes.source.assets[draw.asset]
+                .material
+                .surface
+                .is_some()
             || frame.selection_mesh.as_ref() == Some(&draw.instance)
             || frame.light.shadow.is_some()
             || frame.light.environment.is_some_and(|e| e.intensity > 0.)

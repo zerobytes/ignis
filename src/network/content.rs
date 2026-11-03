@@ -5,7 +5,7 @@ use crate::{
     model::{Camera, Light, Result, invalid},
 };
 use serde::{Deserialize, Serialize};
-pub const VERSION: u16 = 7;
+pub const VERSION: u16 = 8;
 pub const MAX_BYTES: usize = 8 * 1024 * 1024;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -2,3 +2,10 @@
 /artifacts/
 .DS_Store
 __pycache__/
+
+# Local project context and reference inputs kept outside the public source tree.
+/AGENTS.md
+/.agents/
+/.ui-craft/
+/docs/publication-internal.md
+/docs/references/image-to-3d/

@@ -96,8 +96,9 @@ Verificações realizadas:
 
 Revisão visual cobriu os oito cartões, campo amplo, vista próxima e versão sem
 flores/pendões. Plumas/sementes finas podem desaparecer ou cintilar à distância;
-interseções de folhas e facetas permanecem visíveis de perto. Aceite artístico
-da coleção alta fica com o usuário. Plantio continua em altura constante, sem
+interseções de folhas e facetas permanecem visíveis de perto. O usuário aprovou
+a coleção alta; a continuidade de [arbustos](shrub-assets.md) é separada.
+Plantio continua em altura constante, sem
 adaptação automática a terreno, vento, colisão ou integração ao runtime planetário.
 Foi usado o executável corrente e preservada a janela humana, sem build novo,
 publicação ou push.

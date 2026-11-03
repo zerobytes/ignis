@@ -72,6 +72,7 @@ pub fn compile(document: &Document) -> Result<Arc<Vec<Pack>>> {
     let mut packs = Vec::new();
     for a in &document.assets {
         if a.rig.is_none()
+            && a.material.surface.is_none()
             && a.clips.is_empty()
             && a.material
                 .reflectance

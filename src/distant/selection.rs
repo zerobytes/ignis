@@ -180,6 +180,7 @@ impl Selection {
                 choice.visible & crate::render_visibility::CAMERA != 0
                     && eligible_light
                     && draw.eligible
+                    && source.assets[draw.asset].material.surface.is_none()
                     && c.valid
                     && frame.selection_mesh.as_ref() != Some(&draw.instance)
             }) {

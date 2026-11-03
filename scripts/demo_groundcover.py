@@ -17,7 +17,7 @@ from collections import Counter
 from pathlib import Path
 
 from groundcover_assets import FAMILIES, atomic_json, source_fingerprint
-from botany_collections import collection
+from botany_collections import COLLECTIONS, collection
 from verify_lab import Client, ROOT
 
 OUT=ROOT/'artifacts/groundcover'
@@ -25,6 +25,17 @@ OUT=ROOT/'artifacts/groundcover'
 
 def relative(path):
     return str(path.relative_to(ROOT))
+
+
+def publish_recipe(c,recipe,temporary):
+    # Dense editable foliage can exceed the2MiB stdio message envelope. Reuse
+    # native file loading for large sources instead of raising transport quotas.
+    if len(json.dumps(recipe).encode())<1_900_000:
+        return c.call('botany',operation=dict(kind='publish',recipe=recipe))
+    atomic_json(temporary,recipe)
+    try:
+        return c.call('botany',operation=dict(kind='load',path=relative(temporary),publish=True))
+    finally:temporary.unlink(missing_ok=True)
 
 
 def fit(c,lo,hi,path,direction=(.6,.45,1),width=850,height=750):
@@ -54,8 +65,14 @@ def ground(scene):
     scene['meshes']['instances'].append(dict(id='gc_ground',asset='gc_ground',position=[0,0,0],rotation=[0,0,0,1],scale=1,color=[.18,.155,.09]))
 
 
-def base_scene(compiled):
-    scene=copy.deepcopy(compiled)
+def base_scene(compiled,asset_ids=None):
+    if asset_ids is None:
+        scene=copy.deepcopy(compiled)
+    else:
+        # A close view needs only its specimens. Keep immutable baked geometry
+        # shared while preparing the file, rather than copy unrelated variants.
+        scene=copy.deepcopy({k:v for k,v in compiled.items() if k not in ('meshes','botany')})
+        scene['meshes']=dict(assets=[a for a in compiled['meshes']['assets'] if a['id'] in asset_ids])
     # Static library copies are mesh instances; authoring curves live separately.
     scene['botany']=[]
     scene['meshes']['instances']=[]
@@ -137,7 +154,7 @@ def verify_closed(assets):
 def main():
     global OUT
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--collection',choices=['groundcover','tallgrass'],default='groundcover')
+    p.add_argument('--collection',choices=COLLECTIONS,default='groundcover')
     p.add_argument('--binary',type=Path,default=ROOT/'target/release/ignis')
     p.add_argument('--recipe',type=Path)
     p.add_argument('--count',type=int);p.add_argument('--size',type=float)
@@ -174,7 +191,7 @@ def main():
                 row=next(i for i,f in enumerate(families) if f['id']==e['family'])
                 authored=copy.deepcopy(files[part['path']])
                 authored['settings']['position']=gallery_position(row,e['variant'],manifest['variants'])
-                c.call('botany',operation=dict(kind='publish',recipe=authored))
+                publish_recipe(c,authored,OUT/'publication.ignis-botany')
         report['compile_library_seconds']=time.monotonic()-started
         c.call('set_camera',camera=dict(position=[9,10,14],target=[0,.5,0],fov_degrees=36))
         c.call('save_scene',path=relative(OUT/'authoring.scene.json'))
@@ -202,7 +219,9 @@ def main():
         c.call('save_scene',path=relative(OUT/'gallery.scene.json'))
         # Each family's three real 3D variants, same scale within each frame.
         for f in families:
-            sample=base_scene(compiled);entries=[e for e in manifest['entries'] if e['family']==f['id']]
+            entries=[e for e in manifest['entries'] if e['family']==f['id']]
+            needed={i['asset'] for e in entries for i in templates[e['id']]} if config.get('compact_samples') else None
+            sample=base_scene(compiled,needed)
             gap=max(.5,f['reach']*2.2)
             for j,e in enumerate(entries):place(sample,templates,e,f'sample_{j}',[(j-(len(entries)-1)/2)*gap,0,0],j*.8)
             atomic_json(OUT/'sample.scene.json',sample);c.call('load_scene',path=relative(OUT/'sample.scene.json'))
@@ -215,6 +234,16 @@ def main():
             lo=[min(p[k] for p in points) for k in range(3)];hi=[max(p[k] for p in points) for k in range(3)]
             fit(c,lo,hi,OUT/f"{f['id']}.png")
             report.setdefault('families',{})[f['id']]=dict(bounds=[lo,hi],variants=len(entries),triangles_per_variant=[sum(len(amap[i['asset']]['geometry']['triangles']) for i in templates[e['id']]) for e in entries])
+        extra_html=''
+        if config.get('density_compare'):
+            pair=base_scene(compiled)
+            for j,family in enumerate(config['density_compare']):
+                entry=next(e for e in manifest['entries'] if e['family']==family)
+                place(pair,templates,entry,f'density_{j}',[(j-.5)*2.5,0,0])
+            atomic_json(OUT/'density.scene.json',pair);c.call('load_scene',path=relative(OUT/'density.scene.json'))
+            fit(c,[-2.6,-.03,-1.2],[2.6,1.5,1.2],OUT/'density.png',direction=(.25,.42,1),width=1400,height=850)
+            c.call('save_scene',path=relative(OUT/'density.scene.json'))
+            extra_html='<h2>Densidade e estrutura</h2><p>Compacto à esquerda; aberto à direita. Mesma escala e câmera.</p><img src="density.png">'
         field,counts,placements=field_scene(compiled,templates,manifest,recipe)
         again,_,second=field_scene(compiled,templates,manifest,recipe)
         assert placements==second and field==again
@@ -256,7 +285,7 @@ def main():
         atomic_json(OUT/'report.json',report)
         cards=''.join(f'<figure><img src="{f["id"]}.png"><figcaption>{html.escape(f["name"])}</figcaption></figure>' for f in families)
         title=f"{config['title']} · {len(families)} tipos / {len(manifest['entries'])} variações"
-        (OUT/'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Ignis · cobertura vegetal</title><style>body{background:#18201b;color:#e4eadc;font:17px system-ui;max-width:1500px;margin:32px auto;padding:20px}img{width:100%;display:block}figure{margin:0 0 20px}.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}a{color:#b5da8d}</style><h1>'+html.escape(title)+'</h1><p>Geometria procedural nativa; fontes editáveis e instâncias compartilhadas. Arquétipos autorais, sem calibração de espécie. Aceite artístico pendente.</p><h2>Campo misto</h2><img src="field.png"><img src="close.png"><h2>'+html.escape(config['foliage_title'])+'</h2><img src="grass.png"><h2>Biblioteca</h2><img src="gallery.png"><div class="cards">'+cards+'</div><p><a href="field.scene.json">Cena do campo</a> · <a href="grass.scene.json">Cena de folhagens</a> · <a href="authoring.scene.json">Fontes editáveis</a> · <a href="report.json">Contagens e validação</a></p>')
+        (OUT/'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Ignis · cobertura vegetal</title><style>body{background:#18201b;color:#e4eadc;font:17px system-ui;max-width:1500px;margin:32px auto;padding:20px}img{width:100%;display:block}figure{margin:0 0 20px}.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}a{color:#b5da8d}</style><h1>'+html.escape(title)+'</h1><p>Geometria procedural nativa; fontes editáveis e instâncias compartilhadas. Arquétipos autorais, sem calibração de espécie. Aceite artístico pendente.</p><h2>Campo misto</h2><img src="field.png"><img src="close.png">'+extra_html+'<h2>'+html.escape(config['foliage_title'])+'</h2><img src="grass.png"><h2>Biblioteca</h2><img src="gallery.png"><div class="cards">'+cards+'</div><p><a href="field.scene.json">Cena do campo</a> · <a href="grass.scene.json">Cena de folhagens</a> · <a href="authoring.scene.json">Fontes editáveis</a> · <a href="report.json">Contagens e validação</a></p>')
         print(json.dumps({k:v for k,v in report.items() if k!='components'},ensure_ascii=False,indent=2),flush=True)
     finally:c.close()
 
