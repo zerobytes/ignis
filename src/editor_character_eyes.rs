@@ -25,6 +25,7 @@ pub(super) fn controls(
                 ui.selectable_value(selected, i, if i == 0 { "Esquerdo" } else { "Direito" });
             }});
             ui.small("A profundidade move o globo e acompanha a borda das pálpebras. Zero mantém o encaixe natural. Valores positivos recuam o olho.");
+            if eye.fit.as_ref().is_some_and(|f|f.spherical.is_some()) {ui.small("O globo é esférico. O encaixe ajusta as pálpebras ao redor dele.");}
             for &(name, label, _, _, _) in FIT_CONTROLS {
                 let p=source.parameters.iter().find(|p|p.name==key(name)).unwrap();
                 let (min,max,default)=(p.minimum,p.maximum,p.default);

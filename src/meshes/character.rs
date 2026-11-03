@@ -19,7 +19,7 @@ pub use refinement::Refinement;
 pub mod eyes;
 pub use eyes::Eye;
 
-pub const VERSION: u16 = 8;
+pub const VERSION: u16 = 9;
 pub const MAX_PARAMETERS: usize = 512;
 pub const MAX_BYTES: usize = 96 * 1024 * 1024;
 pub const LEGACY_MAX_BYTES: usize = 64 * 1024 * 1024;

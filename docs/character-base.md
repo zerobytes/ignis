@@ -1,6 +1,8 @@
 # Base humana feminina — EAF-187
 
-Incremento atual: [papada, região orbital, nariz e encaixe ocular](character-face.md).
+Incremento atual: [globo ocular esférico e contato das pálpebras](character-spherical.md).
+
+[Papada, região orbital e nariz](character-face.md).
 
 [Cadeia de pontos da mandíbula](character-jaw.md).
 

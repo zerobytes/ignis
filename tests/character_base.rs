@@ -1466,9 +1466,7 @@ fn ocular_source_contract_cache_rigid_transport_and_durability() {
         .unwrap();
 }
 
-#[test]
-fn source8_contact_transport_legacy_equivalence_and_metadata_guards() {
-    use glam::{Mat4, Vec3};
+fn ocular_contact_source() -> Source {
     let mut s = source();
     for &(name, _, min, max, default) in eyes::CONTROLS.iter().chain(eyes::FIT_CONTROLS) {
         s.parameters.push(Parameter {
@@ -1496,6 +1494,7 @@ fn source8_contact_transport_legacy_equivalence_and_metadata_guards() {
         0.012,
     );
     eye.fit = Some(eyes::EyeFit {
+        spherical: None,
         part: "skin".into(),
         rim: (0..16).collect(),
         lid: (0..32)
@@ -1531,6 +1530,122 @@ fn source8_contact_transport_legacy_equivalence_and_metadata_guards() {
         let n = (i + 1) % 16;
         skin.triangles.extend([[i, 16 + i, 16 + n], [i, 16 + n, n]]);
     }
+    s
+}
+
+#[test]
+fn source9_keeps_the_globe_spherical_and_wraps_only_the_lid_band() {
+    use glam::{Mat4, Vec3};
+    let mut s = ocular_contact_source();
+    s.version = 9;
+    s.eyes[0].fit.as_mut().unwrap().spherical = Some(eyes::SphericalFit { interior: vec![] });
+    s.validate().unwrap();
+    let mut bad = s.clone();
+    bad.version = 8;
+    assert!(bad.validate().is_err());
+    bad = s.clone();
+    bad.eyes[0]
+        .fit
+        .as_mut()
+        .unwrap()
+        .spherical
+        .as_mut()
+        .unwrap()
+        .interior = vec![0];
+    assert!(bad.validate().is_err());
+    let config = Configuration::default();
+    let (a, _) = s.compile(&config, &placement()).unwrap();
+    let globe = a.asset("test_sclera").unwrap();
+    let center = Vec3::from(globe.rig.as_ref().unwrap().bones[255].translation);
+    let radius = (Vec3::from(globe.geometry.positions[0]) - center).length();
+    assert!(radius >= 0.016 && radius < 0.025);
+    for p in &globe.geometry.positions {
+        assert!(((Vec3::from(*p) - center).length() - radius).abs() < 2e-6);
+    }
+    for t in &globe.geometry.triangles {
+        let [p, q, r] = t.map(|i| Vec3::from(globe.geometry.positions[i as usize]));
+        assert!((q - p).cross(r - p).dot((p + q + r) / 3. - center) > 0.);
+    }
+    let skin = a.asset("test_skin").unwrap();
+    for p in &skin.geometry.positions[..16] {
+        assert!(((Vec3::from(*p) - center).length() - radius).abs() < 0.0001);
+    }
+    for p in &skin.geometry.positions[16..32] {
+        let p = Vec3::from(*p);
+        let rr = (p.truncate() - center.truncate()).length_squared();
+        if rr < radius * radius {
+            assert!(p.z <= center.z - (radius * radius - rr).sqrt() + 1e-6);
+        }
+    }
+    assert_eq!(skin.geometry.positions[32], [0.1, 0., 0.]);
+    for amount in [0., 0.5, 1.] {
+        for depth in [-0.003, 0.008] {
+            let mut c = config.clone();
+            c.parameters.extend([
+                ("ocular_socket_fit".into(), amount),
+                ("ocular_globe_depth".into(), depth),
+            ]);
+            let (b, _) = s.compile(&c, &placement()).unwrap();
+            let eye = b.asset("test_sclera").unwrap();
+            let o = Vec3::from(eye.rig.as_ref().unwrap().bones[255].translation);
+            let r = (Vec3::from(eye.geometry.positions[0]) - o).length();
+            assert!(
+                eye.geometry
+                    .positions
+                    .iter()
+                    .all(|p| ((Vec3::from(*p) - o).length() - r).abs() < 2e-6)
+            );
+        }
+    }
+    let mut legacy = s.clone();
+    legacy.version = 7;
+    legacy.eyes[0].fit = None;
+    let mut off = config.clone();
+    off.parameters.insert("ocular_socket_fit".into(), 0.);
+    assert_eq!(
+        s.compile(&off, &placement()).unwrap().0,
+        legacy.compile(&config, &placement()).unwrap().0
+    );
+    s.parameters.push(Parameter {
+        name: "pitch".into(),
+        minimum: -1.,
+        maximum: 1.,
+        default: 0.,
+    });
+    s.warps.push(Warp {
+        name: "pitch".into(),
+        parameter: "pitch".into(),
+        origin: Anchor { vertices: vec![0] },
+        axis: [1., 0., 0.],
+        angle_degrees: 30.,
+        weights: (0..s.positions.len() as u32)
+            .map(|vertex| WarpWeight { vertex, weight: 1. })
+            .collect(),
+        rigid_sockets: vec![255],
+    });
+    let mut rotated = config;
+    rotated.parameters.insert("pitch".into(), 1.);
+    let (b, _) = s.compile(&rotated, &placement()).unwrap();
+    let rotation = Mat4::from_rotation_x(30f32.to_radians());
+    for id in ["test_skin", "test_sclera", "test_iris", "test_cornea"] {
+        for (p, q) in a
+            .asset(id)
+            .unwrap()
+            .geometry
+            .positions
+            .iter()
+            .zip(&b.asset(id).unwrap().geometry.positions)
+        {
+            assert!((rotation.transform_point3((*p).into()) - Vec3::from(*q)).length() < 4e-6);
+        }
+    }
+}
+
+#[test]
+fn source8_contact_transport_legacy_equivalence_and_metadata_guards() {
+    use glam::{Mat4, Vec3};
+    let mut s = ocular_contact_source();
+    s.version = 8;
     s.validate().unwrap();
     let mut bad = s.clone();
     bad.version = 7;

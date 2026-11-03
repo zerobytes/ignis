@@ -10,7 +10,7 @@ use std::{
     sync::Mutex,
 };
 mod fitting;
-pub use fitting::{EyeFit, FIT_CONTROLS};
+pub use fitting::{EyeFit, FIT_CONTROLS, SphericalFit};
 
 /// Name, label, minimum, maximum, default. The configuration is shared by MCP/UI.
 pub const CONTROLS: &[(&str, &str, f32, f32, f32)] = &[

@@ -1,5 +1,10 @@
 # Local facial authoring and ocular contact
 
+The source8 scleral contact skirt below was rejected by human review because it
+stopped being a spherical eyeball. It remains readable for historical recipes
+and undo. Current ocular authoring uses the [source9 spherical globe](character-spherical.md);
+the fifteen facial landmarks described here are retained unchanged.
+
 Source8 adds fifteen XYZ landmarks to the mandibular/ocular base. Existing
 sources1..7 are immutable; all343 previously authored coefficients are retained.
 The new source is `artifacts/character-base/human-face.ignis-character`, built

@@ -18,7 +18,7 @@ impl Default for State {
         Self {
             key: None,
             draft: Default::default(),
-            source_path: "artifacts/character-base/human-face.ignis-character".into(),
+            source_path: "artifacts/character-base/human-spherical.ignis-character".into(),
             prefix: "female".into(),
             preset_path: "artifacts/character-base/female.ignis-character-config".into(),
             confirm_regenerate: false,

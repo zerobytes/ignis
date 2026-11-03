@@ -1,5 +1,7 @@
-//! Source8 socket contact, evaluated only while baking a character configuration.
+//! Versioned socket contact: legacy source8 skirt, source9 spherical globe.
 use super::*;
+mod spherical;
+pub use spherical::SphericalFit;
 
 pub const FIT_CONTROLS: &[(&str, &str, f32, f32, f32)] = &[
     (
@@ -20,6 +22,8 @@ pub struct EyeFit {
     pub part: String,
     pub rim: Vec<u32>,
     pub lid: Vec<WarpWeight>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spherical: Option<SphericalFit>,
 }
 
 impl Source {
@@ -74,6 +78,19 @@ impl Source {
                 }
             }
             self.validate_contact_rim(body, &fit.rim)?;
+            if let Some(spherical) = &fit.spherical
+                && (self.version < 9
+                    || spherical.interior.len() > 4096
+                    || spherical.interior.windows(2).any(|w| w[0] >= w[1])
+                    || spherical
+                        .interior
+                        .iter()
+                        .any(|i| rim.contains(i) || region.get(i) != Some(&1.)))
+            {
+                return Err(invalid(
+                    "Spherical socket interior requires source9 and distinct full-weight non-rim lid vertices",
+                ));
+            }
             for &(name, _, min, max, default) in FIT_CONTROLS {
                 let key = format!("{}_{}", eye.prefix, name);
                 let p = params
@@ -119,31 +136,51 @@ impl Source {
             let high = rim
                 .iter()
                 .fold(Vec3::splat(f32::NEG_INFINITY), |a, &b| a.max(b));
-            let mut center = (low + high) * 0.5;
-            let radius = rim
-                .iter()
-                .map(|p| (p.truncate() - center.truncate()).length())
-                .fold(eye.radius, f32::max)
-                * 1.12;
-            if !radius.is_finite() || radius > 0.04 {
-                return Err(invalid(
-                    "Eye aperture exceeds bounded socket fit; reduce the orbital deformation",
-                ));
-            }
             let base = eye.center.at(&self.positions);
-            center.z = base.z;
-            let fitted_center = base.lerp(center, amount);
-            // Keep the authored skin exact at rest. A depth edit transports only
-            // its finite lid band; fit closes the sclera behind the existing rim.
-            if depth != 0. {
-                for w in &fit.lid {
-                    let p = inverse.transform_point3(g.positions[w.vertex as usize].into());
-                    g.positions[w.vertex as usize] = socket
-                        .transform_point3(p + Vec3::Z * w.weight * depth)
-                        .to_array();
+            let (final_center, fitted_radius) = if let Some(spherical) = &fit.spherical {
+                let samples: Vec<_> = fit
+                    .lid
+                    .iter()
+                    .map(|w| {
+                        (
+                            w.vertex,
+                            w.weight,
+                            inverse.transform_point3(g.positions[w.vertex as usize].into()),
+                        )
+                    })
+                    .collect();
+                let result =
+                    spherical.wrap(&fit.rim, &rim, &samples, (base, eye.radius), amount, depth)?;
+                for (i, p) in result.positions {
+                    g.positions[i as usize] = socket.transform_point3(p).to_array();
                 }
-            }
-            let final_center = fitted_center + Vec3::Z * depth;
+                (result.center, result.radius)
+            } else {
+                let mut center = (low + high) * 0.5;
+                let radius = rim
+                    .iter()
+                    .map(|p| (p.truncate() - center.truncate()).length())
+                    .fold(eye.radius, f32::max)
+                    * 1.12;
+                if !radius.is_finite() || radius > 0.04 {
+                    return Err(invalid(
+                        "Eye aperture exceeds bounded socket fit; reduce the orbital deformation",
+                    ));
+                }
+                center.z = base.z;
+                let fitted_center = base.lerp(center, amount);
+                // Keep the authored skin exact at rest. A depth edit transports only
+                // its finite lid band; fit closes the sclera behind the existing rim.
+                if depth != 0. {
+                    for w in &fit.lid {
+                        let p = inverse.transform_point3(g.positions[w.vertex as usize].into());
+                        g.positions[w.vertex as usize] = socket
+                            .transform_point3(p + Vec3::Z * w.weight * depth)
+                            .to_array();
+                    }
+                }
+                (fitted_center + Vec3::Z * depth, eye.radius)
+            };
             for name in [&eye.sclera, &eye.iris, &eye.cornea] {
                 let part = self.parts.iter().find(|p| &p.name == name).unwrap();
                 let id = format!("{}_{}", placement.prefix, name);
@@ -153,11 +190,16 @@ impl Source {
                     values,
                     Some(socket),
                     asset,
-                    Some((final_center, eye.radius)),
+                    Some((final_center, fitted_radius)),
                 )?;
-                if name == &eye.sclera && amount > 0. {
+                if fit.spherical.is_none() && name == &eye.sclera && amount > 0. {
                     let iris_radius = values[&format!("{}_radius", eye.prefix)];
-                    let shape = contact_sclera(&rim, fitted_center, eye.radius, iris_radius)?;
+                    let shape = contact_sclera(
+                        &rim,
+                        final_center - Vec3::Z * depth,
+                        eye.radius,
+                        iris_radius,
+                    )?;
                     let g = Arc::make_mut(&mut asset.geometry);
                     if g.positions.len() != shape.len() {
                         return Err(invalid(
