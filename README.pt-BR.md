@@ -5,8 +5,8 @@
   <p><a href="README.md">English</a> · <a href="docs/quickstart.md">Começar</a> · <a href="docs/status.md">Estado atual</a> · <a href="https://github.com/zerobytes/ignis/discussions">Comunidade</a></p>
 </div>
 
-![Terreno procedural renderizado pelo Ignis](docs/media/terrain.png)
-*Captura real da demonstração de terreno planar. O runtime planetário experimental tem limitações visuais próprias.*
+![Ignis Horizon: vale com florestas cercado por cadeias de montanhas](docs/media/horizon.webp)
+***Ignis Horizon.** Vales, florestas e montanhas renderizados pela engine nativa. Captura selecionada pelo criador para o site.*
 
 Ignis é uma **engine 3D com código disponível em Rust, com autoria via Model Context
 Protocol (MCP) e editor visual nativo**. Humanos e agentes usam a mesma API de
@@ -65,6 +65,16 @@ passos e capturar o resultado antes de propor a próxima alteração.
 
 Os [exemplos e links por área estão no README principal](README.md#explore-the-engine).
 Há também um [catálogo de demos em português](docs/demo-catalog.pt-BR.md).
+
+## Capturas da engine
+
+<table>
+  <tr>
+    <td><img src="docs/media/sunset.webp" alt="Silhuetas de montanhas e camadas atmosféricas ao pôr do sol na Ignis" width="600" height="388"></td>
+    <td><img src="docs/media/cottage.webp" alt="Estudo de arquitetura nativa: casa detalhada renderizada na Ignis" width="600" height="400"></td>
+  </tr>
+  <tr><td>Silhuetas de montanhas e camadas atmosféricas. Captura nativa.</td><td>Estudo de arquitetura. Captura nativa da Ignis.</td></tr>
+</table>
 
 ## Participe e acompanhe
 

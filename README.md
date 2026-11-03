@@ -10,8 +10,8 @@
   <p><a href="docs/quickstart.md">Quickstart</a> · <a href="docs/status.md">What works today</a> · <a href="https://github.com/zerobytes/ignis/discussions">Discussions</a> · <a href="README.pt-BR.md">Português</a></p>
 </div>
 
-![Procedural terrain rendered by the native Ignis engine](docs/media/terrain.png)
-*Actual Ignis render from the expanded-world demonstration. This is the planar terrain demo; the experimental planetary runtime has separate visual limitations.*
+![Ignis Horizon: a forested valley surrounded by layered mountain ranges](docs/media/horizon.webp)
+***Ignis Horizon.** Forested valleys and mountain ranges rendered by the native Ignis engine. A creator-selected capture from the website.*
 
 Ignis is a source-available **Rust 3D engine with Model Context Protocol (MCP)
 authoring and a native visual editor**. A human can edit a scene while an agent
@@ -114,10 +114,10 @@ technical notes below are currently in Portuguese; English translations are welc
 
 <table>
   <tr>
-    <td><img src="docs/media/botany.png" alt="A procedural fig tree with native branches, leaves and roots" width="600"></td>
-    <td><img src="docs/media/editor.png" alt="The native Ignis editor with sculpt controls and scene hierarchy" width="600"></td>
+    <td><img src="docs/media/sunset.webp" alt="Mountain silhouettes and atmospheric layers at sunset, rendered by Ignis" width="600" height="388"></td>
+    <td><img src="docs/media/cottage.webp" alt="A native architecture study: a detailed cottage rendered in Ignis" width="600" height="400"></td>
   </tr>
-  <tr><td>Native procedural botany. Actual engine capture.</td><td>Native editor and sculpting tools. Actual editor capture.</td></tr>
+  <tr><td>Mountain silhouettes and atmospheric layers. Native Ignis capture.</td><td>Architecture study. Native Ignis capture.</td></tr>
 </table>
 
 Technical documents include historical milestones and their validation

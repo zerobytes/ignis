@@ -1,7 +1,28 @@
 # Public image provenance
 
-These images are unaltered local engine/editor captures copied for the public
-README. They are not image-generator concepts or third-party reference photos.
+The current READMEs use creator-selected native captures already prepared for
+the website: Horizon as the lead image, with sunset and cottage as supporting
+views. The optimized WebP files are copied byte-for-byte from the website, with
+no new crop, repainting or generative alteration. Original PNG captures remain
+unchanged. These are engine output, not the website's illustrative Three.js art.
+
+| Current image | Website copy | Original capture | Size |
+| --- | --- | --- | --- |
+| `horizon.webp` | `website/dist/assets/engine/horizon.webp` | `website/media/horizon-forest.png` | 1600×890, 176,888 bytes |
+| `sunset.webp` | `website/dist/assets/engine/sunset.webp` | `website/media/horizon-sunset.png` | 1600×1034, 23,266 bytes |
+| `cottage.webp` | `website/dist/assets/engine/cottage.webp` | `artifacts/cottage-normals/artifacts/joined-hero.png` | 1536×1024, 159,224 bytes |
+
+The landscape captures are planar rendering studies, not the experimental
+planetary runtime. The architecture view is an authored native study; these
+images do not promise universal performance or exact reproduction from a
+particular public build. Source hashes and captions are recorded in
+`website/media-provenance.json` and `website/dist/engine-media.js` in the
+authoring checkout; only the selected optimized copies are needed here.
+
+## Earlier captures
+
+These earlier native outputs remain available for technical documents and the
+website's existing provenance records, but no longer lead the READMEs.
 
 | Public image | Original generated output | Context |
 | --- | --- | --- |
