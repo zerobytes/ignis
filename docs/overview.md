@@ -23,6 +23,14 @@ An agent is an optional external client, not a requirement of the engine. The
 core does not need an account, API key, network server or language model for
 local simulation. A user chooses their client and model independently.
 
+## Explore the capabilities
+
+The **[feature guide](features.md)** covers rendering, materials, worlds, botany,
+characters, modeling, physics, NPC perception/personality, navigation/tactics,
+combat, populations, animation/audio, multiplayer and editor/persistence tools.
+Each section links the technical contracts and distinguishes integrated features
+from experimental paths and session laboratories.
+
 ## One process, one session
 
 Run `ignis --mcp` for a headless command session. Run `ignis --mcp --editor`

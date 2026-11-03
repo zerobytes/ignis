@@ -7,7 +7,7 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-Ignis_Commercial-orange" alt="Ignis commercial source license"></a>
     <img src="https://img.shields.io/badge/status-early_development-8b949e" alt="Early development">
   </p>
-  <p><a href="docs/quickstart.md">Quickstart</a> · <a href="docs/status.md">What works today</a> · <a href="https://github.com/zerobytes/ignis/discussions">Discussions</a> · <a href="README.pt-BR.md">Português</a></p>
+  <p><a href="docs/features.md">Feature guide</a> · <a href="https://ignis.web.app/">Website</a> · <a href="docs/quickstart.md">Quickstart</a> · <a href="docs/status.md">What works today</a> · <a href="https://github.com/zerobytes/ignis/discussions">Discussions</a> · <a href="README.pt-BR.md">Português</a></p>
 </div>
 
 ![Ignis Horizon: a forested valley surrounded by layered mountain ranges](docs/media/horizon.webp)
@@ -37,6 +37,34 @@ the engine. Connect your own MCP client when you want agent assistance.
 and substantial unfinished work. It is not a production-ready replacement for
 established engines. Current desktop validation is centered on macOS Apple
 Silicon; other platforms need independent validation. See [status and limits](docs/status.md).
+
+## What can you build?
+
+Create editable landscapes and plant libraries, shape characters and meshes,
+prototype NPC-driven gameplay, or automate authoring and verification through
+an agent. The public source includes the systems below.
+
+| Area | Available capabilities |
+| --- | --- |
+| **[Ignis Horizon rendering](docs/features.md#ignis-horizon-rendering)** | Native lighting and shadows, shared geometry, GPU visibility/occlusion, residency and atmosphere-aware distant representations. |
+| **[Materials and surface detail](docs/features.md#materials-and-surface-detail)** | Procedural color, roughness, bump and triplanar detail; dielectric/metal response; cutout, translucency, additive surfaces and thin glass. |
+| **[Worlds, terrain and planets](docs/features.md#worlds-terrain-and-planets)** | Editable terrain and ridges, landforms and cavities, terrain collision, global coordinates, plus experimental planetary walking and surface-to-globe tile LOD. |
+| **[Procedural botany](docs/features.md#procedural-botany)** | Trees, palms, grass and shrubs built from organs and curves; branching, age/vigor, roots, buttresses and collars. Separate deformation/growth/pruning laboratory. |
+| **[Parametric characters](docs/features.md#parametric-characters)** | Body proportions, posture, local face/ear/lip/nose controls, symmetric 3D handles and source-preserving regeneration. |
+| **[Modeling and sculpting](docs/features.md#modeling-and-sculpting)** | Vertex/edge/face editing, extrusion/inset/bevel, sculpt brushes and local refinement, sweeps, organic junctions and composite objects. |
+| **[Physics and player control](docs/features.md#physics-and-player-control)** | Fixed-step or continuous simulation, collision and character controllers, slopes/steps, triggers, first- and third-person exploration. |
+| **[NPC perception and personality](docs/features.md#npc-perception-and-personality)** | Vision, hearing, footsteps, memory, search, relationships, communication, intelligence, independent traits and inspectable decisions. |
+| **[Navigation, tactics and interaction](docs/features.md#navigation-tactics-and-interaction)** | Generated routes, ground/air circulation, walk/jump/glide/fly, cover/flanking, orders/formations, schedules, needs, objects and structured dialogue. |
+| **[Abilities and combat](docs/features.md#abilities-and-combat)** | Resources and cooldowns, casts/channeling/interruptions, projectiles, damage/healing, buffs, dispelling, areas, auras, death and resurrection. |
+| **[Populations and spawning](docs/features.md#populations-and-spawning)** | Actor templates, persistent individual identity, seeded/weighted regions, population generators and finite waves. |
+| **[Animation and audio](docs/features.md#animation-and-audio)** | Rigs/clips, retarget mappings, visual IK and optional root motion; spatial PCM mixing, presentation events and optional device output. |
+| **[Multiplayer and actor runtime](docs/features.md#multiplayer-and-actor-runtime)** | Optional authoritative QUIC/TLS sessions, scoped remote controls, replication/reconnect and documented local/loopback 1,000-player load experiments. |
+| **[Editor, MCP and persistence](docs/features.md#editor-mcp-and-persistence)** | Projects, workspaces, file browsing, typed commands, undo/redo, real captures, image comparison, replay, checkpoints and portable saves. |
+
+**[Read the full feature guide →](docs/features.md)** for concrete capabilities,
+technical contracts and the scope of each experimental or laboratory system.
+The [current status](docs/status.md) separates integrated features from research
+and future work.
 
 ## Try it
 
@@ -100,17 +128,11 @@ the language model and its provider are your choice. [MCP walkthrough →](docs/
 
 ## Explore the engine
 
-Start with the [English architecture overview](docs/overview.md). The deeper
-technical notes below are currently in Portuguese; English translations are welcome.
-
-| Area | Start here |
-| --- | --- |
-| Editor, meshes and sculpting | [Editor](docs/editor.md) · [Modeling](docs/editor-modeling.md) · [Sculpting](docs/sculpt-brushes.md) |
-| Procedural terrain and atmosphere | [Terrain](docs/terrain.md) · [Representative world](docs/representative-world.md) · [Atmosphere](docs/atmosphere.md) |
-| Native botany | [Integration](docs/botany-integration.md) · [Architecture](docs/botany-architecture.md) · [Roots](docs/botany-roots.md) |
-| NPCs, navigation and gameplay | [NPC capability matrix](docs/npc-v1-closure.md) · [Integrated demo](docs/npc-v1-demo.md) |
-| Save, replay and networking | [Portable saves](docs/portable-saves.md) · [Optional QUIC transport](docs/quic-transport.md) |
-| Engine architecture and API | [Architecture](docs/architecture.md) · [Command contract](docs/commands.md) · [Demo catalog (PT)](docs/demo-catalog.pt-BR.md) |
+Browse the **[full feature guide](docs/features.md)** for the capability map,
+the [English architecture overview](docs/overview.md) for how the systems fit
+together, and the [demo catalog (PT)](docs/demo-catalog.pt-BR.md) for existing
+scenarios. The [command contract](docs/commands.md) and MCP schema describe the
+actual control interface. Detailed technical contracts are mostly in Portuguese.
 
 <table>
   <tr>
