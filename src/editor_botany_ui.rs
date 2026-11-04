@@ -81,6 +81,17 @@ pub(super) fn properties(
             egui::ComboBox::from_id_salt("growth_grammar").selected_text(match d.version {1=>"Planta de diagnóstico",2=>"Árvore viva",_=>"Árvore · porte configurável"}).show_ui(ui,|ui|{
                 ui.selectable_value(&mut d.version,1,"Planta de diagnóstico");ui.selectable_value(&mut d.version,2,"Árvore viva");ui.selectable_value(&mut d.version,3,"Árvore · porte configurável");
             });
+            if d.version>=2 {
+                let p=d.foliage.get_or_insert_with(Default::default);
+                ui.collapsing("Folhagem desde a muda",|ui|{
+                    ui.add(egui::DragValue::new(&mut p.expansion_days).range(1..=100000).prefix("Dias para expandir folhas "));
+                    ui.add(egui::Slider::new(&mut p.apical_leaves,2..=64).text("Folhas no broto inicial"));
+                    ui.add(egui::Slider::new(&mut p.primary_leaves,2..=64).text("Folhas por galho principal"));
+                    ui.add(egui::Slider::new(&mut p.secondary_leaves,2..=32).text("Folhas por ramo secundário"));
+                    ui.add(egui::DragValue::new(&mut p.length_m).range(0.02..=1.).speed(0.01).prefix("Comprimento da folha (m) "));
+                    ui.add(egui::DragValue::new(&mut p.width_m).range(0.005..=p.length_m.min(0.5)).speed(0.005).prefix("Largura da folha (m) "));
+                });
+            }else{d.foliage=None;}
             if d.version==3 {stature_controls(ui,d.stature.get_or_insert_with(Default::default));}else {d.stature=None;}
 
             ui.add(egui::DragValue::new(&mut d.interval).range(1..=100000).prefix("Dias por novo ramo "));

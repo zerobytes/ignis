@@ -25,6 +25,42 @@ fn noise(seed: u64, i: u64) -> f64 {
     n = (n ^ (n >> 27)).wrapping_mul(0x94d049bb133111eb);
     ((n ^ (n >> 31)) >> 11) as f64 / (1u64 << 53) as f64
 }
+fn young_leaves(
+    organs: &mut Vec<Organ>,
+    parent: &str,
+    path: &[[f64; 3]],
+    count: u16,
+    angle: f64,
+    growth: f64,
+    profile: &foliage::Profile,
+) {
+    let (length, width) = profile.dimensions(growth);
+    for l in 0..count {
+        let at = 0.45 + 0.52 * l as f64 / (count - 1) as f64;
+        let a = angle + l as f64 * 2.3999632297;
+        let start = point(path, at);
+        let end = start + V::new(a.cos() * length, 0.06, a.sin() * length);
+        let mut leaf = axis(
+            format!("{parent}/young_leaf{l}"),
+            Some(parent.into()),
+            at,
+            vec![start.to_array(), end.to_array()],
+            0.001,
+        );
+        leaf.shape = Shape::Blade {
+            width,
+            thickness: 0.0003,
+            fold: 0.12,
+            cup: 0.06,
+            outline: Outline::Strip {
+                base_power: 0.55,
+                tip_power: 1.2,
+            },
+        };
+        leaf.normal = [a.cos() * 0.3, 1., a.sin() * 0.3];
+        organs.push(leaf);
+    }
+}
 pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
     let d = &plant.definition;
     let age = plant.production.plant.time - plant.production.plant.born;
@@ -52,6 +88,17 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
     organs[0].taper_power = 0.7;
     if let Shape::Axis { tip_ratio, .. } = &mut organs[0].shape {
         *tip_ratio = 0.03;
+    }
+    if let Some(profile) = &d.foliage {
+        young_leaves(
+            &mut organs,
+            "stem",
+            &trunk,
+            profile.apical_leaves,
+            noise(d.seed, 71000) * 6.,
+            progress(age, 0, profile.expansion_days),
+            profile,
+        );
     }
     for i in 0..nodes {
         let id = format!("node{i}");
@@ -85,11 +132,20 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
             0.006 + 0.04 * g * (0.5 + maturity * 0.5),
         ));
         // Persistent juvenile foliage: early crowns are visible before later orders emerge.
-        for l in 0..16u64 {
-            let at = 0.25 + l as f64 * 0.045;
+        let leaf_count = d.foliage.as_ref().map_or(16, |p| p.primary_leaves as u64);
+        for l in 0..leaf_count {
+            let at = if d.foliage.is_some() {
+                0.15 + l as f64 * 0.8 / (leaf_count - 1) as f64
+            } else {
+                0.25 + l as f64 * 0.045
+            };
             let a = angle + l as f64 * 2.3999632297;
             let start = point(&path, at);
-            let len = 0.07 + 0.18 * g;
+            let (len, width) = d
+                .foliage
+                .as_ref()
+                .map(|p| p.dimensions(progress(age, birth, p.expansion_days)))
+                .unwrap_or((0.07 + 0.18 * g, 0.025 + 0.06 * g));
             let end = start + V::new(a.cos() * len, 0.04, a.sin() * len);
             let mut leaf = axis(
                 format!("{id}/leaf{l}"),
@@ -99,7 +155,7 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
                 0.001,
             );
             leaf.shape = Shape::Blade {
-                width: 0.025 + 0.06 * g,
+                width,
                 thickness: 0.0003,
                 fold: 0.12,
                 cup: 0.06,
@@ -136,6 +192,17 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
                 branch.clone(),
                 0.002 + 0.009 * sg,
             ));
+            if let Some(profile) = &d.foliage {
+                young_leaves(
+                    &mut organs,
+                    &sid,
+                    &branch,
+                    profile.secondary_leaves,
+                    a,
+                    progress(age, secondary_birth, profile.expansion_days),
+                    profile,
+                );
+            }
             for k in 0..4u64 {
                 let twig_birth = secondary_birth + d.interval * 3 + k * d.interval / 4;
                 if age < twig_birth {
@@ -164,7 +231,11 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
                         + l as f64 * 2.3999632297
                         + noise(d.seed, i * 1000 + j * 100 + k * 10 + l);
                     let start = point(&twig, at);
-                    let len = 0.08 + 0.19 * tg;
+                    let (len, width) = d
+                        .foliage
+                        .as_ref()
+                        .map(|p| p.dimensions(progress(age, twig_birth, p.expansion_days)))
+                        .unwrap_or((0.08 + 0.19 * tg, 0.025 + 0.065 * tg));
                     let end = start
                         + V::new(
                             leaf_angle.cos() * len,
@@ -179,7 +250,7 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
                         0.001,
                     );
                     leaf.shape = Shape::Blade {
-                        width: 0.025 + 0.065 * tg,
+                        width,
                         thickness: 0.0003,
                         fold: 0.12,
                         cup: 0.06,

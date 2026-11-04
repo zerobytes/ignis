@@ -2,6 +2,7 @@
 //! Scene ownership and automatic gameplay ticking remain separate integration work.
 use super::{lifecycle::Schedule, production::Production, *};
 mod tree;
+pub mod foliage;
 mod stature;
 pub use stature::Stature;
 
@@ -16,6 +17,8 @@ pub struct Definition {
     pub maximum_nodes: u16,
     pub internode_length: f64,
     pub schedule: Schedule,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub foliage: Option<foliage::Profile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stature: Option<Stature>,
 }
@@ -44,6 +47,7 @@ impl Default for Definition {
     fn default() -> Self {
         Self {
             version: 1,
+            foliage: None,
             stature: None,
             prefix: "living".into(),
             seed: 42,
@@ -64,6 +68,12 @@ impl Default for Definition {
 impl Definition {
     pub fn validate(&self) -> Result<()> {
         self.schedule.validate().map_err(invalid)?;
+        if let Some(profile) = &self.foliage {
+            if self.version < 2 {
+                return Err(invalid("Early foliage requires a broadleaf grammar"));
+            }
+            profile.validate()?;
+        }
         if (self.version==3)!=self.stature.is_some() {return Err(invalid("Stature requires explicit growth grammar3"));}
         if let Some(stature)=&self.stature {stature.validate()?;}
         if self
@@ -328,6 +338,7 @@ mod tests {
         Plant {
             definition: Definition {
                 version: 1,
+                foliage: None,
                 stature: None,
                 prefix: "living".into(),
                 seed: 42,

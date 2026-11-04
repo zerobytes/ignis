@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 from verify_lab import Client, ROOT
+from demo_groundcover import fit
 
 OUT = ROOT / 'artifacts/living-tree'
 
@@ -24,11 +25,19 @@ def main():
             environment=dict(sky=[.46, .61, .78], horizon=[.59, .65, .62], ground=[.16, .19, .08], axis=[0, 1, 0], intensity=.35),
             shadow=dict(center=[0, 3, 0], extent=10, resolution=2048, bias=.0005)))
         stages = []
-        for years in [2, 5, 10, 12, 20]:
+        for years in [0, 1, 2, 5, 10, 12, 20]:
             c.call('botany', operation=dict(kind='living', prefix='living', action=dict(kind='advance', time=years * 365)))
             c.call('capture', path=f'artifacts/living-tree/age-{years}.png', width=1600, height=1200)
             r = c.call('botany', operation=dict(kind='inspect'))['recipes'][0]
-            stages.append(dict(years=years, organs=len(r['source']['organs'])))
+            leaves=[o for o in r['source']['organs'] if o['shape']['kind']=='blade']
+            stages.append(dict(years=years, organs=len(r['source']['organs']),leaves=len(leaves)))
+            assert leaves, f'Missing seedling foliage at {years} years'
+            if years in [0,1,2]:
+                points=[p for o in r['source']['organs'] for p in o['path']]
+                lo=[min(p[i] for p in points)-0.15 for i in range(3)]
+                hi=[max(p[i] for p in points)+0.15 for i in range(3)]
+                fit(c,lo,hi,OUT/f'young-{years}-close.png',width=1200,height=1100)
+                c.call('set_camera', camera=dict(position=[10,7,14],target=[0,3.1,0],fov_degrees=40))
         c.call('botany', operation=dict(kind='open', open=True, prefix='living'))
         c.call('save_scene', path='artifacts/living-tree/tree.scene.json')
         c.call('capture_editor', path='artifacts/living-tree/editor.png', width=1600, height=1100)

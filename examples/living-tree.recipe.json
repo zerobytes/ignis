@@ -12,5 +12,13 @@
     "flower_duration": 25,
     "fruit_duration": 90,
     "ripe_duration": 35
+  },
+  "foliage": {
+    "expansion_days": 30,
+    "apical_leaves": 16,
+    "primary_leaves": 24,
+    "secondary_leaves": 8,
+    "length_m": 0.25,
+    "width_m": 0.085
   }
 }

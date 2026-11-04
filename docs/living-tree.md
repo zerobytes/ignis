@@ -37,3 +37,27 @@ human windows/scenes are preserved.
 The age slider now supports back-and-forth growth previews. Confirming an
 advance is a separate action; preview cancellation restores the saved tree and
 its interventions. See [preview semantics](living-plants-integration.md).
+
+## Early foliage
+
+The current exemplar explicitly includes `definition.foliage`. A starting
+individual is an established seedling, not an ungerminated seed: its main shoot
+already bears leaves at age zero. Every primary, secondary and terminal woody
+axis bears its own leaves from emergence. Leaf expansion has a separate authored
+duration (30 game days here), independent of multi-year woody elongation.
+
+The profile configures expansion days, apical/primary/secondary leaf counts and
+mature leaf length/width. New broadleaf creation in the Vegetation panel exposes
+these controls under **Folhagem desde a muda**. It does not implement carbon
+assimilation, respiration or seasonal leaf turnover. This is the growth/geometry
+rule, not an energy-budget model.
+
+`foliage: None` is omitted during serialization and retains the previous grammar
+output. Existing sources/scenes are not silently regenerated with new foliage;
+the revised exemplar saves an explicit profile, read through the normal guarded
+source-loading path. Stem/branch leaves retain stable parent/organ IDs and are
+removed along with their supporting branch by pruning.
+
+The review includes young closeups at0/1/2years, leaf counts and the same-camera
+age series. Reversible editor preview validation remains available with
+`uv run scripts/verify_living_preview.py`.
