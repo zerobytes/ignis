@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "files": {
+    "catalog/data/meshes/ignis.mesh.tree.birch-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-0.igmpz",
+      "bytes": 11079999,
+      "sha256": "6c59cfde1ae3c7545b064dbed6690bad9da3cf049d39afee841b1a2b6a03c48b"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-1.igmpz",
+      "bytes": 11071558,
+      "sha256": "c5d6668c866c00a1207a3549f319af3c18219d12fea6d57d27762dbc437d97cd"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-2.igmpz",
+      "bytes": 11085268,
+      "sha256": "4fa8c0e9feba09b36edb4036fc0a2b9d7b5427e384163bdc5cba0559cbf70e4f"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.eucalipto.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.eucalipto.igmpz",
+      "bytes": 21266400,
+      "sha256": "1be809da529f5cc6695df25d37f9ece1eae34cc370aea7b3d6f8840061329f55"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.figueira.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira.igmpz",
+      "bytes": 42203940,
+      "sha256": "e840b18469d6945c723969625c83143baaa8448eac7c180d89038dafa5f9f2c1"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.figueira-rs.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira-rs.igmpz",
+      "bytes": 41451657,
+      "sha256": "17cf5108730adf0f80858c834a0cf71b5f0afb36d390b8e3c31c5a959850b0cb"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.palmeirinha.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.palmeirinha.igmpz",
+      "bytes": 4025278,
+      "sha256": "17e49b013152ff22775f0332b263759bd6d71ca2e5d9aa490e1f10ded61213fa"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.platano.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.platano.igmpz",
+      "bytes": 58192692,
+      "sha256": "c1ff602b0db6b376a5bfb8b23cacb99a5d1a89979e55b829ab62b73c2142abaa"
+    }
+  }
+}
