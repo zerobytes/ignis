@@ -74,6 +74,9 @@ Publishing the website does not publish unrelated native commits.
 Use the existing paired `website/deploy.py` workflow after preparing, committing
 and publishing only this website increment on the canonical public history.
 Both Firebase Hosting and GitHub Pages must serve the same version and file hashes.
+The paired deploy reuses a successful or active Pages workflow for the exact
+public commit. A newer queued duplicate cannot hide an already successful run;
+served-file verification still confirms the actual bytes on both destinations.
 The catalog's assets retain CC BY 4.0 attribution. The shader and host remain under
 the separate Ignis engine license, included in `data/engine-license.txt`.
 

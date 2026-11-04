@@ -66,19 +66,28 @@ def github_publish(files, version):
         differing = sorted(p for p in remote.keys() | expected.keys() if remote.get(p) != expected.get(p))
         raise RuntimeError('Website source differs from public main. Run --prepare, commit and push the intended website files first: ' + ', '.join(differing))
     print(f'Public static source matches {head} (release {version[:12]})', flush=True)
-    subprocess.run(['gh', 'workflow', 'run', 'pages.yml', '--repo', REPO, '--ref', 'main'], check=True)
+    # A website push already starts Pages. Reuse that exact-head run instead of
+    # queueing a second deployment behind it in the Pages concurrency group.
+    runs = pages_runs(head)
+    if not any(r['status'] != 'completed' or r['conclusion'] == 'success' for r in runs):
+        subprocess.run(['gh', 'workflow', 'run', 'pages.yml', '--repo', REPO, '--ref', 'main'], check=True)
     return head
+
+
+def pages_runs(head):
+    return json.loads(run(['gh', 'run', 'list', '--repo', REPO, '--workflow', 'pages.yml', '--commit', head, '--json', 'status,conclusion,url']))
 
 
 def wait_pages(head):
     deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
-        runs = json.loads(run(['gh', 'run', 'list', '--repo', REPO, '--workflow', 'pages.yml', '--commit', head, '--json', 'status,conclusion,url']))
-        if runs and runs[0]['status'] == 'completed':
-            if runs[0]['conclusion'] != 'success':
-                raise RuntimeError(f'Pages failed: {runs[0]["url"]}')
-            print(f'GitHub Pages ready: {runs[0]["url"]}', flush=True)
+        runs = pages_runs(head)
+        successful = next((r for r in runs if r['status'] == 'completed' and r['conclusion'] == 'success'), None)
+        if successful:
+            print(f'GitHub Pages ready: {successful["url"]}', flush=True)
             return
+        if runs and all(r['status'] == 'completed' for r in runs):
+            raise RuntimeError(f'Pages failed: {runs[0]["url"]}')
         time.sleep(5)
     raise RuntimeError('Pages deployment not confirmed within 10 minutes')
 
