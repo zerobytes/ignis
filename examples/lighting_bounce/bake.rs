@@ -103,7 +103,7 @@ fn reuse(h: &Header, boxes: &[BoxData], p: &Params) -> Option<[f32; 3]> {
     }
     Some(ratio)
 }
-fn pull(r: &Renderer, b: &wgpu::Buffer, size: u64) -> Result<Vec<u8>> {
+pub(super) fn pull(r: &Renderer, b: &wgpu::Buffer, size: u64) -> Result<Vec<u8>> {
     let stage = buffer(
         r,
         "bake readback",
@@ -115,7 +115,7 @@ fn pull(r: &Renderer, b: &wgpu::Buffer, size: u64) -> Result<Vec<u8>> {
     r.queue.submit([e.finish()]);
     read(r, &stage, size)
 }
-fn boxes_for(engine: &Engine) -> Vec<BoxData> {
+pub(super) fn boxes_for(engine: &Engine) -> Vec<BoxData> {
     engine
         .scene
         .entities
@@ -131,7 +131,7 @@ fn boxes_for(engine: &Engine) -> Vec<BoxData> {
         })
         .collect()
 }
-fn params(engine: &Engine, mut p: Params) -> Params {
+pub(super) fn params(engine: &Engine, mut p: Params) -> Params {
     let f = engine.render_frame();
     p.inv = ignis::picking::view_projection(&f.camera, W, H)
         .inverse()

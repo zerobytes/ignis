@@ -15,6 +15,8 @@ use std::{
 use wgpu::util::DeviceExt;
 #[path = "lighting_bounce/bake.rs"]
 mod bake;
+#[path = "lighting_bounce/regional.rs"]
+mod regional;
 const W: u32 = 480;
 const H: u32 = 320;
 const NAMES: [&str; 24] = [
@@ -105,6 +107,12 @@ enum Dispatch<'a> {
     Indirect(&'a wgpu::Buffer, u64),
 }
 struct Lab {
+    geometry: wgpu::Buffer,
+    region_full: wgpu::ComputePipeline,
+    region_mark: wgpu::ComputePipeline,
+    region_compact: wgpu::ComputePipeline,
+    region_repair: wgpu::ComputePipeline,
+    region_query: wgpu::ComputePipeline,
     atlas_build: wgpu::ComputePipeline,
     atlas_query: wgpu::ComputePipeline,
     uniform: wgpu::Buffer,
@@ -164,7 +172,7 @@ impl Lab {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("bounce boxes"),
                 contents: bytemuck::cast_slice(boxes),
-                usage: wgpu::BufferUsages::STORAGE,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             });
         let receivers = buffer(
             r,
@@ -286,7 +294,9 @@ impl Lab {
                 concat!(
                     include_str!("lighting_bounce/transport.wgsl"),
                     "\n",
-                    include_str!("lighting_bounce/bake.wgsl")
+                    include_str!("lighting_bounce/bake.wgsl"),
+                    "\n",
+                    include_str!("lighting_bounce/regional.wgsl")
                 )
                 .into(),
             ),
@@ -357,6 +367,12 @@ impl Lab {
         let groups = std::array::from_fn(|i| make_group(i, &dummy));
         let finalize_group = make_group(0, &indirect);
         Self {
+            geometry,
+            region_full: pipeline("region_full"),
+            region_mark: pipeline("region_mark"),
+            region_compact: pipeline("region_compact"),
+            region_repair: pipeline("region_repair"),
+            region_query: pipeline("region_query"),
             atlas_build: pipeline("atlas_build"),
             atlas_query: pipeline("atlas_query"),
             work,
@@ -430,7 +446,7 @@ impl Lab {
     }
     fn run(&self, r: &Renderer, p: &Params, stage: &str) -> Result<(f64, f64)> {
         let t = Instant::now();
-        if stage.starts_with("bake") {
+        if stage.starts_with("bake") || stage.starts_with("region") {
             self.filtered_output.set(false);
         }
         let reconstruction = (stage == "shade" || stage == "full") && p.dims[3] >= 17;
@@ -444,7 +460,94 @@ impl Lab {
         let group = &self.groups[usize::from(fine)];
         let mut e = r.device.create_command_encoder(&Default::default());
         let image = || Dispatch::Grid(W.div_ceil(8), H.div_ceil(8), 1);
-        if stage == "bake-full" {
+        let atlas_count = p.dims[2] * 6 * p.counts[0] * p.counts[0];
+        if stage == "region-full" {
+            self.pass(
+                &mut e,
+                &self.region_full,
+                group,
+                [Some(0), Some(1)],
+                Dispatch::Grid(atlas_count.div_ceil(64), 1, 1),
+            );
+        } else if stage == "region-query" {
+            self.pass(&mut e, &self.primary, group, [Some(0), None], image());
+            self.pass(&mut e, &self.region_query, group, [None, Some(1)], image());
+        } else if stage == "region-update" && p.dims[3] == 3 {
+            self.pass(
+                &mut e,
+                &self.region_mark,
+                group,
+                [Some(0), None],
+                Dispatch::Grid(atlas_count.div_ceil(64), 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.region_full,
+                group,
+                [None, Some(1)],
+                Dispatch::Grid(atlas_count.div_ceil(64), 1, 1),
+            );
+        } else if stage == "region-mark" || stage == "region-update" {
+            self.pass(
+                &mut e,
+                &self.region_mark,
+                group,
+                [Some(0), None],
+                Dispatch::Grid(atlas_count.div_ceil(64), 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.reset,
+                group,
+                [None, None],
+                Dispatch::Grid(1, 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.region_compact,
+                group,
+                [None, None],
+                Dispatch::Grid(atlas_count.div_ceil(64), 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.finalize,
+                &self.finalize_group,
+                [
+                    None,
+                    if stage == "region-mark" {
+                        Some(1)
+                    } else {
+                        None
+                    },
+                ],
+                Dispatch::Grid(1, 1, 1),
+            );
+            if stage == "region-update" {
+                self.pass(
+                    &mut e,
+                    &self.region_repair,
+                    group,
+                    [None, Some(1)],
+                    Dispatch::Indirect(&self.indirect, 0),
+                );
+            }
+        } else if stage == "region-repair" {
+            self.pass(
+                &mut e,
+                &self.begin_batch,
+                group,
+                [Some(0), None],
+                Dispatch::Grid(1, 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.region_repair,
+                group,
+                [None, Some(1)],
+                Dispatch::Indirect(&self.indirect, 0),
+            );
+        } else if stage == "bake-full" {
             self.pass(&mut e, &self.primary, group, [Some(0), None], image());
             self.pass(&mut e, &self.atlas_query, group, [None, Some(1)], image());
         } else if stage == "bake-build" {
@@ -629,12 +732,14 @@ fn main() -> Result<()> {
                 "--validation-d",
                 "--bake-audit",
                 "--bake-validation",
-                "--bake-final"
+                "--bake-final",
+                "--regional-audit"
             ]
             .contains(&arg.as_str()),
             "Unknown one-bounce argument: {arg}"
         );
     }
+    let regional_audit = std::env::args().any(|s| s == "--regional-audit");
     let baking = std::env::args().any(|s| s == "--bake-audit");
     let bake_final = std::env::args().any(|s| s == "--bake-final");
     let bake_validation = std::env::args().any(|s| s == "--bake-validation");
@@ -685,7 +790,18 @@ fn main() -> Result<()> {
         !baking || !(hybrid || validation_a || validation_b || validation_c || validation_d),
         "Choose one experiment"
     );
-    let dir = if baking {
+    ensure!(
+        !regional_audit
+            || !(baking || hybrid || validation_a || validation_b || validation_c || validation_d),
+        "Choose one regional experiment"
+    );
+    let dir = if regional_audit {
+        if thin {
+            "artifacts/lighting-regional/thin-wall"
+        } else {
+            "artifacts/lighting-regional/open"
+        }
+    } else if baking {
         if thin {
             "artifacts/lighting-bake/thin-wall"
         } else {
@@ -867,6 +983,9 @@ fn main() -> Result<()> {
         counts: [0; 4],
     };
     grid(&mut p, false);
+    if regional_audit {
+        return regional::run(&mut r, engine, boxes, native, target, p, dir);
+    }
     if baking {
         return bake::run(
             &mut r,

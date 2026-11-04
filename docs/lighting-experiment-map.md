@@ -14,7 +14,7 @@ No complete GI architecture has been selected or shown superior to Lumen.
 | H4: spatial/temporal reservoir reuse improves path/light selection | Independent sampling vs ReSTIR/GRIS-compatible reuse | Literature only; none of the TTL policies is ReSTIR | Many lights/emissive transport, valid PDFs/mappings, disocclusion, duplication and reservoir traffic |
 | H5: learned representation beats explicit caches | Small explicit field vs neural radiance/incident predictor | Literature only; no native training/inference | Same target/updates/device, include training/adaptation/memory, unbiased correction vs biased termination |
 | H6: reconstruction buys quality with fewer samples | Full resolution direct16/64 vs geometry-guided spatial reconstruction and GPU-compacted adaptive budgets | Native one-bounce box laboratory; 20/24/28/32 low budgets,64 at geometric boundaries; full setup/dispatch/filter measured | Textures, curved surfaces, motion, disocclusion and bias beyond flat opaque boxes; temporal reconstruction remains unimplemented |
-| H7: build-time transport amortizes stable content | Object-space surface bake vs fresh64/compact20 vs guarded lookup | Persistent six-face box atlases, three resolutions, RGB light rescaling and full invalidation; [bake experiment](lighting-bake.md) | General UV/triangle surfaces, regional repair, streamed/procedural content, dynamic characters and directional relighting |
+| H7: build-time transport amortizes stable content | Object-space surface bake vs fresh64/compact20 vs guarded lookup | Persistent six-face box atlases, three resolutions, RGB light rescaling and full invalidation; [bake experiment](lighting-bake.md) | General UV/triangle surfaces, budgeted regional repair, streamed/procedural content, dynamic characters and directional relighting |
 | Shared infrastructure | Camera-visible receivers; conservative influencer selection; accelerated intersections | Native visibility masks; bounded AO influence experiment | BVH/build-update study, retained offscreen influences, dynamic scene costs |
 
 The axes may compose, but their improvements cannot be assumed additive.
@@ -165,3 +165,15 @@ than the spatial bake error it was intended to avoid. Numerical quality gates,
 local failure at low resolution, memory and new views decide that tradeoff.
 This is surface light baking, not PRT or a new transport algorithm. Regional
 invalidation and world-scale streaming remain separate implementation work.
+
+## H7 regional repair checkpoint
+
+The [regional repair diagnostic](lighting-regional.md) records sampled-path
+support and conservatively classifies changed charts/texels, including new
+occlusion and off-camera blockers. GPU-produced lists repair a private atlas;
+pending dirty support uses fresh64, then publishes atomically in queue order.
+All24sequential events match full atlas/dependency rebuild and published pixels.
+This preserves the existing finite sampled bake; it is not a continuous-radiance
+certificate, async engine scheduler or frame-budgeted dynamic GI. Material edits
+save more than broad geometry changes; global sun direction still invalidates
+all. Dependency storage and conservative false positives are explicit costs.
