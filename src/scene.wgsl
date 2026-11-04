@@ -18,6 +18,7 @@ struct Globals {
     planet_space: vec4<f32>,
     planet_eye_high:vec4<f32>,planet_eye_low:vec4<f32>,
     planet_axis0:vec4<f32>,planet_axis1:vec4<f32>,planet_axis2:vec4<f32>,
+    direct_light:vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> globals: Globals;
 @group(0) @binding(1) var shadow_map: texture_depth_2d;
@@ -678,9 +679,9 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
         color += (1.0 - globals.light.w) * visible * (vec3<f32>(response.y) - base * response.x);
     }
     if material.procedural.x>0u {color-=base*globals.light.w*(1.0-recipe_ao);}
-    if globals.environment.z != 1.0 {
+    if any(globals.direct_light.xyz != vec3<f32>(1.0)) {
         let ambient_color = base * globals.light.w * recipe_ao;
-        color = ambient_color + (color-ambient_color) * globals.environment.z;
+        color = ambient_color + (color-ambient_color) * globals.direct_light.xyz;
     }
     if globals.environment.x > 0.0 {
         color += globals.environment.x * recipe_ao * environment_light(base,normal,in.world,material);
@@ -688,7 +689,12 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
     if material.surface.w > 0.5 {
         // Thin-sheet glass has reflection, no diffuse lobe or invented ambient.
         let direct = dielectric(normal, light, in.world, material.low.w, material.response.w).y;
-        color = vec3<f32>((1.0-globals.light.w) * globals.environment.z * visible * direct);
+        if globals.direct_light.w > 0.5 {
+            // Preserve the old scalar multiplication order for exact white renders.
+            color = vec3<f32>((1.0-globals.light.w) * globals.environment.z * visible * direct);
+        } else {
+            color = ((1.0-globals.light.w) * visible * direct) * globals.direct_light.xyz;
+        }
         if globals.environment.x > 0.0 {
             color += globals.environment.x * environment_light(vec3<f32>(0.0), normal, in.world, material);
         }

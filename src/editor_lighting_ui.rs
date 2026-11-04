@@ -245,6 +245,10 @@ fn source_controls(ui: &mut egui::Ui, light: &mut crate::model::Light) -> bool {
                 changed = true;
             }
             changed |= design_ui::field(ui, "Intensidade direta", |ui| ui.add(egui::Slider::new(&mut light.direct_intensity, 0.0..=4.))).changed();
+            changed |= design_ui::field(ui, "Cor direta (RGB linear)", |ui| design_ui::color(ui, &mut light.direct_color)).changed();
+            for (channel, label) in ["R linear", "G linear", "B linear"].into_iter().enumerate() {
+                changed |= design_ui::field(ui, label, |ui| ui.add(egui::DragValue::new(&mut light.direct_color[channel]).range(0.0..=1.).speed(0.005))).changed();
+            }
             changed |= design_ui::field(ui, "Ambiente uniforme", |ui| ui.add(egui::Slider::new(&mut light.ambient, 0.0..=1.))).changed();
             ui.small("O ambiente uniforme ilumina também as cavidades; não representa luz indireta local.");
             let mut enabled = light.environment.is_some();

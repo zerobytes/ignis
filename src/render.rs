@@ -40,10 +40,13 @@ struct Globals {
     planet_axis2: [f32; 4],
 }
 
+    // xyz: linear color * direct intensity; w: exact legacy-white path for glass.
+    direct_light: [f32; 4],
 #[cfg(test)]
 #[test]
 fn globals_match_wgsl_camera_layout() {
-    assert_eq!(std::mem::size_of::<Globals>(), 448);
+    assert_eq!(std::mem::size_of::<Globals>(), 464);
+    assert_eq!(std::mem::offset_of!(Globals, direct_light), 448);
     assert_eq!(std::mem::offset_of!(Globals, planet_optics), 320);
     assert_eq!(std::mem::offset_of!(Globals, planet_radial), 336);
     assert_eq!(std::mem::offset_of!(Globals, planet_space), 352);
@@ -1561,6 +1564,12 @@ impl Renderer {
                 (span.start * std::mem::size_of::<Vertex>()) as u64,
                 bytemuck::cast_slice(&self.geometry.vertices[span]),
             );
+                direct_light: [
+                    scene.light.direct_color[0] * scene.light.direct_intensity,
+                    scene.light.direct_color[1] * scene.light.direct_intensity,
+                    scene.light.direct_color[2] * scene.light.direct_intensity,
+                    f32::from(scene.light.direct_color == [1.; 3]),
+                ],
         }
         let selected_vertices = if self.distant.active {
             &self.distant.full

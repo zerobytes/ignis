@@ -944,7 +944,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 129;
+pub const REPLAY_VERSION: u32 = 130;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1363,6 +1363,9 @@ impl Engine {
                     scene.particles = document;
                 }
                 SceneEdit::SetLight { light } => {
+                    if light.direct_color != [1.; 3] {
+                        scene.version = scene.version.max(crate::model::DIRECT_COLOR_SCENE_VERSION);
+                    }
                     if light.shadow.as_ref().is_some_and(|s| s.receiver_plane_bias) {
                         scene.version = scene.version.max(111);
                     }

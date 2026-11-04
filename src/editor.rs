@@ -176,6 +176,7 @@ pub fn studio_light() -> Option<crate::model::Light> {
         direction: [0.7, -1., -0.4],
         ambient: 0.08,
         direct_intensity: 1.,
+        direct_color: [1.; 3],
         environment: None,
         atmosphere: None,
         shadow: Some(crate::model::DirectionalShadow {

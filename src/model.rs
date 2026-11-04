@@ -3,7 +3,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 119;
+pub const SCENE_VERSION: u32 = 120;
+pub const DIRECT_COLOR_SCENE_VERSION: u32 = 120;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -354,6 +355,9 @@ pub struct Light {
     pub ambient: f32,
     #[serde(default = "one", skip_serializing_if = "is_one")]
     pub direct_intensity: f32,
+    /// Linear RGB chromatic scale, independent of intensity; white preserves legacy lighting.
+    #[serde(default = "white", skip_serializing_if = "is_white")]
+    pub direct_color: [f32; 3],
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub environment: Option<crate::environment::Environment>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -365,6 +369,10 @@ pub struct Light {
 impl Light {
     pub fn validate(&self) -> Result<()> {
         finite(&self.direction, "light direction")?;
+        finite(&self.direct_color, "direct light linear RGB")?;
+        if self.direct_color.iter().any(|c| !(0. ..=1.).contains(c)) {
+            return Err(invalid("Direct light color requires linear RGB0..1"));
+        }
         if !self.direct_intensity.is_finite() || !(0. ..=4.).contains(&self.direct_intensity) {
             return Err(invalid("Direct light intensity requires finite0..4"));
         }
@@ -401,6 +409,12 @@ impl Light {
 
 fn one() -> f32 {
     1.
+}
+fn white() -> [f32; 3] {
+    [1.; 3]
+}
+fn is_white(value: &[f32; 3]) -> bool {
+    *value == [1.; 3]
 }
 fn is_one(value: &f32) -> bool {
     *value == 1.
@@ -634,6 +648,9 @@ impl Scene {
             return Err(invalid(
                 "Environment/direct intensity require scene version76",
             ));
+        }
+        if self.version < DIRECT_COLOR_SCENE_VERSION && !is_white(&self.light.direct_color) {
+            return Err(invalid("Direct light color requires scene version120"));
         }
         if self.version < crate::materials::rock::SCENE_VERSION {
             let rock = |a: &crate::meshes::Asset| {
@@ -1631,6 +1648,7 @@ impl RoomRecipe {
                 environment: None,
                 atmosphere: None,
                 direct_intensity: 1.,
+                direct_color: [1.; 3],
                 shadow: None,
                 direction: [-0.5, -1., -0.3],
                 ambient: 0.32,
