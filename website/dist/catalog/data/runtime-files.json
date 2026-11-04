@@ -32,9 +32,9 @@
       "sha256": "17cf5108730adf0f80858c834a0cf71b5f0afb36d390b8e3c31c5a959850b0cb"
     },
     "catalog/data/meshes/ignis.mesh.tree.palmeirinha.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.palmeirinha.igmpz",
-      "bytes": 4025278,
-      "sha256": "17e49b013152ff22775f0332b263759bd6d71ca2e5d9aa490e1f10ded61213fa"
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/palmeirinha-v1.1.0/ignis.mesh.tree.palmeirinha.igmpz",
+      "bytes": 1440564,
+      "sha256": "037e0d03ff4ebc618ca6a5cb70bdd84bfd7542f3b396e75ce0d197656dde6ef1"
     },
     "catalog/data/meshes/ignis.mesh.tree.platano.igmpz": {
       "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.platano.igmpz",

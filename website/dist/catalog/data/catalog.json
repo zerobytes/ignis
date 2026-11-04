@@ -1641,10 +1641,10 @@
     {
       "format_version": 1,
       "id": "ignis.mesh.tree.palmeirinha",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "kind": "mesh",
       "name": "Areca palm",
-      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "summary": "Areca palm with continuous, progressively curved leaves and editable young/developed growth stages.",
       "author": {
         "name": "Guilherme Oliveira / Zerobytes",
         "url": "https://github.com/zerobytes"
@@ -1659,30 +1659,32 @@
       ],
       "provenance": {
         "repository": "https://github.com/zerobytes/ignis",
-        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "commit": "be146a80b80a3b80ed47386fd958bd204f7418b3",
         "path": "assets/botany/palmeirinha.ignis-botany",
-        "source_sha256": "032ae6e4fab86548bf2e0b1459fb3c2ee37357859ffd45fad5b67ad50558c241",
+        "source_sha256": "68c5c0268fd4002751ca30f141fb778e850eb15425eb80fb0234b1cb26826f15",
         "availability": "local-unpublished",
         "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
       },
       "compatibility": {
         "engine": "ignis",
         "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
-        "botany_recipe_version": 3
+        "botany_recipe_version": 9,
+        "minimum_scene_version": 121,
+        "growth_variation_default": 0.8
       },
       "mesh": {
-        "vertices": 481728,
-        "triangles": 946944,
+        "vertices": 178488,
+        "triangles": 351072,
         "bounds": {
           "max": [
-            1.7266637086868286,
-            4.980625152587891,
-            1.8326197862625122
+            2.668865203857422,
+            3.091585397720337,
+            2.1759469509124756
           ],
           "min": [
-            -1.7714852094650269,
-            -0.004694212228059769,
-            -1.5932869911193848
+            -2.083073854446411,
+            -0.0010521708754822612,
+            -2.288318157196045
           ]
         }
       },
@@ -1694,20 +1696,20 @@
           "blade_samples": 4,
           "sides": 6
         },
-        "decoded_bytes": 6644224,
-        "decoded_sha256": "2a155aefb144c00b28c72e4cf66caedc1c4995c8e6bae739163412eeb57537ff",
-        "vertices": 142464,
-        "triangles": 268416,
+        "decoded_bytes": 2380092,
+        "decoded_sha256": "930a4b878ec7920254f3ecbd128193950b373a99cf67c2804afe99cd40be4979",
+        "vertices": 50976,
+        "triangles": 96048,
         "bounds": {
           "max": [
-            1.7266452312469482,
-            4.9804768562316895,
-            1.8326197862625122
+            2.668865203857422,
+            3.0923542976379395,
+            2.175877571105957
           ],
           "min": [
-            -1.7714728116989136,
-            -0.004694212228059769,
-            -1.593258261680603
+            -2.0829925537109375,
+            -0.0010521708754822612,
+            -2.288318157196045
           ]
         }
       },
@@ -1715,33 +1717,33 @@
         {
           "role": "source",
           "media_type": "application/zip",
-          "bytes": 25446762,
-          "sha256": "86ccf6c2eadf7ce1fbdec33afe319b9a835b0f4bae0678d3a083adc22e111266",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.palmeirinha.zip"
+          "bytes": 9391155,
+          "sha256": "2eed345b2b76617d85500df898c7af9237cd53c9f3fdcddca964bad497024233",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/palmeirinha-v1.1.0/ignis.mesh.tree.palmeirinha.zip"
         },
         {
           "role": "preview",
           "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 4025278,
-          "sha256": "17e49b013152ff22775f0332b263759bd6d71ca2e5d9aa490e1f10ded61213fa",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.palmeirinha.igmpz"
+          "bytes": 1440564,
+          "sha256": "037e0d03ff4ebc618ca6a5cb70bdd84bfd7542f3b396e75ce0d197656dde6ef1",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/palmeirinha-v1.1.0/ignis.mesh.tree.palmeirinha.igmpz"
         },
         {
           "role": "preview",
           "media_type": "image/jpeg",
-          "bytes": 11396,
-          "sha256": "6e63dd71699c4a31c1b3d66ad22461b0d59c8774fcc5991891dd20144630ec06",
+          "bytes": 8024,
+          "sha256": "4018cca5d7d2fcc0d71dd6bdbec7015284ad2ba7db1c7ad561ffdb2a493a544a",
           "path": "assets/meshes/trees/palmeirinha/thumbnail.jpg"
         }
       ],
       "manifest": "assets/meshes/trees/palmeirinha/asset.json",
       "preview": {
         "path": "data/meshes/ignis.mesh.tree.palmeirinha.igmpz",
-        "packet_bytes": 4025278,
-        "packet_sha256": "17e49b013152ff22775f0332b263759bd6d71ca2e5d9aa490e1f10ded61213fa",
-        "decoded_bytes": 6644224,
-        "decoded_sha256": "2a155aefb144c00b28c72e4cf66caedc1c4995c8e6bae739163412eeb57537ff",
-        "thumbnail_sha256": "6e63dd71699c4a31c1b3d66ad22461b0d59c8774fcc5991891dd20144630ec06"
+        "packet_bytes": 1440564,
+        "packet_sha256": "037e0d03ff4ebc618ca6a5cb70bdd84bfd7542f3b396e75ce0d197656dde6ef1",
+        "decoded_bytes": 2380092,
+        "decoded_sha256": "930a4b878ec7920254f3ecbd128193950b373a99cf67c2804afe99cd40be4979",
+        "thumbnail_sha256": "4018cca5d7d2fcc0d71dd6bdbec7015284ad2ba7db1c7ad561ffdb2a493a544a"
       }
     },
     {
@@ -1851,12 +1853,12 @@
       }
     }
   ],
-  "source_revision": "0bab64f2d535b64f85fabeb12be3f5201a92f696",
+  "source_revision": "302b75243ff58957b9d0ac191c7f7036f4704607",
   "source_repository": "https://github.com/zerobytes/ignis-catalog",
   "shader_sha256": "cc69495172bf46ee7e735b1ff4afae02fbe99bd26c0ad89d1243b00ab32120e7",
   "renderer_source": {
     "repository": "https://github.com/zerobytes/ignis",
-    "local_snapshot": "51bdfdbc0dee86312aabba2139b42805f377dc55",
+    "local_snapshot": "be146a80b80a3b80ed47386fd958bd204f7418b3",
     "source_state": "working-tree",
     "source_sha256": {
       "src/meshes/preview.rs": "38a52b1ddb1c39efae0980288775eb67dfce1507b97b39da27b0b0301dc1d132",
