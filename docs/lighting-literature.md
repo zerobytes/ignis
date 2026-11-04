@@ -218,3 +218,6 @@ licenses are integration questions to resolve independently of paper quality.
 This unit changes documentation only: no new render pass, asset, build, GPU
 measurement or window interaction. Research artifacts do not complete EAF-208's
 native implementation, movement validation or human acceptance criteria.
+
+The subsequent [CPU estimator experiment](lighting-estimator-experiment.md)
+implements the first numerical laboratory and records its findings and limits.
