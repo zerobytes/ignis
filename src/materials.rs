@@ -6,9 +6,9 @@ use std::sync::Arc;
 mod asset_file;
 pub mod library;
 pub mod marble;
+pub mod preview;
 pub mod recipe;
 pub mod rock;
-pub mod preview;
 mod surface;
 pub use surface::{BlendMode, Coverage, Glass, Surface};
 
