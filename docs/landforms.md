@@ -1,5 +1,9 @@
 # Formas de relevo 3D: estudo e ferramentas
 
+Source3 adds connected local3D shaping and conforming crease planes. The user
+rejected the earlier plateau morphology; [plateau wall correction](plateau-rock-relief.md)
+records the image analysis, geometric contract and remaining visual differences.
+
 Landform2 (EAF-221) adds independently scaled contour rays per section, common
 plane/spherical placement, and altitude/slope queries. Source1 remains readable
 and byte compatible. The version1 restrictions below describe the original

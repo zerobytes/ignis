@@ -14,11 +14,13 @@ use std::{
 };
 mod domain;
 mod presets;
+mod shaping;
 mod triangulate;
 pub use domain::Domain;
 pub use presets::Preset;
+pub use shaping::{CreasePlane, Falloff, Shaping, Stamp};
 
-pub const VERSION: u16 = 2;
+pub const VERSION: u16 = 3;
 pub const MAX_PIECES: usize = 32;
 pub const MAX_WORK: usize = 4_000_000;
 pub const MAX_RAY_HITS: usize = 512;
@@ -71,6 +73,8 @@ pub struct Piece {
     pub sections: Vec<Section>,
     /// A smaller homothetic contour creates an actual longitudinal opening.
     pub inner_scale: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shaping: Option<Shaping>,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -247,6 +251,9 @@ impl Document {
                 "Domain and variable sections require landform version2",
             ));
         }
+        if self.version < 3 && self.pieces.iter().any(|p| p.shaping.is_some()) {
+            return Err(invalid("Local surface shaping requires landform version3"));
+        }
         let mut ids = BTreeSet::new();
         let mut work = 0usize;
         for p in &self.pieces {
@@ -274,7 +281,17 @@ impl Document {
         let mut vertices = 0;
         let mut triangles = 0;
         for p in &self.pieces {
-            let prepared = p.prepare()?;
+            let mut prepared = p.prepare()?;
+            if let Some(shape) = &p.shaping {
+                shape.prepare()?;
+                let (v, t) = shape.counts(prepared.vertices, prepared.triangles)?;
+                work = work.saturating_add(v * shape.stamps.len() + t * 12);
+                if work > MAX_WORK {
+                    return Err(invalid("Landform shaping exceeds preflight work budget"));
+                }
+                prepared.vertices = v;
+                prepared.triangles = t;
+            }
             vertices += prepared.vertices;
             triangles += prepared.triangles;
             if vertices > meshes::MAX_VERTICES || triangles > meshes::MAX_TRIANGLES {
@@ -372,6 +389,9 @@ fn closed_volume(geometry: &Geometry, range: [usize; 2], pivot: DVec3) -> Result
     Ok(volume)
 }
 pub fn compile(document: &Document) -> Result<Compiled> {
+    if document.pieces.iter().any(|p| p.shaping.is_some()) {
+        return shaping::compile(document);
+    }
     let prepared = document.prepare()?;
     let frame = domain::Frame::new(document.origin, document.domain.as_ref())?;
     let vertex_count = prepared.iter().map(|p| p.vertices).sum();
@@ -549,6 +569,10 @@ pub enum Edit {
     SetDomain {
         domain: Option<Domain>,
     },
+    SetShaping {
+        id: String,
+        shaping: Option<Shaping>,
+    },
     Append {
         piece: Piece,
     },
@@ -589,7 +613,7 @@ pub fn edit(mut document: Document, expected_revision: u32, edits: Vec<Edit>) ->
     for edit in edits {
         if let Edit::SetDomain { domain } = edit {
             document.domain = domain;
-            document.version = VERSION;
+            document.version = document.version.max(2);
             continue;
         }
         if let Edit::Append { piece } = edit {
@@ -605,6 +629,7 @@ pub fn edit(mut document: Document, expected_revision: u32, edits: Vec<Edit>) ->
             | Edit::SetProfile { id, .. }
             | Edit::SetSections { id, .. }
             | Edit::SetInnerScale { id, .. } => id,
+            Edit::SetShaping { id, .. } => id,
             Edit::Append { .. } | Edit::SetDomain { .. } => unreachable!(),
         };
         let index = document
@@ -622,6 +647,7 @@ pub fn edit(mut document: Document, expected_revision: u32, edits: Vec<Edit>) ->
             Edit::SetInnerScale { inner_scale, .. } => {
                 document.pieces[index].inner_scale = inner_scale
             }
+            Edit::SetShaping { shaping, .. } => document.pieces[index].shaping = shaping,
             Edit::Append { .. } | Edit::SetDomain { .. } => unreachable!(),
         }
     }
@@ -630,6 +656,9 @@ pub fn edit(mut document: Document, expected_revision: u32, edits: Vec<Edit>) ->
         .iter()
         .any(|p| p.sections.iter().any(|s| !s.radial_scales.is_empty()))
     {
+        document.version = document.version.max(2);
+    }
+    if document.pieces.iter().any(|p| p.shaping.is_some()) {
         document.version = VERSION;
     }
     document.validate()?;

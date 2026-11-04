@@ -4,6 +4,11 @@ The three user-supplied references define morphology, not a redistribution of
 their game assets. This document specifies reusable authoring tools. Geological
 process simulation and artistic acceptance are separate gates.
 
+The user rejected the initial terrace morphology. [Plateau wall shaping](plateau-rock-relief.md)
+records the image-specific analysis and source3 correction: local 3D deformation
+and conforming crease tessellation. Passing the source2 software gates below
+did not establish the desired wall shape.
+
 | ID | Requirement | Observable acceptance |
 |---|---|---|
 | R1 | Hierarchy: region, dominant mass, shoulders/ridges, blocks and fissures | Three recipes contain dominant and subordinate volumes, varied proportions and directions, and named editable source pieces. |

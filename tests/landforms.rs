@@ -145,6 +145,7 @@ fn manual_authorship_codec_and_late_errors_preserve_source_and_format_boundaries
                 },
             ],
             inner_scale: None,
+            shaping: None,
         }],
     };
     d.origin = Position::normalize(Coordinates {

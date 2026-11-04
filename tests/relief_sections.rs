@@ -33,6 +33,7 @@ fn source() -> Document {
             profile_x: [1., 0., 0.],
             profile: vec![[-1., -1.], [1., -1.], [1., 1.], [-1., 1.]],
             inner_scale: None,
+            shaping: None,
             sections: vec![
                 section(0., 4., &[1.; 4]),
                 section(4., 3., &[1., 0.8, 1.1, 0.9]),

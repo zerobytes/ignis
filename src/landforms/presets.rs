@@ -99,6 +99,7 @@ fn extrusion(id: String, profile: Vec<[f64; 2]>, length: f64) -> Piece {
         profile,
         sections: vec![section(0., 1.), section(length, 1.)],
         inner_scale: None,
+        shaping: None,
     }
 }
 pub(super) fn create(id: String, origin: Position, preset: Preset) -> Result<Document> {
