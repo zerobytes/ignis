@@ -124,3 +124,32 @@ O contraste útil é o processo completo de autoria. Mais polígonos ou executar
 Um estágio de erosão exige vizinhança e estado. A arquitetura recomendada é gerar/compilar dados regionais durante a autoria, com bordas de trabalho, cache por conteúdo e leitura pelo runtime; não recalcular uma simulação completa a cada consulta de altura ou frame. Esta é uma proposta para investigação, ainda não uma ferramenta implementada. A escolha de algoritmo, resolução, custo e integração nativa precisa ser medida antes de prometer execução em tempo real.
 
 O marco seguinte deve demonstrar qualidade em uma área pequena antes de expandir continentes. Validação de colisão e persistência continua necessária, mas aprovação visual das formas é um requisito separado. Nenhuma ferramenta externa foi comprada/instalada, nenhum asset importado e o mundo publicado continua o mesmo protótipo durante esta revisão.
+
+## Procedural e escultura compartilham as ferramentas
+
+**Requisito explícito do usuário, 4 de novembro de 2026:** tudo que o procedural usar para construir o relevo deve ser utilizável manualmente. O terreno precisa ser gerável e esculpível, com os dois modos combináveis. Isso orienta a implementação seguinte; esta revisão não declara a escultura planetária integrada como pronta.
+
+O catálogo de operações e seus kernels serão comuns. A receita procedural escolhe parâmetros, regiões, máscaras, sementes e ordem de composição. O uso manual fornece esses mesmos dados por pincéis, curvas, alças e controles locais. MCP e interface enviam os mesmos comandos nativos validados. O gerador também deve poder aplicar traços de pincel, em vez de existir uma família de deformações exclusiva do mouse.
+
+| Operação compartilhada | Uso procedural | Uso manual |
+| --- | --- | --- |
+| Elevar, cavar, suavizar e nivelar | Aplicar operações/traços em regiões e percursos escolhidos pela receita. | Pintar traços ou ajustar uma região com raio, intensidade e transição. |
+| Cristas, vales e patamares | Compor caminhos, perfis e máscaras segundo regras regionais. | Desenhar/editar caminhos e perfis, mover marcos e controlar bordas. |
+| Erosão e deposição propostas | Processar regiões e máscaras definidas pelo gerador. | Pintar/selecionar a área, ajustar intensidade e executar a mesma etapa com prévia. Não precisa ser uma simulação instantânea em cada movimento do mouse. |
+| Máscaras | Derivar campos de regras e combiná-los. | Pintar, proteger, apagar e combinar influência local. |
+
+A camada de autoria deve conservar as operações, seus parâmetros, máscaras e traços. Ajustes manuais precisam de identidade e ordem explícitas, independentes da triangulação e do LOD visível. Não basta alterar vértices de um tile temporário: ele será substituído pela residência/refinamento. Operações com vizinhança podem ter dados regionais compilados e cache, mas a receita que os produz continua editável.
+
+O fluxo obrigatório é: gerar uma base → acrescentar ajustes manuais → alterar/regenerar a base → reavaliar os ajustes conservados. Reaplicar um traço não garante uma aparência idêntica quando sua base muda. Áreas protegidas, parâmetros absolutos/relativos e a posição das camadas devem tornar essa escolha explícita; incompatibilidades exigem diagnóstico antes de substituir o resultado, sem descartar ajustes silenciosamente. A ordem importa: erosão antes de um patamar não equivale a erosão depois dele.
+
+Estado verificado: [Surface1](../../surface-program.md) já compartilha operações/dados entre autoria e receita, em plano e esfera; editar por MCP não equivale a ter todos esses controles manipuláveis no viewport. A [escultura de meshes](../../editor-sculpt.md) tem seu próprio fluxo de traços e prévia. Ainda é preciso integrar a autoria de relevo planetário a gestos, máscaras e persistência dessas edições. O protótipo permanece baseado em receita/recarregamento. A integração deve preservar os pincéis de mesh existentes, sem prometer que todo deslocamento volumétrico se torna automaticamente uma altura radial.
+
+Critérios do próximo incremento:
+
+1. Mesma operação normalizada, base, ordem, resolução autoral e semente produz o mesmo resultado via UI, MCP ou receita; o adaptador de entrada não muda o kernel.
+2. Prévia e aplicação coincidem; cancelar preserva a fonte; um gesto é uma unidade de desfazer/refazer.
+3. Salvar/reabrir conserva parâmetros, traços, máscaras, ordem e edições manuais; regenerar a base mantém essas edições e sinaliza incompatibilidades.
+4. Alternar LOD, atravessar limites de tiles/faces ou revisitar uma região não apaga escultura nem muda seu raio físico; fonte visual e colisão continuam coerentes.
+5. Custo e resolução ficam explícitos, inclusive em etapas demoradas como erosão. Avaliar formas em material neutro e manter o aceite artístico separado.
+
+Esse contrato é de construção do mundo no editor. Não acrescenta automaticamente terreno destrutível, escavação de gameplay, cavernas ou edição multiplayer ao jogo.
