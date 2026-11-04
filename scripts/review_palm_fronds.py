@@ -40,7 +40,7 @@ def main():
         assert (OUT/'palmeirinha-roundtrip.png').read_bytes()==(OUT/'palmeirinha-after.png').read_bytes()
         report['scene_roundtrip_pixels_equal']=True
         # One complete leaf, including its own bare basal region; no cane.
-        leaf=copy.deepcopy(current);leaf['settings'].pop('age_years',None);leaf['source'].pop('development',None);leaf['version']=leaf['source']['version']=2
+        leaf=copy.deepcopy(current);leaf['settings'].pop('age_years',None);leaf['settings'].pop('frond_growth_variation',None);leaf['source'].pop('development',None);leaf['version']=leaf['source']['version']=2
         for o in leaf['source']['organs']:o.pop('life',None)
         key='caule0/raquis3'
         leaf['source']['organs']=[o for o in leaf['source']['organs'] if o['id']==key or o['id'].startswith(key+'/')]

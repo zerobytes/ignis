@@ -8,6 +8,7 @@
       0.36,
       0.1
     ],
+    "frond_growth_variation": 0.8,
     "leaf_color": [
       0.075,
       0.22,
@@ -156,6 +157,7 @@
         "life": {
           "born_years": 1.5,
           "expansion_years": 2.0,
+          "growth_stage": 0.3,
           "role": "frond"
         },
         "normal": [
@@ -3103,6 +3105,7 @@
         "life": {
           "born_years": 1.5,
           "expansion_years": 2.0,
+          "growth_stage": 0.409375,
           "role": "frond"
         },
         "normal": [
@@ -6050,6 +6053,7 @@
         "life": {
           "born_years": 1.5,
           "expansion_years": 2.0,
+          "growth_stage": 0.6499999999999999,
           "role": "frond"
         },
         "normal": [
@@ -8997,6 +9001,7 @@
         "life": {
           "born_years": 1.5,
           "expansion_years": 2.0,
+          "growth_stage": 0.890625,
           "role": "frond"
         },
         "normal": [
@@ -11944,6 +11949,7 @@
         "life": {
           "born_years": 1.5,
           "expansion_years": 2.0,
+          "growth_stage": 1.0,
           "role": "frond"
         },
         "normal": [
@@ -15004,6 +15010,7 @@
         "life": {
           "born_years": 2.35,
           "expansion_years": 2.0,
+          "growth_stage": 0.3,
           "role": "frond"
         },
         "normal": [
@@ -17951,6 +17958,7 @@
         "life": {
           "born_years": 2.35,
           "expansion_years": 2.0,
+          "growth_stage": 0.409375,
           "role": "frond"
         },
         "normal": [
@@ -20898,6 +20906,7 @@
         "life": {
           "born_years": 2.35,
           "expansion_years": 2.0,
+          "growth_stage": 0.6499999999999999,
           "role": "frond"
         },
         "normal": [
@@ -23845,6 +23854,7 @@
         "life": {
           "born_years": 2.35,
           "expansion_years": 2.0,
+          "growth_stage": 0.890625,
           "role": "frond"
         },
         "normal": [
@@ -26792,6 +26802,7 @@
         "life": {
           "born_years": 2.35,
           "expansion_years": 2.0,
+          "growth_stage": 1.0,
           "role": "frond"
         },
         "normal": [
@@ -29852,6 +29863,7 @@
         "life": {
           "born_years": 3.2,
           "expansion_years": 2.0,
+          "growth_stage": 0.3,
           "role": "frond"
         },
         "normal": [
@@ -32799,6 +32811,7 @@
         "life": {
           "born_years": 3.2,
           "expansion_years": 2.0,
+          "growth_stage": 0.409375,
           "role": "frond"
         },
         "normal": [
@@ -35746,6 +35759,7 @@
         "life": {
           "born_years": 3.2,
           "expansion_years": 2.0,
+          "growth_stage": 0.6499999999999999,
           "role": "frond"
         },
         "normal": [
@@ -38693,6 +38707,7 @@
         "life": {
           "born_years": 3.2,
           "expansion_years": 2.0,
+          "growth_stage": 0.890625,
           "role": "frond"
         },
         "normal": [
@@ -41640,6 +41655,7 @@
         "life": {
           "born_years": 3.2,
           "expansion_years": 2.0,
+          "growth_stage": 1.0,
           "role": "frond"
         },
         "normal": [
@@ -44700,6 +44716,7 @@
         "life": {
           "born_years": 4.05,
           "expansion_years": 2.0,
+          "growth_stage": 0.3,
           "role": "frond"
         },
         "normal": [
@@ -47647,6 +47664,7 @@
         "life": {
           "born_years": 4.05,
           "expansion_years": 2.0,
+          "growth_stage": 0.409375,
           "role": "frond"
         },
         "normal": [
@@ -50594,6 +50612,7 @@
         "life": {
           "born_years": 4.05,
           "expansion_years": 2.0,
+          "growth_stage": 0.6499999999999999,
           "role": "frond"
         },
         "normal": [
@@ -53541,6 +53560,7 @@
         "life": {
           "born_years": 4.05,
           "expansion_years": 2.0,
+          "growth_stage": 0.890625,
           "role": "frond"
         },
         "normal": [
@@ -56488,6 +56508,7 @@
         "life": {
           "born_years": 4.05,
           "expansion_years": 2.0,
+          "growth_stage": 1.0,
           "role": "frond"
         },
         "normal": [
@@ -59548,6 +59569,7 @@
         "life": {
           "born_years": 4.9,
           "expansion_years": 2.0,
+          "growth_stage": 0.3,
           "role": "frond"
         },
         "normal": [
@@ -62495,6 +62517,7 @@
         "life": {
           "born_years": 4.9,
           "expansion_years": 2.0,
+          "growth_stage": 0.409375,
           "role": "frond"
         },
         "normal": [
@@ -65442,6 +65465,7 @@
         "life": {
           "born_years": 4.9,
           "expansion_years": 2.0,
+          "growth_stage": 0.6499999999999999,
           "role": "frond"
         },
         "normal": [
@@ -68389,6 +68413,7 @@
         "life": {
           "born_years": 4.9,
           "expansion_years": 2.0,
+          "growth_stage": 0.890625,
           "role": "frond"
         },
         "normal": [
@@ -71336,6 +71361,7 @@
         "life": {
           "born_years": 4.9,
           "expansion_years": 2.0,
+          "growth_stage": 1.0,
           "role": "frond"
         },
         "normal": [
@@ -74396,6 +74422,7 @@
         "life": {
           "born_years": 5.75,
           "expansion_years": 2.0,
+          "growth_stage": 0.3,
           "role": "frond"
         },
         "normal": [
@@ -77343,6 +77370,7 @@
         "life": {
           "born_years": 5.75,
           "expansion_years": 2.0,
+          "growth_stage": 0.409375,
           "role": "frond"
         },
         "normal": [
@@ -80290,6 +80318,7 @@
         "life": {
           "born_years": 5.75,
           "expansion_years": 2.0,
+          "growth_stage": 0.6499999999999999,
           "role": "frond"
         },
         "normal": [
@@ -83237,6 +83266,7 @@
         "life": {
           "born_years": 5.75,
           "expansion_years": 2.0,
+          "growth_stage": 0.890625,
           "role": "frond"
         },
         "normal": [
@@ -86184,6 +86214,7 @@
         "life": {
           "born_years": 5.75,
           "expansion_years": 2.0,
+          "growth_stage": 1.0,
           "role": "frond"
         },
         "normal": [
@@ -89123,7 +89154,7 @@
       }
     ],
     "seed": 42,
-    "version": 3
+    "version": 9
   },
-  "version": 3
+  "version": 9
 }

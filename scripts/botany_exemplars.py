@@ -32,7 +32,7 @@ class Builder:
     def recipe(self,prefix,**settings):return dict(version=2,prefix=prefix,source=dict(version=2,name=self.name,seed=self.seed,organs=self.organs),settings=dict(axis_samples=self.axis_samples,sides=8,**settings))
 
 def radial(angle,h):return (math.cos(angle),h,math.sin(angle))
-def palm(seed=42):
+def palm(seed=42,frond_growth_variation=.8):
     """Cluster of leaf bases: each petiole and rachis is one unbranched axis."""
     x=Builder('Palmeirinha · bases foliares e frondes contínuas',seed)
     x.axis_samples=32
@@ -69,6 +69,13 @@ def palm(seed=42):
     recipe=chronological(x.recipe('palmeirinha',bark_color=[.33,.36,.10],leaf_color=[.075,.22,.015]),'palmeirinha')
     # Whole leaf axes have the same isotropic age scaling as their leaflets.
     # The basal support no longer masquerades as a long trunk with branches.
+    if not 0. <= frond_growth_variation <= 1.:raise ValueError('Frond growth variation must be0..1')
+    recipe['version']=recipe['source']['version']=9
+    recipe['settings']['frond_growth_variation']=frond_growth_variation
+    for organ in recipe['source']['organs']:
+        if organ['life']['role']=='frond':
+            index=int(organ['id'].rsplit('raquis',1)[1]);t=index/4
+            organ['life']['growth_stage']=.30+.70*t*t*(3-2*t)
     return recipe
 
 def spline(points,u):
@@ -366,9 +373,9 @@ def chronological(recipe,kind,age=None):
 
 def main():
     dest=ROOT/'assets/botany';dest.mkdir(parents=True,exist_ok=True)
-    parser=argparse.ArgumentParser();parser.add_argument('--only',choices=['palmeirinha',*CROWNS]);parser.add_argument('--age',type=float);parser.add_argument('--seed',type=int);parser.add_argument('--without-roots',action='store_true');parser.add_argument('--binary',type=Path,default=ROOT/'target/release/ignis');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--only',choices=['palmeirinha',*CROWNS]);parser.add_argument('--age',type=float);parser.add_argument('--seed',type=int);parser.add_argument('--without-roots',action='store_true');parser.add_argument('--frond-growth-variation',type=float,default=.8);parser.add_argument('--binary',type=Path,default=ROOT/'target/release/ignis');args=parser.parse_args()
     for name in ([args.only] if args.only else ['palmeirinha',*CROWNS]):
-        r=palm(args.seed if args.seed is not None else 42) if name=='palmeirinha' else tree(name,args.seed if args.seed is not None else 129)
+        r=palm(args.seed if args.seed is not None else 42,args.frond_growth_variation) if name=='palmeirinha' else tree(name,args.seed if args.seed is not None else 129)
         if args.age is not None:r['settings']['age_years']=args.age
         path=dest/(r['prefix']+'.ignis-botany');systems=[]
         if not args.without_roots and path.exists():systems=json.loads(path.read_bytes())['source'].get('root_systems',[])

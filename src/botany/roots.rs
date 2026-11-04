@@ -357,6 +357,7 @@ pub fn configure_with_policy(
                         born_years: level as f64 * 1.2,
                         expansion_years: 2.,
                         role: development::Role::Root,
+                        growth_stage: 1.,
                     }),
                 });
                 if remaining > 0 {

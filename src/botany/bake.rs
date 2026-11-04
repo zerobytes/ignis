@@ -170,6 +170,7 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
     let development = super::development::state(recipe)?;
     let profile = recipe.source.development.as_ref();
     let mut depths: Vec<u32> = Vec::new();
+    let mut frond_scales: Vec<f64> = Vec::new();
     let scale = DVec3::new(s.scale * s.crown_width, s.scale, s.scale * s.crown_width);
     let mut result: Vec<Pose> = Vec::new();
     let mut lookup: BTreeMap<String, usize> = BTreeMap::new();
@@ -237,6 +238,13 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
             .life
             .as_ref()
             .map_or(super::development::Role::Axis, |l| l.role);
+        let inherited_frond_scale = parent.map_or(1., |p| frond_scales[p]);
+        let frond_scale = if role == super::development::Role::Frond {
+            let stage = o.life.as_ref().map_or(1., |life| life.growth_stage);
+            inherited_frond_scale * (1. - s.frond_growth_variation * (1. - stage))
+        } else {
+            inherited_frond_scale
+        };
         let mut age_scale = DVec3::ONE;
         let mut radial = 1.;
         let mut flare = 0.;
@@ -299,6 +307,12 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
             } else {
                 age.stiffness
             };
+        }
+        // One similarity scale for the whole frond and all its descendants.
+        // Parent frames carry the attachment; local geometry uses this same scale.
+        if frond_scale != 1. {
+            age_scale *= frond_scale;
+            radial *= frond_scale;
         }
         let rotation = DQuat::from_scaled_axis(DVec3::from_array(edit.rotation));
         let factor = edit.length
@@ -371,15 +385,17 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
             Shape::Blade {
                 width, thickness, ..
             } => (
-                thickness * s.scale * edit.radius / 2.,
+                thickness * s.scale * edit.radius * frond_scale / 2.,
                 width
                     * s.scale
                     * s.leaf_width
+                    * frond_scale
                     * edit.width
                     * development.map_or(1., |a| a.leaf * expansion),
             ),
         };
         depths.push(depth);
+        frond_scales.push(frond_scale);
         raw.insert(o.id.clone(), initial);
         lookup.insert(o.id.clone(), result.len());
         let section = super::roots::system_for(&recipe.source, &o.id).and_then(|system| {

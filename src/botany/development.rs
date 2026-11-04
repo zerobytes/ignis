@@ -22,6 +22,9 @@ pub struct OrganLife {
     pub born_years: f64,
     pub expansion_years: f64,
     pub role: Role,
+    /// Authored fraction of developed size for a complete leaf, not a biological age.
+    #[serde(default = "one", skip_serializing_if = "is_one")]
+    pub growth_stage: f64,
 }
 impl Default for OrganLife {
     fn default() -> Self {
@@ -29,12 +32,16 @@ impl Default for OrganLife {
             born_years: 0.,
             expansion_years: 2.,
             role: Role::Axis,
+            growth_stage: 1.,
         }
     }
 }
 impl OrganLife {
     pub fn validate(&self) -> Result<()> {
-        if !self.born_years.is_finite()
+        if !self.growth_stage.is_finite()
+            || !(0.1..=1.).contains(&self.growth_stage)
+            || (self.role != Role::Frond && self.growth_stage != 1.)
+            || !self.born_years.is_finite()
             || !(0. ..=2000.).contains(&self.born_years)
             || !self.expansion_years.is_finite()
             || !(0.1..=200.).contains(&self.expansion_years)

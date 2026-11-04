@@ -21,9 +21,12 @@ pub mod production;
 pub mod root_crown;
 pub mod root_sections;
 pub mod roots;
-pub const VERSION: u16 = 7;
+pub const VERSION: u16 = 9;
 fn one() -> f64 {
     1.
+}
+fn is_zero(v: &f64) -> bool {
+    *v == 0.
 }
 fn is_one(v: &f64) -> bool {
     *v == 1.
@@ -130,6 +133,9 @@ pub struct Settings {
     pub leaf_length: f64,
     pub leaf_width: f64,
     pub leaf_density: f64,
+    /// Strength of authored growth-stage differences on complete fronds.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub frond_growth_variation: f64,
     pub axis_samples: u16,
     /// Longitudinal tessellation of strip blades; independent of axis/physics sampling.
     pub blade_samples: u8,
@@ -153,6 +159,7 @@ impl Default for Settings {
             leaf_length: 1.,
             leaf_width: 1.,
             leaf_density: 1.,
+            frond_growth_variation: 0.,
             axis_samples: 12,
             blade_samples: 12,
             sides: 8,
@@ -310,6 +317,9 @@ impl Source {
             }
             if let Some(life) = &o.life {
                 life.validate()?;
+                if life.growth_stage != 1. && self.version < 9 {
+                    return Err(invalid("Frond growth stages require botanical source9"));
+                }
                 if life.role == development::Role::Root
                     && (self.version < 5 || roots::system_for(self, &o.id).is_none())
                 {
@@ -558,6 +568,15 @@ impl Recipe {
             return Err(invalid("Valley crowns require recipe7"));
         }
         let s = &self.settings;
+        if self.source.version >= 9 && self.version < 9 {
+            return Err(invalid("Frond growth source9 requires recipe9"));
+        }
+        if !s.frond_growth_variation.is_finite()
+            || !(0. ..=1.).contains(&s.frond_growth_variation)
+            || (s.frond_growth_variation != 0. && self.version < 9)
+        {
+            return Err(invalid("Frond growth variation must be0..1 and requires recipe9"));
+        }
         if self.source.development.is_some() {
             if self.version < 3 {
                 return Err(invalid("Development profiles require botanical recipe3"));

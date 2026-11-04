@@ -81,6 +81,12 @@ pub(super) fn properties(
         changed|=ui.add(egui::Slider::new(&mut draft.settings.leaf_length,0.1..=5.).text("Comprimento das folhas")).changed();
         changed|=ui.add(egui::Slider::new(&mut draft.settings.leaf_width,0.1..=5.).text("Largura das folhas")).changed();
         changed|=ui.add(egui::Slider::new(&mut draft.settings.leaf_density,0. ..=1.).text("Densidade de folhas")).changed();
+        if draft.source.organs.iter().any(|o|o.life.as_ref().is_some_and(|life|life.role==crate::botany::development::Role::Frond)) {
+            let response=ui.add(egui::Slider::new(&mut draft.settings.frond_growth_variation,0. ..=1.).text("Variação de crescimento das frondes"));
+            let growth_changed=response.drag_stopped()||(response.changed()&&!response.dragged());
+            if growth_changed {draft.version=draft.version.max(9);changed=true;}
+            ui.label("0: tamanhos de referência. 1: estágios jovens e desenvolvidos da fonte.");
+        }
         ui.label("Folhas");changed|=ui.color_edit_button_rgb(&mut draft.settings.leaf_color).changed();
         if changed{send(commands,Op::Preview{recipe:Box::new(draft.clone()),policy:ManualPolicy::Preserve});}
         ui.horizontal_wrapped(|ui|{
@@ -134,6 +140,18 @@ pub(super) fn properties(
         });
         if let Some(id)=&service.botany.organ {
             if state.organ.as_ref()!=Some(id){state.organ=Some(id.clone());state.edit=recipe.edits.get(id).cloned().unwrap_or_default();}
+            if let Some(stage)=draft.source.organs.iter().find(|o|o.id==*id).and_then(|o|o.life.as_ref()).filter(|life|life.role==crate::botany::development::Role::Frond).map(|life|life.growth_stage) {
+                let mut value=stage;
+                let response=ui.add(egui::Slider::new(&mut value,0.1..=1.).text("Estágio desta fronde: jovem → desenvolvida"));
+                if response.changed() {
+                    let source=std::sync::Arc::make_mut(&mut draft.source);source.version=source.version.max(9);
+                    source.organs.iter_mut().find(|o|o.id==*id).unwrap().life.as_mut().unwrap().growth_stage=value;
+                    draft.version=draft.version.max(9);
+                }
+                if response.drag_stopped()||(response.changed()&&!response.dragged()) {
+                    send(commands,Op::Preview{recipe:Box::new(draft.clone()),policy:ManualPolicy::Preserve});
+                }
+            }
             ui.add(egui::Slider::new(&mut state.edit.length,0.1..=5.).text("Comprimento do órgão"));
             ui.add(egui::Slider::new(&mut state.edit.width,0.1..=5.).text("Largura do órgão"));
             ui.add(egui::Slider::new(&mut state.edit.radius,0.1..=5.).text(if recipe.source.organs.iter().any(|o|o.id==*id&&matches!(o.shape,crate::botany::Shape::Blade{..})){"Espessura da folha"}else{"Raio do órgão"}));

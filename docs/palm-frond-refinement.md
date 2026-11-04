@@ -35,7 +35,8 @@ measured within the leafy region. The former inverse progression (strong base,
 weak tip) was incorrect and has been removed.
 
 The canonical source has 1,476 organs, 178,488 compiled vertices and 351,072
-triangles. Current native bounds reach 4.67 m high. Existing saved sources retain
+triangles. At zero growth variation, native bounds reach 4.67 m high; the current 0.8
+variation preset reaches 3.09 m. Existing saved sources retain
 their authored curves. This preset changes membership; applying it over existing
 manual work must use the existing explicit preservation/discard policy.
 
@@ -76,3 +77,57 @@ accepted merely because they compiled or produced captures.
 Earlier botanical references:
 - https://www.nparks.gov.sg/florafaunaweb/flora/2/6/2622
 - https://plants.ces.ncsu.edu/plants/chrysalidocarpus-lutescens/
+
+## Authored growth stages and leaf-height variation
+
+The continuous leaf shape received user approval; the next control distinguishes
+shorter young leaves from developed leaves. `settings.frond_growth_variation`
+ranges from 0 to 1. Every complete leaf can carry `life.growth_stage` from 0.1 to
+1, where 1 is its developed reference size. Its applied scale is:
+
+```
+scale = 1 - frond_growth_variation * (1 - growth_stage)
+```
+
+The same scale propagates through the complete petiole/rachis and its descendants,
+including leaflet length, width and thickness. Isotropic scaling preserves the
+progressive curve's angles. Parent attachment frames are reevaluated before
+placing descendants. The native baker is also the rest source for the existing
+local dynamics session. Individual organ edits remain separate multipliers.
+
+The Vegetation panel exposes **Variação de crescimento das frondes** and, for a
+selected complete leaf, **Estágio desta fronde: jovem → desenvolvida**. Both use
+the existing preview/apply/cancel workflow with manual-edit preservation. MCP
+uses the same recipe fields through `botany` preview/publish/load/save.
+
+The palmeirinha preset uses stages 0.30 through 1 across its five leaves per
+basal support, with a default variation of 0.8. That makes the youngest stage
+44% of its developed length and the oldest stage 100%, in addition to the
+existing seeded variation in reference lengths. Stages are authored growth
+fractions, not calibrated ages in years. They do not automatically advance a
+new biological simulation; chronological plant age and the existing local
+expansion clock retain their separate roles.
+
+`palm(seed, frond_growth_variation)` and `--frond-growth-variation 0..1` expose
+the generator parameter. Source and recipe 9 protect the new semantics. Older
+sources default each stage to 1, and absent variation defaults to 0. Zero
+variation is omitted on serialization and preserves the old bake exactly.
+Nondefault stages require source9; an active variation requires recipe9, and
+source9 requires recipe9. Invalid/nonfinite values are rejected before publish.
+No global Scene or replay version change is introduced by this increment.
+
+`tests/frond_growth.rs` covers whole-leaf/descendant scaling, unchanged angles,
+legacy equality, version/range rejection, preview atomicity and serialization.
+`scripts/review_palm_growth.py` compares 0, 0.45, 0.8 and 1 at the same camera/light,
+checks scene save/load pixels, and exercises local dynamics identity/attachments.
+Evidence uses stable `palmeirinha-growth-*.png` and `palm-growth-verification.json`
+paths under `artifacts/botany-native`. This does not establish artistic acceptance
+of the new height distribution or calibrated plant development.
+
+Validation of the growth increment passed: two focused Rust tests, the existing
+four-exemplar integrity/reproducibility test, and Clippy release for lib/bin plus
+the new test target (`-D warnings`). Native comparison, scene roundtrip and local
+dynamics used build `e9140564387683bd`; maximum reported attachment error was
+3.47e-18 m. The retained current executable is `target/release/ignis`; captures
+replace stable artifact paths, with no extra app bundle or binary copy created.
+GUI interaction and artistic acceptance of the new distribution remain separate.
