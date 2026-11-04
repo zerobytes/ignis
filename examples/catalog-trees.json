@@ -1,0 +1,59 @@
+[
+  {
+    "id": "ignis.mesh.tree.palmeirinha",
+    "name": "Areca palm",
+    "path": "assets/botany/palmeirinha.ignis-botany",
+    "materials": {}
+  },
+  {
+    "id": "ignis.mesh.tree.platano",
+    "name": "Plane tree",
+    "path": "assets/botany/platano.ignis-botany",
+    "materials": {}
+  },
+  {
+    "id": "ignis.mesh.tree.eucalipto",
+    "name": "Eucalyptus",
+    "path": "assets/botany/eucalipto.ignis-botany",
+    "materials": {}
+  },
+  {
+    "id": "ignis.mesh.tree.figueira",
+    "name": "Broad-crown fig",
+    "path": "assets/botany/figueira.ignis-botany",
+    "materials": {}
+  },
+  {
+    "id": "ignis.mesh.tree.figueira-rs",
+    "name": "Countryside fig",
+    "path": "assets/botany/figueira_rs.ignis-botany",
+    "materials": {}
+  },
+  {
+    "id": "ignis.mesh.tree.birch-0",
+    "name": "Golden birch — Golden spire",
+    "path": "assets/botany/genshin-birch/birch_0.ignis-botany",
+    "materials": {
+      "birch_0_wood": "assets/botany/genshin-birch/birch_0_wood.ignis-material",
+      "birch_0_leaves": "assets/botany/genshin-birch/birch_0_leaves.ignis-material"
+    }
+  },
+  {
+    "id": "ignis.mesh.tree.birch-1",
+    "name": "Golden birch — Broad golden crown",
+    "path": "assets/botany/genshin-birch/birch_1.ignis-botany",
+    "materials": {
+      "birch_1_wood": "assets/botany/genshin-birch/birch_1_wood.ignis-material",
+      "birch_1_leaves": "assets/botany/genshin-birch/birch_1_leaves.ignis-material"
+    }
+  },
+  {
+    "id": "ignis.mesh.tree.birch-2",
+    "name": "Golden birch — Slender leaning crown",
+    "path": "assets/botany/genshin-birch/birch_2.ignis-botany",
+    "materials": {
+      "birch_2_wood": "assets/botany/genshin-birch/birch_2_wood.ignis-material",
+      "birch_2_leaves": "assets/botany/genshin-birch/birch_2_leaves.ignis-material"
+    }
+  }
+]

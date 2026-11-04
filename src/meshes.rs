@@ -9,6 +9,7 @@ mod attachments;
 mod wind;
 use attachments::{Hierarchy, Prepared};
 mod extraction;
+pub mod preview;
 pub use extraction::{ExtractionMode, Island, IslandTransform, Islands};
 
 // Legacy per-operation modeling budgets; these are not scene/render quotas.
