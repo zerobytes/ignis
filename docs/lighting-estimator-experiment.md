@@ -147,8 +147,8 @@ does not repair a predictor for the wrong scene.
   rational integration supplies exact means and second moments for analytic
   controls, including each cache's residual variance. No statistical CI pass is
   used as proof of unbiasedness.
-- Identical-input replay checks all four numerical CSVs byte for byte; timing
-  values are deliberately excluded. The current numerical SHA256 is
+- First-stage identical-input replay checks all four baseline numerical CSVs
+  byte for byte; timing values are deliberately excluded. Their SHA256 is
   `6eec81465885e0f0886ec583f6bc592cf6912cde1aadc9820cf827e713ce3971`.
 - Rust warnings/fmt and Python F-class static checks pass. Generated plots are
   inspected. This isolated numerical change does not require engine/GPU tests.
@@ -168,3 +168,8 @@ does not repair a predictor for the wrong scene.
 - One current lab executable/report set remains in the stable output directory;
   task staging and replay outputs are removed. Unrelated sources, builds,
   processes, windows and the birch are preserved. EAF-208 remains In Progress.
+
+The [independent-pilot extension](lighting-pilot-experiment.md) now adds learned
+weights and validated fallback policies to this same runner and executable.
+Its numerical replay also covers `pilot_trials.csv`. The original four-file
+digest remains separately recorded as `baseline_numerical_sha256` in the manifest.

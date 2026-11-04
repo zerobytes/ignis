@@ -29,6 +29,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import lighting_pilot_report
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "artifacts/lighting-estimator"
@@ -568,17 +569,19 @@ def main():
     parser.add_argument("--reference-grid", type=int, default=2048)
     parser.add_argument("--timing-blocks", type=int, default=9)
     parser.add_argument("--bootstrap-replicates", type=int, default=1000)
+    parser.add_argument("--pilot-samples", type=int, default=32)
     parser.add_argument("--verify-reproducibility", action="store_true")
     args = parser.parse_args()
     if not (
         32 <= args.trials <= 2048
         and 0 <= args.seed < 2**64
-        and all(1 <= n <= 4096 for n in args.samples)
+        and all(16 <= n <= 4096 for n in args.samples)
         and all(1 <= g <= 64 for g in args.cache_grids)
         and 128 <= args.reference_grid <= 2048
         and args.reference_grid & (args.reference_grid - 1) == 0
         and 5 <= args.timing_blocks <= 31
         and 100 <= args.bootstrap_replicates <= 2000
+        and 4 <= args.pilot_samples <= 256
         and args.trials * sum(args.samples) * len(args.cache_grids) * 6 <= 100_000_000
     ):
         parser.error("configuration outside bounded experiment limits")
@@ -605,6 +608,18 @@ def main():
             str(args.timing_blocks),
         ]
         run(command)
+        pilot_command = [
+            str(work / "estimator"),
+            "--pilot",
+            str(work),
+            str(args.trials),
+            str(args.seed),
+            ",".join(map(str, args.samples)),
+            ",".join(map(str, args.cache_grids)),
+            str(args.pilot_samples),
+            str(args.timing_blocks),
+        ]
+        run(pilot_command)
         report = summarize(work, config)
         # Scientific red/green controls: these check inference risks rather
         # than mirroring implementation details or demanding random CI passes.
@@ -620,11 +635,16 @@ def main():
         write_json(work / "results.json", report)
         plot(work, report)
         review(work, report)
+        lighting_pilot_report.build(work, config, report, analytic_moments)
+        numerical_files = [
+            "references.csv",
+            "caches.csv",
+            "trials.csv",
+            "maps.csv",
+            "pilot_trials.csv",
+        ]
         numerical_digest = hashlib.sha256(
-            b"".join(
-                (work / n).read_bytes()
-                for n in ["references.csv", "caches.csv", "trials.csv", "maps.csv"]
-            )
+            b"".join((work / n).read_bytes() for n in numerical_files)
         ).hexdigest()
         reproduction = "not requested"
         if args.verify_reproducibility:
@@ -633,11 +653,11 @@ def main():
             repeated_command = command.copy()
             repeated_command[1] = str(replay)
             run(repeated_command)
+            repeated_pilot = pilot_command.copy()
+            repeated_pilot[2] = str(replay)
+            run(repeated_pilot)
             replay_digest = hashlib.sha256(
-                b"".join(
-                    (replay / n).read_bytes()
-                    for n in ["references.csv", "caches.csv", "trials.csv", "maps.csv"]
-                )
+                b"".join((replay / n).read_bytes() for n in numerical_files)
             ).hexdigest()
             assert replay_digest == numerical_digest, (
                 "numerical replay differs with identical inputs"
@@ -648,8 +668,20 @@ def main():
             schema=1,
             config=config,
             numerical_sha256=numerical_digest,
+            baseline_numerical_sha256=hashlib.sha256(
+                b"".join(
+                    (work / n).read_bytes()
+                    for n in ["references.csv", "caches.csv", "trials.csv", "maps.csv"]
+                )
+            ).hexdigest(),
             source_sha256={
-                str(p.relative_to(ROOT)): digest(p) for p in [SOURCE, Path(__file__)]
+                str(p.relative_to(ROOT)): digest(p)
+                for p in [
+                    SOURCE,
+                    Path(__file__),
+                    ROOT / "scripts/lighting_estimator_pilot.rs",
+                    ROOT / "scripts/lighting_pilot_report.py",
+                ]
             },
             provenance=dict(
                 rustc=compiler,

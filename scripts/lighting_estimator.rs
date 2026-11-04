@@ -2,6 +2,8 @@
 use std::{fmt::Write as _, fs, hint::black_box, path::Path, time::Instant};
 
 type Rgb = [f64; 3];
+#[path = "lighting_estimator_pilot.rs"]
+mod pilot;
 const CASES: [&str; 6] = [
     "smooth_polynomial",
     "missed_emitter",
@@ -121,11 +123,13 @@ struct Cache {
     side: usize,
     values: Vec<Rgb>,
     integral: Rgb,
+    constant: bool,
 }
 impl Cache {
     fn new(case: usize, side: usize) -> Self {
         let mut values = Vec::with_capacity(side * side);
         let mut total = [0.0; 3];
+        let mut constant = true;
         for y in 0..side {
             for x in 0..side {
                 let value = cache_source(
@@ -133,6 +137,9 @@ impl Cache {
                     (x as f64 + 0.5) / side as f64,
                     (y as f64 + 0.5) / side as f64,
                 );
+                if let Some(first) = values.first() {
+                    constant &= *first == value;
+                }
                 values.push(value);
                 total = add(total, value);
             }
@@ -141,6 +148,7 @@ impl Cache {
             side,
             values,
             integral: scale(total, 1.0 / (side * side) as f64),
+            constant,
         }
     }
     fn at(&self, p: [f64; 2]) -> Rgb {
@@ -314,7 +322,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("--verify") {
         verify();
+        pilot::verify();
         return Ok(());
+    }
+    if args.get(1).map(String::as_str) == Some("--pilot") {
+        return pilot::run(&args[2..]);
     }
     if args.len() != 8 {
         return Err(
