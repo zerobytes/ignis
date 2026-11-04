@@ -84,4 +84,43 @@ Os verificadores cobrem documento e dimensões, fonte nativa idêntica, observad
 
 Capturas, fontes de comparação, relatório e galeria usam caminhos estáveis em `artifacts/terrain/`. A variante diagnóstica permanece somente por sua utilidade na investigação. A fonte atual do jogo é `world/sphere.planet.json` com seu binário nativo correspondente; os dois candidatos não são builds de aplicativo diferentes.
 
-O próximo passo recomendado é corrigir a distribuição de detalhe no chão e melhorar os perfis das cristas antes de ampliar o relevo para o planeta inteiro. A estrutura é examinável agora; a aproximação artística ao estilo desejado ainda precisa da avaliação do usuário.
+O próximo passo recomendado é trabalhar a riqueza das formas e a distribuição de detalhe no chão antes de ampliar o relevo para o planeta inteiro. A estrutura é examinável agora; a aproximação artística ao estilo desejado ainda precisa da avaliação do usuário. A revisão abaixo detalha por que corrigir apenas o LOD não resolve a qualidade.
+
+## Revisão de qualidade: referência World Creator e imagem do usuário
+
+Em seguida o usuário considerou o protótipo melhor, mas cobrou qualidade de terreno, apontou World Creator e enviou uma imagem de ambiente costeiro. Isso não constitui aceite da topografia final. O diagnóstico anterior focou excessivamente no funcionamento do planeta e no LOD; a qualidade das formas deve ser um critério próprio de continuidade.
+
+### Por que o estudo ficou artificial
+
+1. **Autoria simplificada.** A receita usa três curvas principais, perfis constantes ao longo de cada curva, poucos picos adicionais e remapeamento de altitude para os patamares. O ruído tem período de 1.024 m, duas oitavas e amplitude de 7 m. Não há uma composição trabalhada de cristas secundárias, ravinas, ombros, recortes e fragmentação das bordas em escalas intermediárias. O número de nós, por si só, não mede qualidade.
+2. **Ferramentas existentes subutilizadas.** `src/terrain/surface.rs` já inclui `Ridge`, com `crest_wander`, `folds_meters` e perfil de encosta, mas `terrain.py` não o usa. Portanto não é correto atribuir toda a simplicidade a ferramentas ausentes. Antes de ampliar a API, precisamos explorar e avaliar esse operador e a composição de ramificações/máscaras com autoria própria.
+3. **Formação do relevo incompleta.** O enum Surface1 atual não oferece erosão hidráulica/térmica, transporte de sedimentos ou acumulação de fluxo. Channel corta um leito ao longo de uma linha autorada; não calcula uma rede de drenagem. Ruído e um canal não substituem esses processos. Eles são candidatos a ferramentas novas, com intensidade e máscaras controláveis para a direção estilizada de Land of Survivors.
+4. **Amostragem limitada.** O orçamento e os bounds globais dificultam representar detalhe localizado no chão. Corrigir isso melhora a representação da fonte; não inventa as formas que faltam nela.
+5. **Apresentação parcial.** O estudo usa cor/material uniformes e não construiu água, rocha/solo em camadas ou vegetação. Esses componentes contribuem para o resultado final da referência. Ainda assim, o relevo precisa ser convincente sob material neutro.
+
+Essas conclusões são sobre o caminho usado pelo protótipo. Não são uma auditoria de todos os recursos da engine nem prova de que nenhum outro subsistema tenha ferramentas semelhantes.
+
+### O que a imagem acrescenta à meta
+
+A imagem enviada mostra massas de terra irregulares, bordas rochosas fragmentadas, bancos rasos, canais e depressões submersas. Vegetação, areia, rocha exposta, sombras e água com diferenças visuais de profundidade reforçam a leitura. A escala física, a autoria, o software e os algoritmos usados nessa imagem não foram fornecidos; não podem ser deduzidos da captura.
+
+A referência passa a orientar variedade de formas e transições entre terreno e água. Não define um novo mapa a copiar, não troca automaticamente o vale atual por uma ilha e não altera o escopo de construir somente o mundo. Para avaliar a contribuição da geometria, o próximo estudo precisa mostrar tanto uma vista neutra quanto uma apresentação de superfície, nas mesmas câmeras.
+
+### Comparação com World Creator
+
+Na [lista oficial de recursos](https://www.bitethebytes.com/products/world-creator/features), o fabricante descreve erosão e sedimentos, rios, máscaras por altura/inclinação/curvatura, escultura, materiais em camadas e distribuição de objetos. Esse conjunto reúne formação, controle artístico e apresentação. A [página do produto](https://www.bitethebytes.com/products/world-creator) também anuncia geração/iteração acelerada por GPU. São capacidades anunciadas, não benchmarks reproduzidos nesta máquina nem uma identificação das técnicas da imagem do usuário.
+
+O contraste útil é o processo completo de autoria. Mais polígonos ou executar a mesma receita na GPU não acrescentaria por si só a organização que falta às formas atuais. O tamanho terrestre da esfera também não impede um trecho local detalhado; exige residência e detalhe regionais. Não precisamos simular toda a superfície terrestre com resolução de chão para trabalhar uma área de referência.
+
+### Próximo incremento e critérios de qualidade
+
+| Frente | Trabalho concreto | Evidência necessária |
+| --- | --- | --- |
+| Formas e direção artística | Refinar uma área pequena no planeta existente: composição principal assimétrica, ramificações secundárias, ombros, cortes e transições locais. Explorar Ridge e composição existentes antes de declarar novas APIs necessárias. | Mesmas vistas aérea, oblíqua e de chão; material neutro; silhuetas e cortes legíveis, sem corredores de perfil uniforme nem degraus regulares em toda a encosta. |
+| Ferramentas de formação | Projetar um estágio regional de erosão/relaxamento e drenagem, preservando áreas de gameplay por máscaras; permitir variantes com e sem processamento. | Comparação da mesma fonte antes/depois, parâmetros explícitos, controles de intensidade, ausência de costuras e nenhuma alegação de erosão baseada apenas em ruído. |
+| Representação no runtime | Bounds locais e refinamento conforme o detalhe físico da fonte, sem ampliar orçamento às cegas. | Mesma geometria de referência e mesmas poses, orçamento/tempo/memória registrados, transições/costuras e chão verificados; flag de qualidade visível. |
+| Superfície e leitura | Integrar máscaras coerentes de rocha/solo/sedimento; avaliar água rasa quando uma região costeira entrar na autoria. | Comparação neutro/superfície na mesma câmera, sem usar vegetação ou névoa para encobrir falhas de relevo. |
+
+Um estágio de erosão exige vizinhança e estado. A arquitetura recomendada é gerar/compilar dados regionais durante a autoria, com bordas de trabalho, cache por conteúdo e leitura pelo runtime; não recalcular uma simulação completa a cada consulta de altura ou frame. Esta é uma proposta para investigação, ainda não uma ferramenta implementada. A escolha de algoritmo, resolução, custo e integração nativa precisa ser medida antes de prometer execução em tempo real.
+
+O marco seguinte deve demonstrar qualidade em uma área pequena antes de expandir continentes. Validação de colisão e persistência continua necessária, mas aprovação visual das formas é um requisito separado. Nenhuma ferramenta externa foi comprada/instalada, nenhum asset importado e o mundo publicado continua o mesmo protótipo durante esta revisão.
