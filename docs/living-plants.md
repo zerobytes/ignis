@@ -271,3 +271,28 @@ identity or arbitrary biological accuracy is not promised by these requirements.
 
 No implementation or biological calibration is claimed by accepting this design
 document. Runtime work and artistic acceptance require their own evidence.
+
+## Implementation checkpoint: native growth grammar
+
+`src/botany/growth.rs` now supplies a small bounded native grammar, with a
+serialized definition and individual production state. Advancing time creates
+new node/branch/leaf IDs, evaluates their expansion and invokes the actual
+botanical mesh compiler before committing the candidate. Failed/reversed
+advances leave the individual unchanged. Removed sites suppress their branch
+and leaves without renumbering surviving nodes. Each production site records
+its birth, preventing a newly created branch from producing an older cohort.
+
+This specimen has configurable node interval/count, internode length, seed and
+schedule. Its stem diameter, branch form and leaf form are initial authored
+constants, not yet a general species grammar. Dead individuals currently refuse
+further growth; death chronology and dead-wood evolution remain unimplemented.
+The production state still needs strict validation/migration before admission
+through external commands. These Rust types are not yet a published file format.
+
+Tests compile actual growing meshes, compare direct versus partitioned time
+advances, serialize/restore a pruned individual, check atomic rewind rejection,
+and exercise two reproductive cohorts without reviving a harvested fruit.
+These are CPU/native compiler tests, not visual/runtime acceptance. Scene,
+portable-save/replay, MCP/editor operations, automatic gameplay ticking,
+flower/fruit geometry and exactly-once world detachments remain open integration
+work. No current Scene/source version or existing asset changed in this increment.

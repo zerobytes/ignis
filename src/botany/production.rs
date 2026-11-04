@@ -13,6 +13,8 @@ pub struct FruitId {
 pub struct Production {
     pub plant: Individual,
     pub sites: BTreeMap<String, u16>,
+    #[serde(default)]
+    pub site_births: BTreeMap<String, u64>,
     pub removed_sites: BTreeSet<String>,
     pub harvested: BTreeSet<FruitId>,
 }
@@ -21,6 +23,16 @@ impl Production {
         if self.removed_sites.contains(&id.site)
             || self.harvested.contains(id)
             || id.slot >= *self.sites.get(&id.site)?
+        {
+            return None;
+        }
+        let start = schedule.start(id.cohort)?;
+        if start
+            < self
+                .site_births
+                .get(&id.site)
+                .copied()
+                .unwrap_or(self.plant.born)
         {
             return None;
         }
@@ -126,6 +138,7 @@ mod tests {
                 harvested: BTreeSet::new(),
             },
             sites: BTreeMap::from([("a".into(), 2), ("b".into(), 1)]),
+            site_births: BTreeMap::new(),
             removed_sites: BTreeSet::new(),
             harvested: BTreeSet::new(),
         };

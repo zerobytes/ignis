@@ -36,7 +36,7 @@ impl Schedule {
             .ok_or("duration overflow")?;
         Ok(())
     }
-    fn start(&self, cohort: u64) -> Option<u64> {
+    pub(crate) fn start(&self, cohort: u64) -> Option<u64> {
         cohort.checked_mul(self.period)?.checked_add(self.phase)
     }
     pub fn stage(&self, plant: &Individual, cohort: u64) -> Option<Stage> {
