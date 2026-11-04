@@ -10,7 +10,7 @@ No complete GI architecture has been selected or shown superior to Lumen.
 |---|---|---|---|
 | H1: predictable residual reduces expensive estimation work | Plain MC, frozen cache, corrected cache, independent pilots, shared weights | CPU analytic/dynamic laboratories; native static GPU AO gallery | Matched RGB one-bounce transport, changed lighting/geometry; include construction/memory and prediction cost |
 | H2: sample distribution reduces variance without prediction | IID vs randomized stratification at4/16/32/64 queries | Native GPU sampling experiment in this unit | Thin blockers/emissive features, camera motion, equal-time Pareto comparison; cannot infer all high-dimensional path sampling |
-| H3: sparse representation amortizes indirect transport over receivers | Sparse probes/hash, angular incident cache, split distance intervals/cascades | Literature only; no native implementation or measured comparison | Shared one-bounce RGB oracle, identical materials/tracing; measure leaks, density, lookup/build/update/memory |
+| H3: sparse representation amortizes indirect transport over receivers | Sparse probes/hash, angular incident cache, split distance intervals/cascades | Native one-bounce RGB baseline: two probe grids and visibility-gated interpolation; cascades/hash remain unimplemented | Match local error at thin blockers, build/update costs and directional coverage before adopting a representation |
 | H4: spatial/temporal reservoir reuse improves path/light selection | Independent sampling vs ReSTIR/GRIS-compatible reuse | Literature only; none of the TTL policies is ReSTIR | Many lights/emissive transport, valid PDFs/mappings, disocclusion, duplication and reservoir traffic |
 | H5: learned representation beats explicit caches | Small explicit field vs neural radiance/incident predictor | Literature only; no native training/inference | Same target/updates/device, include training/adaptation/memory, unbiased correction vs biased termination |
 | H6: reconstruction buys quality with fewer shaded receivers | Full resolution vs guided spatial/temporal reconstruction | Not implemented in this laboratory | Silhouettes, thin geometry, motion, history rejection and filter cost |
@@ -128,3 +128,14 @@ collapsible_if lint isolated passed. A temporary recheck failure in concurrent
 botany edits was resolved by that work's own ongoing changes before the final
 retry; no botany file was edited or staged by this unit. No all-workspace test
 success is claimed, and no source lint allowance was added.
+
+## H3 checkpoint
+
+The [one-bounce RGB experiment](lighting-one-bounce.md) supplies a shared
+sun-lit secondary-surface transport target and finite high-sample reference.
+Direct H2 sampling is compared with two simple six-axis probe grids, with and
+without receiver-to-probe visibility gating. This is the first sparse-spatial
+comparison in this program; it is not an implementation of Split RC, DDGI,
+SHaRC or ReSTIR, and the map above must not treat those architectures as tested.
+The native direct raster remains unchanged; the extra bounce is an explicit
+headless diagnostic composite, not a production renderer feature.
