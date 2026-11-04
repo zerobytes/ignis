@@ -44,8 +44,9 @@ export class IgnisPreview{
   const adapter=await navigator.gpu.requestAdapter({powerPreference:'low-power'});
   if(!adapter)throw new Error('WEBGPU_UNAVAILABLE');
   const device=await adapter.requestDevice();
-  const host=new IgnisPreview(canvas,device,onError);
+  let host;
   try{
+   host=new IgnisPreview(canvas,device,onError);
    const bytes=await verified(new URL('data/ignis.wgsl',import.meta.url),manifest.shader_sha256);
    const shader=device.createShaderModule({label:'Ignis native scene shader',code:new TextDecoder().decode(bytes)});
    const compilation=await shader.getCompilationInfo();const errors=compilation.messages.filter(m=>m.type==='error');
@@ -54,7 +55,7 @@ export class IgnisPreview{
    host.context.configure({device,format,viewFormats:[host.format],alphaMode:'opaque'});
    host.pipeline=await device.createRenderPipelineAsync({label:'Ignis material preview',layout:'auto',vertex:{module:shader,entryPoint:'vs_main',buffers:[{arrayStride:64,attributes:[{shaderLocation:0,offset:0,format:'float32x3'},{shaderLocation:1,offset:12,format:'float32x3'},{shaderLocation:2,offset:24,format:'float32x3'},{shaderLocation:3,offset:36,format:'float32x3'},{shaderLocation:4,offset:48,format:'uint32'},{shaderLocation:5,offset:52,format:'float32x3'}]}]},fragment:{module:shader,entryPoint:'fs_main',targets:[{format:host.format}]},primitive:{topology:'triangle-list',cullMode:'none'},depthStencil:{format:'depth24plus',depthWriteEnabled:true,depthCompare:'less'}});
    return host;
-  }catch(error){host.destroy();throw error;}
+  }catch(error){if(host)host.destroy();else device.destroy();throw error;}
  }
  constructor(canvas,device,onError){
   this.canvas=canvas;this.device=device;this.context=canvas.getContext('webgpu');if(!this.context)throw new Error('WEBGPU_UNAVAILABLE');
@@ -88,7 +89,7 @@ export class IgnisPreview{
   this.resources.forEach(r=>r.destroy());this.resources=resources;this.group=group;this.asset=asset.id;this.plane=asset.preview.plane;
   this.setShape(this.shape);this.invalidate();
  }
- setShape(shape){this.shape=shape;if(!this.group)return;const mesh=geometry(shape,this.plane);const vb=this.buffer(mesh.vertices,GPUBufferUsage.VERTEX),ib=this.buffer(mesh.indices,GPUBufferUsage.INDEX);this.vertex?.destroy();this.index?.destroy();this.vertex=vb;this.index=ib;this.count=mesh.indices.length;this.invalidate();}
+ setShape(shape){this.shape=shape;if(!this.group)return;const key=`${shape}:${this.plane}`;if(this.geometryKey===key){this.invalidate();return;}const mesh=geometry(shape,this.plane);const vb=this.buffer(mesh.vertices,GPUBufferUsage.VERTEX),ib=this.buffer(mesh.indices,GPUBufferUsage.INDEX);this.vertex?.destroy();this.index?.destroy();this.vertex=vb;this.index=ib;this.count=mesh.indices.length;this.geometryKey=key;this.invalidate();}
  reset(){this.yaw=.35;this.pitch=.12;this.distance=3.6;this.invalidate();}
  setLight(value){this.light=value;this.invalidate();}
  invalidate(){if(!this.frame&&!this.disposed&&this.visible&&!document.hidden)this.frame=requestAnimationFrame(()=>{this.frame=0;try{this.draw();}catch(error){this.destroy();this.onError(error);}});}
