@@ -20,7 +20,7 @@ def main():
     removed = {k: os.environ.pop(k) for k in ['IGNIS_HORIZON_FIELD', 'IGNIS_HORIZON_PROXIES'] if k in os.environ}
     try:
         c = Client(args.binary.resolve(), window=True, detached=True, log_path=out / 'window.log',
-                   startup_args=('--scene', str(scene.relative_to(ROOT))))
+                   startup_args=('--editor', '--scene', str(scene.relative_to(ROOT))))
     finally:
         os.environ.update(removed)
     try:
