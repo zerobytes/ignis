@@ -28,3 +28,19 @@ opens older fronds further and leaves the proximal 28% free of leaflets. Leaflet
 width is increased. Native full/structure captures passed with the same organ
 and mesh counts; total bounds now reach 3.14 m high rather than 5.38 m.
 Human artistic acceptance is still pending.
+
+## Correction: retain cane height and bend the proximal frond
+
+User clarified that cane height was acceptable; shortening was the wrong fix.
+Restore the original seeded height range and radius. Add mild continuous cane
+curvature and move frond curvature toward its base (1.45 to 0.55 multiplier,
+previously 0.22 to 1.78). Near-upright emerging fronds now bend immediately into
+an outward arch, rather than keeping a straight petiole and curling only at the
+leafy tip. Heights remain variable. Sheath attachment remains the existing
+separate closed organ connection; this recipe does not introduce a new nested
+leaf-sheath surface model.
+
+Native full, bare-structure and isolated-cane captures passed in stable paths.
+The isolated image is palmeirinha-isolated.png. Counts remain unchanged; current
+height 4.94 m. The two earlier revisions were rejected; no artistic approval is
+inferred from captures or compilation.

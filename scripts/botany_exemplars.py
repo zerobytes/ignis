@@ -35,15 +35,15 @@ def radial(angle,h):return (math.cos(angle),h,math.sin(angle))
 def palm(seed=42):
     x=Builder('Palmeirinha · touceira pinada',seed)
     for stem in range(12):
-        a=stem*2.4;h=.18+.50*b.uniform(x.seed,str(stem),'cane_height')**.85
-        root=x.axis(f'caule{stem}',None,0.,radial(a,4.5),h,.024,position=((.22+.025*math.sqrt(stem))*math.cos(a),0.,(.22+.025*math.sqrt(stem))*math.sin(a)),young=3e8)
+        a=stem*2.4;h=.55+1.45*b.uniform(x.seed,str(stem),'cane_height')**.85
+        root=x.axis(f'caule{stem}',None,0.,radial(a,4.5),h,.036,position=((.22+.025*math.sqrt(stem))*math.cos(a),0.,(.22+.025*math.sqrt(stem))*math.sin(a)),bend=-.18,normal=b.UP,young=3e8)
         for j in range(7):
-            az=j*2.4+stem+.25*b.uniform(x.seed,f'{root}/{j}','frond_azimuth');u=.95-.075*j
+            az=j*2.4+stem+.25*b.uniform(x.seed,f'{root}/{j}','frond_azimuth');u=.95-.045*j
             length=2.0*(.84+.30*b.uniform(x.seed,f'{root}/{j}','frond_length'))
             # Inner fronds rise; outer fronds open and recurve at the tip.
-            elevation=math.radians(76.-5.*j)
-            turn=math.radians(72.+7.*j+6.*b.uniform(x.seed,f'{root}/{j}','frond_arch'))
-            curvature=b.Field(-turn/length,drivers=(('u',b.Curve(((0.,.22),(1.,1.78)))),))
+            elevation=math.radians(83.-2.*j)
+            turn=math.radians(100.+6.*j+6.*b.uniform(x.seed,f'{root}/{j}','frond_arch'))
+            curvature=b.Field(-turn/length,drivers=(('u',b.Curve(((0.,1.45),(1.,.55)))),))
             frond=x.axis(f'{root}/raquis{j}',root,u,radial(az,math.tan(elevation)),length,.0045,bend=curvature,normal=b.UP,young=8e7)
             x.organs[-1]['connection']='sheath'
             for k in range(24):
