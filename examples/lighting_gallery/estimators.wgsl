@@ -1,7 +1,7 @@
 // Laboratory AO only: cosine measure, 4m visibility, exact 4x4 cache integral.
 struct Params { inv:mat4x4<f32>, eye:vec4<f32>, dims:vec4<u32>, light:vec4<f32> }
 struct Box { lo:vec4<f32>, hi:vec4<f32>, color:vec4<f32> }
-struct Receiver { p:vec4<f32>, n:vec4<f32>, color:vec4<f32>, stats:vec4<f32>, watch:vec4<f32>, values:vec4<f32>, cells:array<f32,16> }
+struct Receiver { p:vec4<f32>, n:vec3<f32>, mask:u32, color:vec4<f32>, stats:vec4<f32>, watch:vec4<f32>, values:vec4<f32>, cells:array<f32,16> }
 @group(0) @binding(0) var<uniform> u:Params;
 @group(0) @binding(1) var<storage,read> boxes:array<Box>;
 @group(0) @binding(2) var<storage,read_write> r:array<Receiver>;
@@ -21,7 +21,22 @@ fn visible(i:u32,v:vec2<f32>)->f32 {
  let t=normalize(cross(select(vec3(0.,1.,0.),vec3(1.,0.,0.),abs(n.y)>.9),n));
  let d=t*(sqrt(v.x)*cos(6.283185307*v.y))+cross(n,t)*(sqrt(v.x)*sin(6.283185307*v.y))+n*sqrt(1.-v.x);
  let p=r[i].p.xyz+n*.002;
- for(var j=0u;j<u.dims.z;j++) { let h=intersect(p,d,boxes[j]);if h.y>=max(h.x,0.) && h.x<4. && h.y>.001 {return 0.;} }
+ if u.light.w>.5 && u.light.w<1.5 {
+  var mask=r[i].mask;
+  loop {
+   if mask==0u { break; }
+   let j=firstTrailingBit(mask);mask=mask&(mask-1u);
+   let h=intersect(p,d,boxes[j]);
+   if h.y>=max(h.x,0.) && h.x<4. && h.y>.001 { return 0.; }
+  }
+ } else {
+  for(var j=0u;j<u.dims.z;j++) {
+   // Negative control only: dropping the offscreen blocker must change AO.
+   if u.light.w>1.5 && j==2u { continue; }
+   let h=intersect(p,d,boxes[j]);
+   if h.y>=max(h.x,0.) && h.x<4. && h.y>.001 { return 0.; }
+  }
+ }
  return 1.;
 }
 fn g(i:u32,v:vec2<f32>)->f32 { let c=min(vec2<u32>(v*4.),vec2(3u));return r[i].cells[c.y*4u+c.x]; }
@@ -39,7 +54,19 @@ fn learn(i:u32,seed:ptr<function,u32>)->f32 {
  r[i].p=vec4(0.);if nearest==1e20{return;}
  let p=u.eye.xyz+nearest*d;let b=boxes[obj];let center=(b.lo.xyz+b.hi.xyz)*.5;let local=(p-center)/((b.hi.xyz-b.lo.xyz)*.5);
  var n=vec3(0.,0.,sign(local.z));if abs(local.x)>abs(local.y) && abs(local.x)>abs(local.z){n=vec3(sign(local.x),0.,0.);}else if abs(local.y)>abs(local.z){n=vec3(0.,sign(local.y),0.);}
- r[i].p=vec4(p,1.);r[i].n=vec4(n,0.);r[i].color=b.color;r[i].stats=vec4(0.);r[i].values=vec4(0.);
+ r[i].p=vec4(p,f32(obj+1u));r[i].n=n;
+ r[i].mask=0xffffffffu;
+ if u.light.w>.5 {
+  var mask=0u;let origin=p+n*.002;
+  for(var j=0u;j<u.dims.z;j++) {
+   let b=boxes[j];let nearest=clamp(origin,b.lo.xyz,b.hi.xyz);
+   let reach=dot(n,(b.lo.xyz+b.hi.xyz)*.5-origin)+dot(abs(n),(b.hi.xyz-b.lo.xyz)*.5);
+   // Conservative numerical margin; never cull by camera visibility here.
+   if distance(origin,nearest)<=4.0001 && reach>=-.0001 {mask=mask|(1u<<j);}
+  }
+  r[i].mask=mask;
+ }
+r[i].color=b.color;r[i].stats=vec4(0.);r[i].values=vec4(0.);
  if u.dims.w>=2u && u.dims.w<=8u {
  var sum=0.;for(var j=0u;j<16u;j++){let v=(vec2(f32(j%4u),f32(j/4u))+.5)/4.;let f=visible(i,v);r[i].cells[j]=f;sum+=f;}r[i].stats.x=sum/16.;
  }

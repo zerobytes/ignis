@@ -62,7 +62,16 @@ fn read(r: &Renderer, b: &wgpu::Buffer, size: u64) -> Result<Vec<u8>> {
     Ok(v)
 }
 fn main() -> Result<()> {
-    let dir = "artifacts/lighting-gallery";
+    let audit = std::env::args().any(|a| a == "--visibility-audit");
+    let guard = std::env::args().any(|a| a == "--offscreen-guard");
+    ensure!(!guard || audit, "Offscreen guard requires visibility audit");
+    let dir = if guard {
+        "artifacts/lighting-visibility/guard"
+    } else if audit {
+        "artifacts/lighting-visibility/gallery"
+    } else {
+        "artifacts/lighting-gallery"
+    };
     fs::create_dir_all(dir)?;
     let mut scene = RoomRecipe::default().generate()?;
     let prototype = scene.entities[0].clone();
@@ -86,19 +95,34 @@ fn main() -> Result<()> {
         bias: 0.0005,
         receiver_plane_bias: false,
     });
-    let objects = [
-        ([0., -0.2, 0.], [11., 0.4, 10.], [0.65, 0.64, 0.59]),
-        ([0., 2., -4.], [11., 4., 0.3], [0.66, 0.65, 0.59]),
-        ([-5., 2., 0.], [0.3, 4., 8.], [0.48, 0.22, 0.14]),
-        ([-2.3, 1.6, -1.4], [1., 3.2, 1.], [0.7, 0.58, 0.35]),
-        ([1.2, 1.6, -1.4], [1., 3.2, 1.], [0.7, 0.58, 0.35]),
-        ([-0.55, 3., -1.4], [4.5, 0.5, 1.2], [0.7, 0.58, 0.35]),
-        ([-0.5, 0.4, 1.], [3.8, 0.8, 2.2], [0.55, 0.54, 0.5]),
-        ([-1.1, 1.15, 1.], [1.2, 0.7, 1.2], [0.08, 0.25, 0.55]),
-        ([2.7, 0.3, 1.5], [1.6, 0.6, 1.8], [0.6, 0.23, 0.09]),
-        ([2.7, 0.75, 0.9], [1.6, 0.3, 0.6], [0.6, 0.23, 0.09]),
-        ([-3.5, 0.6, 2.3], [0.7, 1.2, 0.7], [0.18, 0.42, 0.18]),
-    ];
+    if guard {
+        scene.camera = Camera {
+            position: [0., 1.2, 0.],
+            target: [0., 0.5, -3.],
+            fov_degrees: 60.,
+        };
+    }
+    let objects = if guard {
+        vec![
+            ([0., -0.2, -2.], [8., 0.4, 8.], [0.65, 0.64, 0.59]),
+            ([0., 1., -5.], [8., 2., 0.2], [0.48, 0.22, 0.14]),
+            ([0., 1., 0.6], [3., 2., 0.2], [0.18, 0.42, 0.18]),
+        ]
+    } else {
+        vec![
+            ([0., -0.2, 0.], [11., 0.4, 10.], [0.65, 0.64, 0.59]),
+            ([0., 2., -4.], [11., 4., 0.3], [0.66, 0.65, 0.59]),
+            ([-5., 2., 0.], [0.3, 4., 8.], [0.48, 0.22, 0.14]),
+            ([-2.3, 1.6, -1.4], [1., 3.2, 1.], [0.7, 0.58, 0.35]),
+            ([1.2, 1.6, -1.4], [1., 3.2, 1.], [0.7, 0.58, 0.35]),
+            ([-0.55, 3., -1.4], [4.5, 0.5, 1.2], [0.7, 0.58, 0.35]),
+            ([-0.5, 0.4, 1.], [3.8, 0.8, 2.2], [0.55, 0.54, 0.5]),
+            ([-1.1, 1.15, 1.], [1.2, 0.7, 1.2], [0.08, 0.25, 0.55]),
+            ([2.7, 0.3, 1.5], [1.6, 0.6, 1.8], [0.6, 0.23, 0.09]),
+            ([2.7, 0.75, 0.9], [1.6, 0.3, 0.6], [0.6, 0.23, 0.09]),
+            ([-3.5, 0.6, 2.3], [0.7, 1.2, 0.7], [0.18, 0.42, 0.18]),
+        ]
+    };
     let mut boxes = Vec::new();
     for (j, (p, s, c)) in objects.into_iter().enumerate() {
         let mut e = prototype.clone();
@@ -174,7 +198,12 @@ fn main() -> Result<()> {
         inv: ignis::picking::view_projection(&frame.camera, W, H)
             .inverse()
             .to_cols_array_2d(),
-        eye: [8., 6.3, 10., 1.],
+        eye: [
+            frame.camera.position[0],
+            frame.camera.position[1],
+            frame.camera.position[2],
+            1.,
+        ],
         dims: [W, H, boxes.len() as u32, 0],
         light: [frame.light.ambient, 0., 0., 0.],
     };
@@ -197,7 +226,7 @@ fn main() -> Result<()> {
         &r,
         "receivers and angular cache",
         receiver_bytes,
-        wgpu::BufferUsages::STORAGE,
+        wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
     );
     let estimate_bytes = u64::from(W) * u64::from(H) * 4;
     let estimates = buffer(
@@ -364,8 +393,13 @@ fn main() -> Result<()> {
         "watched",
         "reference512",
     ];
+    ensure!(
+        boxes.len() <= 32,
+        "Diagnostic influence mask supports at most32 boxes"
+    );
     let mut rows = vec![];
     for round in 0..2 {
+        params.light[3] = if audit { 1. } else { 0. };
         let mut cold = [(0., 0.); 10];
         for mode in 1..10 {
             params.dims[3] = mode;
@@ -390,51 +424,64 @@ fn main() -> Result<()> {
         for index in 0..64 {
             for offset in 0..10 {
                 let mode = (index + if round == 0 { offset } else { 9 - offset }) % 10;
-                let cold = cold[mode as usize];
-                params.dims[3] = mode;
-                let t = Instant::now();
-                let mut f = engine.render_frame();
-                f.suppress_diagnostic_grid = true;
-                let prepare = elapsed(t);
-                let t = Instant::now();
-                r.draw(&f, &nv, W, H)?;
-                let native_cpu = elapsed(t);
-                let native_gpu = r.read_gpu_timing()?.unwrap()["sum_ms"].as_f64().unwrap();
-                params.light[1] = index as f32;
-                let t = Instant::now();
-                r.queue
-                    .write_buffer(&uniform, 0, bytemuck::bytes_of(&params));
-                let upload = elapsed(t);
-                let (cpu, gpu) = if mode == 0 {
-                    (0., 0.)
-                } else {
-                    compute(&r, &shade, &group, &queries, &resolve, &timing)?
-                };
-                rows.push(json!({"round":round,"mode":mode,"name":names[mode as usize],"frame":index,"prepare_cpu_ms":prepare,"raster_cpu_ms":native_cpu,"raster_gpu_ms":native_gpu,"compute_cpu_ms":cpu+if mode==0{0.}else{upload},"compute_gpu_ms":gpu,"setup_cpu_ms":cold.0,"setup_gpu_ms":cold.1}));
-                if round == 0 && (index == 15 || (mode == 0 && index == 0)) {
-                    let image = if mode == 0 {
-                        r.read_texture_png(&native, W, H)?
+                for cull in 0..if audit { 2 } else { 1 } {
+                    let cull = if audit && (index + offset) % 2 == 1 {
+                        1 - cull
                     } else {
-                        r.read_texture_png(&target, W, H)?
+                        cull
                     };
-                    fs::write(
-                        format!("{dir}/{mode:02}-{}.png", names[mode as usize]),
-                        image,
-                    )?;
-                    if mode != 0 {
-                        let mut e = r.device.create_command_encoder(&Default::default());
-                        e.copy_buffer_to_buffer(&estimates, 0, &raw, 0, estimate_bytes);
-                        r.queue.submit([e.finish()]);
-                        let data = read(&r, &raw, estimate_bytes)?;
-                        ensure!(
-                            data.chunks_exact(4)
-                                .all(|x| f32::from_le_bytes(x.try_into().unwrap()).is_finite()),
-                            "Nonfinite estimate"
-                        );
+                    params.light[3] = cull as f32;
+                    let cold = cold[mode as usize];
+                    params.dims[3] = mode;
+                    let t = Instant::now();
+                    let mut f = engine.render_frame();
+                    f.suppress_diagnostic_grid = true;
+                    let prepare = elapsed(t);
+                    let t = Instant::now();
+                    r.draw(&f, &nv, W, H)?;
+                    let native_cpu = elapsed(t);
+                    let native_gpu = r.read_gpu_timing()?.unwrap()["sum_ms"].as_f64().unwrap();
+                    params.light[1] = index as f32;
+                    let t = Instant::now();
+                    r.queue
+                        .write_buffer(&uniform, 0, bytemuck::bytes_of(&params));
+                    let upload = elapsed(t);
+                    let (cpu, gpu) = if mode == 0 {
+                        (0., 0.)
+                    } else {
+                        compute(&r, &shade, &group, &queries, &resolve, &timing)?
+                    };
+                    rows.push(json!({"round":round,"culling":cull,"mode":mode,"name":names[mode as usize],"frame":index,"prepare_cpu_ms":prepare,"raster_cpu_ms":native_cpu,"raster_gpu_ms":native_gpu,"compute_cpu_ms":cpu+if mode==0{0.}else{upload},"compute_gpu_ms":gpu,"setup_cpu_ms":cold.0,"setup_gpu_ms":cold.1}));
+                    if round == 0 && (index == 15 || (mode == 0 && index == 0)) {
+                        let image = if mode == 0 {
+                            r.read_texture_png(&native, W, H)?
+                        } else {
+                            r.read_texture_png(&target, W, H)?
+                        };
+                        let suffix = if audit {
+                            format!("-{cull}")
+                        } else {
+                            String::new()
+                        };
                         fs::write(
-                            format!("{dir}/{mode:02}-{}.f32", names[mode as usize]),
-                            &data,
+                            format!("{dir}/{mode:02}-{}{suffix}.png", names[mode as usize]),
+                            image,
                         )?;
+                        if mode != 0 {
+                            let mut e = r.device.create_command_encoder(&Default::default());
+                            e.copy_buffer_to_buffer(&estimates, 0, &raw, 0, estimate_bytes);
+                            r.queue.submit([e.finish()]);
+                            let data = read(&r, &raw, estimate_bytes)?;
+                            ensure!(
+                                data.chunks_exact(4)
+                                    .all(|x| f32::from_le_bytes(x.try_into().unwrap()).is_finite()),
+                                "Nonfinite estimate"
+                            );
+                            fs::write(
+                                format!("{dir}/{mode:02}-{}{suffix}.f32", names[mode as usize]),
+                                &data,
+                            )?;
+                        }
                     }
                 }
             }
@@ -451,14 +498,58 @@ fn main() -> Result<()> {
     let pass = r.read_texture_png(&target, W, H)?;
     let baseline = r.read_texture_png(&native, W, H)?;
     ensure!(pass == baseline, "sRGB passthrough changed pixels");
+    let suffix = if audit { "-0" } else { "" };
     ensure!(
-        fs::read(format!("{dir}/06-ttl.f32"))? == fs::read(format!("{dir}/07-revision.f32"))?,
+        fs::read(format!("{dir}/06-ttl{suffix}.f32"))?
+            == fs::read(format!("{dir}/07-revision{suffix}.f32"))?,
         "Static TTL/revision mismatch"
     );
+    if audit {
+        for mode in 0..10 {
+            for ext in if mode == 0 {
+                vec!["png"]
+            } else {
+                vec!["png", "f32"]
+            } {
+                let stem = format!("{dir}/{mode:02}-{}", names[mode as usize]);
+                ensure!(
+                    fs::read(format!("{stem}-0.{ext}"))? == fs::read(format!("{stem}-1.{ext}"))?,
+                    "Influence culling changed {stem}.{ext}"
+                );
+            }
+        }
+        let staging = buffer(
+            &r,
+            "visibility audit receivers",
+            receiver_bytes,
+            wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        );
+        let mut encoder = r.device.create_command_encoder(&Default::default());
+        encoder.copy_buffer_to_buffer(&receivers, 0, &staging, 0, receiver_bytes);
+        r.queue.submit([encoder.finish()]);
+        fs::write(
+            format!("{dir}/receivers.bin"),
+            read(&r, &staging, receiver_bytes)?,
+        )?;
+        if guard {
+            params.dims[3] = 9;
+            params.light[1] = 15.;
+            params.light[3] = 2.;
+            r.queue
+                .write_buffer(&uniform, 0, bytemuck::bytes_of(&params));
+            compute(&r, &shade, &group, &queries, &resolve, &timing)?;
+            let bad = r.read_texture_png(&target, W, H)?;
+            ensure!(
+                bad != fs::read(format!("{dir}/09-reference512-0.png"))?,
+                "Offscreen blocker had no AO influence"
+            );
+            fs::write(format!("{dir}/incorrect-offscreen-removal.png"), bad)?;
+        }
+    }
     fs::write(
         format!("{dir}/results.json"),
         serde_json::to_vec_pretty(
-            &json!({"adapter":{"name":r.adapter.get_info().name,"backend":format!("{:?}",r.adapter.get_info().backend),"device_type":format!("{:?}",r.adapter.get_info().device_type)},"width":W,"height":H,"renderer_setup_cpu_ms":renderer_setup,"resources_setup_cpu_ms":resources_ms,"receiver_bytes":receiver_bytes,"additional_resident_bytes":receiver_bytes+estimate_bytes+2*u64::from(W)*u64::from(H)*4+boxes.len() as u64*48+112+256+16,"timestamp_period_ns":r.queue.get_timestamp_period(),"timestamp_resolution_fenced":true,"compute_timestamps_monotonic":true,"native_profile_identity":true,"passthrough_identity":true,"static_ttl_revision_identity":true,"rows":rows}),
+            &json!({"adapter":{"name":r.adapter.get_info().name,"backend":format!("{:?}",r.adapter.get_info().backend),"device_type":format!("{:?}",r.adapter.get_info().device_type)},"width":W,"height":H,"renderer_setup_cpu_ms":renderer_setup,"resources_setup_cpu_ms":resources_ms,"receiver_bytes":receiver_bytes,"additional_resident_bytes":receiver_bytes+estimate_bytes+2*u64::from(W)*u64::from(H)*4+boxes.len() as u64*48+112+256+16,"timestamp_period_ns":r.queue.get_timestamp_period(),"visibility_audit":audit,"offscreen_guard":guard,"timestamp_resolution_fenced":true,"compute_timestamps_monotonic":true,"native_profile_identity":true,"passthrough_identity":true,"static_ttl_revision_identity":true,"rows":rows}),
         )?,
     )?;
     Ok(())
