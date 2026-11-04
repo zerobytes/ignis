@@ -127,7 +127,7 @@ fn visibility(world: vec3<f32>) -> f32 {
 }
 fn hash_cell(p: vec3<i32>, seed: u32) -> f32 {
     let q = bitcast<vec3<u32>>(p);
-    var h = q.x * 1597334677u ^ q.y * 3812015801u ^ q.z * 2798796415u ^ seed;
+    var h = (q.x * 1597334677u) ^ (q.y * 3812015801u) ^ (q.z * 2798796415u) ^ seed;
     h = (h ^ (h >> 16u)) * 2246822519u;
     h = (h ^ (h >> 13u)) * 3266489917u;
     h = h ^ (h >> 16u);
@@ -308,7 +308,7 @@ fn sample_mix(a:SurfaceSample,b:SurfaceSample,t:f32)->SurfaceSample {
 fn sample_load(at:u32)->SurfaceSample {return SurfaceSample(procedural_data.items[at],procedural_data.items[at+1u],procedural_data.items[at+2u]);}
 fn periodic_hash(p:vec2<i32>,n:vec2<i32>,seed:u32)->f32 {
     let w=((p%n)+n)%n;let q=vec2<u32>(w);
-    var h=q.x*1597334677u ^ q.y*3812015801u ^ seed;
+    var h=(q.x*1597334677u) ^ (q.y*3812015801u) ^ seed;
     h=(h^(h>>16u))*2246822519u;h=(h^(h>>13u))*3266489917u;h=h^(h>>16u);
     return f32(h&16777215u)/16777215.0;
 }
