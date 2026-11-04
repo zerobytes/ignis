@@ -15,6 +15,7 @@ pub mod bake;
 pub mod deformation;
 pub mod development;
 pub mod dynamics;
+pub mod lifecycle;
 pub mod root_crown;
 pub mod root_sections;
 pub mod roots;
