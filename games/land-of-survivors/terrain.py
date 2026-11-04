@@ -130,6 +130,7 @@ def prepare(binary, variants, publish):
     try:
         init(client)
         client.call('open_project', path=str(ROOT))
+        client.call('open_project_scene', path='scenes/Principal.scene.json')
         snapshot = client.call('inspect')
         report['build_id'] = snapshot['build_id']
         scene = copy.deepcopy(snapshot['scene'])

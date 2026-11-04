@@ -1,6 +1,6 @@
 # Land of Survivors GDD
 
-Versão 1.3 · 4 de novembro de 2026 · Desenvolvimento no Ignis.
+Versão 1.4 · 4 de novembro de 2026 · Desenvolvimento no Ignis.
 
 Land of Survivors é um RPG 3D de fantasia clássica, com exploração de um planeta esférico finito do tamanho da Terra, evolução do personagem, combate PvE/PvP e histórias com consequências permanentes. Preserva a lore, a história e as decisões não técnicas do projeto anterior. Toda a construção do jogo no Ignis será nova.
 
@@ -47,6 +47,8 @@ As bases têm proporções estáveis, com opções discretas de rosto, pele, olh
 Cada personagem conserva nome, identidade, espécie, base, aparência, classe, facção, progressão, builds, inventário e posição de retorno. Nome, base, classe e facção pertencem à criação. A edição cosmética em jogo altera somente a aparência.
 
 O fluxo de entrada apresenta menu, lista de personagens e criação. Confirmar cria a identidade antes da entrada; cancelar não cria um personagem. Editar aparência permite confirmar ou restaurar o estado anterior. Trocar de personagem preserva o progresso individual e os acontecimentos do mundo compartilhado.
+
+A base atual desse fluxo é uma cena própria vazia de 200 × 200 m, registrada como entrada do projeto em `scenes/Inicio.scene.json`. Ela contém apenas piso, câmera e iluminação, sem jogador ou NPC. Menu, lista, criação e apresentação de personagens serão construídos nessa cena; ainda não estão implementados. O mundo planetário e o laboratório de habilidades permanecem separados e preservados. Os comandos para verificar/abrir estão no [projeto nativo](../../../games/land-of-survivors/README.md#entrada-do-app).
 
 ## Classes e estilos de jogo
 

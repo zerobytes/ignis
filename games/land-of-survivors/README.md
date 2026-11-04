@@ -1,6 +1,20 @@
 # Land of Survivors
 
-Projeto nativo Ignis, iniciado em 3 de novembro de 2026. Mundo esférico finito do tamanho médio terrestre, com uma região original de estudo de relevo. A etapa atual implementa as 284 habilidades em um laboratório funcional separado; o mundo está preservado. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Habilidades funcionais](../../docs/games/land-of-survivors/habilidades-runtime.md) · [Geografia](../../docs/games/land-of-survivors/geografia.md) · [Protótipo e ferramentas](../../docs/games/land-of-survivors/prototipo-relevo.md).
+Projeto nativo Ignis, iniciado em 3 de novembro de 2026. A entrada atual é uma cena vazia de 200 × 200 m para construir a tela inicial e a seleção de personagens. O mundo planetário e as 284 habilidades em laboratório separado estão preservados. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Habilidades funcionais](../../docs/games/land-of-survivors/habilidades-runtime.md) · [Geografia](../../docs/games/land-of-survivors/geografia.md) · [Protótipo e ferramentas](../../docs/games/land-of-survivors/prototipo-relevo.md).
+
+## Entrada do app
+
+`scenes/Inicio.scene.json` é a cena inicial registrada no manifesto. Contém somente um piso físico plano de 200 × 200 m, de −100 a +100 m nos eixos X/Z, com topo em Y=0. Câmera e iluminação são configurações da cena. Não há jogador, NPC, personagem visual, decoração ou combate. Essa é a base de construção; menu, lista e criação de personagens ainda não foram implementados.
+
+```sh
+python3 games/land-of-survivors/start.py
+python3 games/land-of-survivors/start.py --open
+python3 games/land-of-survivors/start.py --editor
+```
+
+Sem opção, verifica a entrada, as dimensões, save/load e preservação da câmera por MCP, capturando `artifacts/front-end/start.png` e `overview.png`. `--open` abre a cena na janela nativa; `--editor` abre o projeto para autoria. Usa o executável corrente do Ignis, sem compilar ou copiar um app. As capturas foram inspecionadas offscreen; não comprovam interação desktop ou menus prontos.
+
+`scenes/Principal.scene.json` continua sendo a cena do observador planetário. Os launchers de mundo/relevo selecionam essa cena explicitamente, sem depender da nova entrada. A geografia e o laboratório de habilidades continuam independentes do palco de interface.
 
 ## Habilidades funcionais
 

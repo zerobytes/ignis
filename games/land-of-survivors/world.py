@@ -36,6 +36,7 @@ def main():
         })
         client.request('notifications/initialized', notification=True)
         project = client.call('open_project', path=str(PROJECT))
+        project = client.call('open_project_scene', path='scenes/Principal.scene.json')
         native_source = client.call('load_planet', path='world/sphere.ignis-planet')['document']
         if native_source != source:
             raise ValueError('Native planet file differs from the authored source')
