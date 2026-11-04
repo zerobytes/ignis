@@ -13,7 +13,7 @@ No complete GI architecture has been selected or shown superior to Lumen.
 | H3: sparse representation amortizes indirect transport over receivers | Sparse probes/hash, angular incident cache, split distance intervals/cascades | Native one-bounce RGB baseline: two probe grids and visibility-gated interpolation; cascades/hash remain unimplemented | Match local error at thin blockers, build/update costs and directional coverage before adopting a representation |
 | H4: spatial/temporal reservoir reuse improves path/light selection | Independent sampling vs ReSTIR/GRIS-compatible reuse | Literature only; none of the TTL policies is ReSTIR | Many lights/emissive transport, valid PDFs/mappings, disocclusion, duplication and reservoir traffic |
 | H5: learned representation beats explicit caches | Small explicit field vs neural radiance/incident predictor | Literature only; no native training/inference | Same target/updates/device, include training/adaptation/memory, unbiased correction vs biased termination |
-| H6: reconstruction buys quality with fewer shaded receivers | Full resolution vs guided spatial/temporal reconstruction | Not implemented in this laboratory | Silhouettes, thin geometry, motion, history rejection and filter cost |
+| H6: reconstruction buys quality with fewer samples | Full resolution direct16/64 vs geometry-guided spatial reconstruction and GPU-compacted adaptive budgets | Native one-bounce box laboratory; 20/24/28/32 low budgets,64 at geometric boundaries; full setup/dispatch/filter measured | Textures, curved surfaces, motion, disocclusion and bias beyond flat opaque boxes; temporal reconstruction remains unimplemented |
 | Shared infrastructure | Camera-visible receivers; conservative influencer selection; accelerated intersections | Native visibility masks; bounded AO influence experiment | BVH/build-update study, retained offscreen influences, dynamic scene costs |
 
 The axes may compose, but their improvements cannot be assumed additive.
@@ -139,3 +139,15 @@ comparison in this program; it is not an implementation of Split RC, DDGI,
 SHaRC or ReSTIR, and the map above must not treat those architectures as tested.
 The native direct raster remains unchanged; the extra bounce is an explicit
 headless diagnostic composite, not a production renderer feature.
+
+## H3b / H6 checkpoint
+
+The [adaptive allocation experiment](lighting-hybrid.md) compares geometry and
+probe-disagreement heuristics with independent spatial reconstruction. Mean
+error alone is insufficient: sparse-probe hybrids can improve global error yet
+worsen a local tile. GPU lane divergence can also consume nominal ray savings.
+The experiment therefore reports global/near-wall/p95/worst-tile error and
+measures primary-map setup, guide construction, GPU list compaction, indirect
+dispatch and filtering. Policy selection is frozen before fresh heldouts.
+This remains a diagnostic one-bounce experiment, not production GI, ReSTIR,
+DDGI, a novel estimator or a comparison demonstrating superiority to Lumen.

@@ -15,7 +15,7 @@ use std::{
 use wgpu::util::DeviceExt;
 const W: u32 = 480;
 const H: u32 = 320;
-const NAMES: [&str; 9] = [
+const NAMES: [&str; 24] = [
     "native",
     "strat16",
     "strat64",
@@ -25,6 +25,21 @@ const NAMES: [&str; 9] = [
     "fine-visible",
     "reference-a",
     "reference-b",
+    "hybrid-025",
+    "hybrid-050",
+    "hybrid-075",
+    "hybrid-100",
+    "spread-020",
+    "spread-040",
+    "spread-080",
+    "spread-030",
+    "reconstruct16",
+    "filter16",
+    "reconstruct32",
+    "compact32",
+    "compact20",
+    "compact24",
+    "compact28",
 ];
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -83,15 +98,33 @@ fn grid(p: &mut Params, fine: bool) {
 fn nodes(fine: bool) -> u64 {
     if fine { 21 * 9 * 21 } else { 11 * 5 * 11 }
 }
+enum Dispatch<'a> {
+    Grid(u32, u32, u32),
+    Indirect(&'a wgpu::Buffer, u64),
+}
 struct Lab {
     uniform: wgpu::Buffer,
     receivers: wgpu::Buffer,
     values: wgpu::Buffer,
+    filtered: wgpu::Buffer,
+    guides: wgpu::Buffer,
+    filtered_output: std::cell::Cell<bool>,
     staging: wgpu::Buffer,
     probes: [wgpu::Buffer; 2],
+    work: wgpu::Buffer,
+    indirect: wgpu::Buffer,
+    finalize_group: wgpu::BindGroup,
+    reset: wgpu::ComputePipeline,
+    compact: wgpu::ComputePipeline,
+    finalize: wgpu::ComputePipeline,
+    begin_batch: wgpu::ComputePipeline,
+    sample_low: wgpu::ComputePipeline,
+    sample_high: wgpu::ComputePipeline,
     groups: [wgpu::BindGroup; 2],
     primary: wgpu::ComputePipeline,
     build: wgpu::ComputePipeline,
+    guide: wgpu::ComputePipeline,
+    filter: wgpu::ComputePipeline,
     shade: wgpu::ComputePipeline,
     queries: wgpu::QuerySet,
     resolve: wgpu::Buffer,
@@ -132,13 +165,29 @@ impl Lab {
             r,
             "unclamped RGB indirect",
             bytes,
-            wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
         );
         let staging = buffer(
             r,
             "RGB readback",
             bytes,
             wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        );
+        let filtered = buffer(
+            r,
+            "spatial RGB reconstruction",
+            bytes,
+            wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        );
+        let guides = buffer(
+            r,
+            "geometric neighbor masks",
+            u64::from(W) * u64::from(H) * 4,
+            wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
         );
         let probes = [false, true].map(|fine| {
             buffer(
@@ -150,7 +199,27 @@ impl Lab {
                     | wgpu::BufferUsages::COPY_DST,
             )
         });
-        let entries: Vec<_> = (0..7)
+        let work = buffer(
+            r,
+            "compacted pixel lists",
+            8 + u64::from(W) * u64::from(H) * 8,
+            wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        );
+        let indirect = buffer(
+            r,
+            "GPU dispatch arguments",
+            24,
+            wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::INDIRECT
+                | wgpu::BufferUsages::COPY_SRC,
+        );
+        let dummy = buffer(
+            r,
+            "non-indirect marker storage",
+            24,
+            wgpu::BufferUsages::STORAGE,
+        );
+        let entries: Vec<_> = (0..11)
             .map(|binding| wgpu::BindGroupLayoutEntry {
                 binding,
                 visibility: wgpu::ShaderStages::COMPUTE,
@@ -212,7 +281,7 @@ impl Lab {
                     cache: None,
                 })
         };
-        let groups = std::array::from_fn(|i| {
+        let make_group = |i: usize, args: &wgpu::Buffer| {
             r.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
                 layout: &layout,
@@ -245,18 +314,50 @@ impl Lab {
                         binding: 6,
                         resource: probes[i].as_entire_binding(),
                     },
+                    wgpu::BindGroupEntry {
+                        binding: 7,
+                        resource: guides.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 8,
+                        resource: filtered.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 9,
+                        resource: work.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 10,
+                        resource: args.as_entire_binding(),
+                    },
                 ],
             })
-        });
+        };
+        let groups = std::array::from_fn(|i| make_group(i, &dummy));
+        let finalize_group = make_group(0, &indirect);
         Self {
+            work,
+            indirect,
+            finalize_group,
+            reset: pipeline("reset_work"),
+            compact: pipeline("compact"),
+            finalize: pipeline("dispatch_args"),
+            begin_batch: pipeline("begin_batch"),
+            sample_low: pipeline("sample_low"),
+            sample_high: pipeline("sample_high"),
             uniform,
             receivers,
             values,
+            filtered,
+            guides,
+            filtered_output: std::cell::Cell::new(false),
             staging,
             probes,
             groups,
             primary: pipeline("primary"),
             build: pipeline("build"),
+            guide: pipeline("guide"),
+            filter: pipeline("reconstruct"),
             shade: pipeline("shade"),
             queries: r.device.create_query_set(&wgpu::QuerySetDescriptor {
                 label: None,
@@ -277,32 +378,156 @@ impl Lab {
             ),
         }
     }
+    fn pass(
+        &self,
+        e: &mut wgpu::CommandEncoder,
+        pipeline: &wgpu::ComputePipeline,
+        group: &wgpu::BindGroup,
+        times: [Option<u32>; 2],
+        dispatch: Dispatch<'_>,
+    ) {
+        let mut pass = e.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some("lighting compute"),
+            timestamp_writes: if times == [None, None] {
+                None
+            } else {
+                Some(wgpu::ComputePassTimestampWrites {
+                    query_set: &self.queries,
+                    beginning_of_pass_write_index: times[0],
+                    end_of_pass_write_index: times[1],
+                })
+            },
+        });
+        pass.set_pipeline(pipeline);
+        pass.set_bind_group(0, group, &[]);
+        match dispatch {
+            Dispatch::Grid(x, y, z) => pass.dispatch_workgroups(x, y, z),
+            Dispatch::Indirect(buffer, offset) => pass.dispatch_workgroups_indirect(buffer, offset),
+        }
+    }
     fn run(&self, r: &Renderer, p: &Params, stage: &str) -> Result<(f64, f64)> {
         let t = Instant::now();
+        let reconstruction = (stage == "shade" || stage == "full") && p.dims[3] >= 17;
+        if stage == "shade" || stage == "filter" || stage == "full" {
+            self.filtered_output
+                .set(reconstruction || stage == "filter");
+        }
         r.queue
             .write_buffer(&self.uniform, 0, bytemuck::bytes_of(p));
         let fine = p.grid[3] < 0.75;
         let group = &self.groups[usize::from(fine)];
         let mut e = r.device.create_command_encoder(&Default::default());
-        {
-            let mut pass = e.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some(stage),
-                timestamp_writes: Some(wgpu::ComputePassTimestampWrites {
-                    query_set: &self.queries,
-                    beginning_of_pass_write_index: Some(0),
-                    end_of_pass_write_index: Some(1),
-                }),
-            });
-            pass.set_pipeline(match stage {
+        let image = || Dispatch::Grid(W.div_ceil(8), H.div_ceil(8), 1);
+        if stage == "full" {
+            self.pass(&mut e, &self.primary, group, [Some(0), None], image());
+            if p.dims[3] >= 20 {
+                self.pass(&mut e, &self.guide, group, [None, None], image());
+                self.pass(
+                    &mut e,
+                    &self.reset,
+                    group,
+                    [None, None],
+                    Dispatch::Grid(1, 1, 1),
+                );
+                self.pass(
+                    &mut e,
+                    &self.compact,
+                    group,
+                    [None, None],
+                    Dispatch::Grid((W * H).div_ceil(64), 1, 1),
+                );
+                self.pass(
+                    &mut e,
+                    &self.finalize,
+                    &self.finalize_group,
+                    [None, None],
+                    Dispatch::Grid(1, 1, 1),
+                );
+                self.pass(
+                    &mut e,
+                    &self.sample_low,
+                    group,
+                    [None, None],
+                    Dispatch::Indirect(&self.indirect, 0),
+                );
+                self.pass(
+                    &mut e,
+                    &self.sample_high,
+                    group,
+                    [None, None],
+                    Dispatch::Indirect(&self.indirect, 12),
+                );
+                self.pass(&mut e, &self.filter, group, [None, Some(1)], image());
+            } else {
+                self.pass(&mut e, &self.shade, group, [None, Some(1)], image());
+            }
+        } else if stage == "compact" {
+            self.pass(
+                &mut e,
+                &self.reset,
+                group,
+                [Some(0), None],
+                Dispatch::Grid(1, 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.compact,
+                group,
+                [None, None],
+                Dispatch::Grid((W * H).div_ceil(64), 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.finalize,
+                &self.finalize_group,
+                [None, Some(1)],
+                Dispatch::Grid(1, 1, 1),
+            );
+        } else if reconstruction && p.dims[3] >= 20 {
+            self.pass(
+                &mut e,
+                &self.begin_batch,
+                group,
+                [Some(0), None],
+                Dispatch::Grid(1, 1, 1),
+            );
+            self.pass(
+                &mut e,
+                &self.sample_low,
+                group,
+                [None, None],
+                Dispatch::Indirect(&self.indirect, 0),
+            );
+            self.pass(
+                &mut e,
+                &self.sample_high,
+                group,
+                [None, None],
+                Dispatch::Indirect(&self.indirect, 12),
+            );
+            self.pass(&mut e, &self.filter, group, [None, Some(1)], image());
+        } else {
+            let pipeline = match stage {
                 "primary" => &self.primary,
                 "build" => &self.build,
+                "guide" => &self.guide,
+                "filter" => &self.filter,
                 _ => &self.shade,
-            });
-            pass.set_bind_group(0, group, &[]);
-            if stage == "build" {
-                pass.dispatch_workgroups((nodes(fine) as u32 * 6).div_ceil(64), 1, 1);
+            };
+            let dispatch = if stage == "build" {
+                Dispatch::Grid((nodes(fine) as u32 * 6).div_ceil(64), 1, 1)
             } else {
-                pass.dispatch_workgroups(W.div_ceil(8), H.div_ceil(8), 1);
+                image()
+            };
+            self.pass(
+                &mut e,
+                pipeline,
+                group,
+                [Some(0), if reconstruction { None } else { Some(1) }],
+                dispatch,
+            );
+            if reconstruction {
+                self.pass(&mut e, &self.filter, group, [None, Some(1)], image());
             }
         }
         r.queue.submit([e.finish()]);
@@ -326,7 +551,17 @@ impl Lab {
     fn values(&self, r: &Renderer) -> Result<Vec<u8>> {
         let size = u64::from(W) * u64::from(H) * 16;
         let mut e = r.device.create_command_encoder(&Default::default());
-        e.copy_buffer_to_buffer(&self.values, 0, &self.staging, 0, size);
+        e.copy_buffer_to_buffer(
+            if self.filtered_output.get() {
+                &self.filtered
+            } else {
+                &self.values
+            },
+            0,
+            &self.staging,
+            0,
+            size,
+        );
         r.queue.submit([e.finish()]);
         let raw = read(r, &self.staging, size)?;
         ensure!(
@@ -343,10 +578,69 @@ impl Lab {
 }
 fn main() -> Result<()> {
     for arg in std::env::args().skip(1) {
-        ensure!(arg == "--thin-wall", "Unknown one-bounce argument: {arg}");
+        ensure!(
+            [
+                "--thin-wall",
+                "--hybrid-audit",
+                "--validation-a",
+                "--validation-b",
+                "--validation-c",
+                "--validation-d"
+            ]
+            .contains(&arg.as_str()),
+            "Unknown one-bounce argument: {arg}"
+        );
     }
-    let thin = std::env::args().any(|s| s == "--thin-wall");
-    let dir = if thin {
+    let hybrid = std::env::args().any(|s| s == "--hybrid-audit");
+    let validation_a = std::env::args().any(|s| s == "--validation-a");
+    let validation_b = std::env::args().any(|s| s == "--validation-b");
+    let validation_c = std::env::args().any(|s| s == "--validation-c");
+    let validation_d = std::env::args().any(|s| s == "--validation-d");
+    let thin = std::env::args().any(|s| s == "--thin-wall")
+        || validation_a
+        || validation_b
+        || validation_c
+        || validation_d;
+    ensure!(
+        [validation_a, validation_b, validation_c, validation_d]
+            .into_iter()
+            .filter(|v| *v)
+            .count()
+            <= 1,
+        "Choose one validation scene"
+    );
+    ensure!(
+        !(validation_a || validation_b || validation_c || validation_d) || hybrid,
+        "Validation requires hybrid audit"
+    );
+    let selection = if validation_a || validation_b || validation_c || validation_d {
+        let value: serde_json::Value =
+            serde_json::from_slice(&fs::read("artifacts/lighting-hybrid/selection.json")?)?;
+        ensure!(
+            value["selected_mode"]
+                .as_u64()
+                .is_some_and(|m| (9..=23).contains(&m)),
+            "Validation requires a frozen calibrated hybrid policy"
+        );
+        Some(value)
+    } else {
+        None
+    };
+    let dir = if hybrid {
+        if validation_c {
+            "artifacts/lighting-hybrid/validation-c"
+        } else if validation_d {
+            "artifacts/lighting-hybrid/validation-d"
+        } else if validation_a {
+            "artifacts/lighting-hybrid/validation-a"
+        } else if validation_b {
+            "artifacts/lighting-hybrid/validation-b"
+        } else if thin {
+            "artifacts/lighting-hybrid/thin-wall"
+        } else {
+            "artifacts/lighting-hybrid/open"
+        }
+    } else if thin {
         "artifacts/lighting-bounce/thin-wall"
     } else {
         "artifacts/lighting-bounce/open"
@@ -387,6 +681,42 @@ fn main() -> Result<()> {
     ];
     if thin {
         objects.push(([0.27, 0.9, 1.], [0.08, 1.8, 4.], [0.65, 0.65, 0.65]));
+    }
+    // Held-out parameters fixed before policy/reference calibration.
+    if validation_a {
+        scene.camera.position = [-5.5, 6., 10.];
+        scene.light.direction = [-0.35, -0.9, 0.25];
+        scene.light.direct_color = [0.75, 0.9, 1.];
+        objects[2].2 = [0.1, 0.65, 0.03];
+        objects[1].2 = [0.75, 0.1, 0.03];
+        objects.last_mut().unwrap().0 = [-0.63, 0.9, 0.4];
+        objects[4].0[2] = -0.6;
+    }
+    if validation_b {
+        scene.camera.position = [6.5, 5.5, 11.];
+        scene.camera.target = [0., 0.8, 0.];
+        scene.light.direction = [-0.6, -0.72, -0.36];
+        *objects.last_mut().unwrap() = ([-0.8, 0.8, 0.37], [4.4, 1.6, 0.06], [0.65, 0.65, 0.65]);
+        objects[7].0 = [1.6, 0.65, 1.8];
+        objects[7].1 = [1., 1.3, 0.8];
+    }
+    if validation_c {
+        scene.camera.position = [8., 4.5, 9.];
+        scene.camera.target = [0., 0.8, -1.5];
+        scene.light.direction = [-0.25, -0.95, -0.2];
+        objects[2].2 = [0.03, 0.2, 0.7];
+        objects[1].2 = [0.7, 0.25, 0.03];
+        *objects.last_mut().unwrap() = ([0.83, 1.05, 1.4], [0.05, 2.1, 4.], [0.65, 0.65, 0.65]);
+        objects[4] = ([-0.5, 2.4, -1.6], [4.2, 0.25, 2.4], [0.6, 0.6, 0.6]);
+    }
+    if validation_d {
+        scene.camera.position = [5.5, 8., 9.];
+        scene.camera.target = [0., 0.3, 0.2];
+        scene.light.direction = [0.3, -0.8, -0.5];
+        *objects.last_mut().unwrap() = ([-0.2, 1., -0.43], [5., 2., 0.05], [0.65, 0.65, 0.65]);
+        objects[4].0[0] = 0.6;
+        objects[4].0[2] = 0.2;
+        objects[7] = ([2., 0.35, 2.3], [0.8, 0.7, 1.2], [0.6, 0.6, 0.6]);
     }
     let mut boxes = vec![];
     for (j, (p, s, c)) in objects.into_iter().enumerate() {
@@ -454,10 +784,20 @@ fn main() -> Result<()> {
         inv: ignis::picking::view_projection(&frame.camera, W, H)
             .inverse()
             .to_cols_array_2d(),
-        eye: [7., 7., 12., 1.],
+        eye: [
+            frame.camera.position[0],
+            frame.camera.position[1],
+            frame.camera.position[2],
+            1.,
+        ],
         dims: [W, H, boxes.len() as u32, 0],
         sun: sun.extend(0.).to_array(),
-        energy: [1.1, 1.1 * 0.93, 1.1 * 0.84, 0.],
+        energy: [
+            frame.light.direct_intensity * frame.light.direct_color[0],
+            frame.light.direct_intensity * frame.light.direct_color[1],
+            frame.light.direct_intensity * frame.light.direct_color[2],
+            if hybrid { 1. } else { 0. },
+        ],
         grid: [0.; 4],
         counts: [0; 4],
     };
@@ -465,7 +805,63 @@ fn main() -> Result<()> {
     let t = Instant::now();
     let lab = Lab::new(&r, &p, &boxes, &nv, &tv);
     let resource_cpu = ms(t);
+    let mut primary_study = vec![];
+    if hybrid {
+        for trial in 0..32 {
+            for feature in if trial % 2 == 0 {
+                [false, true]
+            } else {
+                [true, false]
+            } {
+                p.energy[3] = if feature { 1. } else { 0. };
+                let cost = lab.run(&r, &p, "primary")?;
+                primary_study
+                    .push(json!({"trial":trial,"feature":feature,"cpu_ms":cost.0,"gpu_ms":cost.1}));
+            }
+        }
+        p.energy[3] = 1.;
+    }
     let primary = lab.run(&r, &p, "primary")?;
+    let mut guide_study = vec![];
+    if hybrid {
+        for trial in 0..32 {
+            let cost = lab.run(&r, &p, "guide")?;
+            guide_study.push(json!({"trial":trial,"cpu_ms":cost.0,"gpu_ms":cost.1}));
+        }
+        let bytes = u64::from(W) * u64::from(H) * 4;
+        let staging = buffer(
+            &r,
+            "guide audit",
+            bytes,
+            wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        );
+        let mut e = r.device.create_command_encoder(&Default::default());
+        e.copy_buffer_to_buffer(&lab.guides, 0, &staging, 0, bytes);
+        r.queue.submit([e.finish()]);
+        fs::write(format!("{dir}/guides.bin"), read(&r, &staging, bytes)?)?;
+    }
+    let mut compact_study = vec![];
+    if hybrid {
+        for trial in 0..32 {
+            let cost = lab.run(&r, &p, "compact")?;
+            compact_study.push(json!({"trial":trial,"cpu_ms":cost.0,"gpu_ms":cost.1}));
+        }
+        for (name, source, size) in [
+            ("work.bin", &lab.work, 8 + u64::from(W) * u64::from(H) * 8),
+            ("dispatch.bin", &lab.indirect, 24),
+        ] {
+            let staging = buffer(
+                &r,
+                "dispatch audit",
+                size,
+                wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            );
+            let mut e = r.device.create_command_encoder(&Default::default());
+            e.copy_buffer_to_buffer(source, 0, &staging, 0, size);
+            r.queue.submit([e.finish()]);
+            fs::write(format!("{dir}/{name}"), read(&r, &staging, size)?)?;
+        }
+    }
     let recv_size = u64::from(W) * u64::from(H) * 48;
     let staging = buffer(
         &r,
@@ -487,7 +883,30 @@ fn main() -> Result<()> {
     }
     r.draw(&frame, &nv, W, H)?;
     r.read_gpu_timing()?;
-    for mode in 1..7 {
+    let mut modes: Vec<u32> = if hybrid {
+        if validation_a || validation_b || validation_c || validation_d {
+            vec![
+                0,
+                1,
+                2,
+                6,
+                19,
+                20,
+                selection.as_ref().unwrap()["selected_mode"]
+                    .as_u64()
+                    .unwrap() as u32,
+            ]
+        } else {
+            vec![
+                0, 1, 2, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            ]
+        }
+    } else {
+        (0..7).collect()
+    };
+    modes.sort_unstable();
+    modes.dedup();
+    for &mode in modes.iter().filter(|&&m| m != 0) {
         p.dims[3] = mode;
         grid(&mut p, mode >= 5);
         p.counts[3] = 0;
@@ -498,8 +917,14 @@ fn main() -> Result<()> {
     let mut rows = vec![];
     for round in 0..2 {
         for index in 0..64 {
-            for offset in 0..7 {
-                let mode = (index + if round == 0 { offset } else { 6 - offset }) % 7;
+            for offset in 0..modes.len() {
+                let mode = modes[(index as usize
+                    + if round == 0 {
+                        offset
+                    } else {
+                        modes.len() - 1 - offset
+                    })
+                    % modes.len()];
                 let t = Instant::now();
                 let mut f = engine.render_frame();
                 f.suppress_diagnostic_grid = true;
@@ -533,12 +958,22 @@ fn main() -> Result<()> {
                 builds.push(json!({"fine":fine,"seed":seed,"cpu_ms":cost.0,"gpu_ms":cost.1}));
             }
         }
-        for mode in 1..7 {
+        for &mode in modes.iter().filter(|&&m| m != 0) {
             grid(&mut p, mode >= 5);
             p.dims[3] = mode;
             p.counts[3] = [7, 23, 39, 55][seed as usize];
             lab.run(&r, &p, "shade")?;
             lab.save_values(&r, &format!("{dir}/quality-{mode}-{seed}.rgba32f"))?;
+            if hybrid && seed == 3 && mode >= 17 {
+                let size = u64::from(W) * u64::from(H) * 16;
+                let mut e = r.device.create_command_encoder(&Default::default());
+                e.copy_buffer_to_buffer(&lab.values, 0, &lab.staging, 0, size);
+                r.queue.submit([e.finish()]);
+                fs::write(
+                    format!("{dir}/input-{mode}.rgba32f"),
+                    read(&r, &lab.staging, size)?,
+                )?;
+            }
             if seed == 0 {
                 fs::write(
                     format!("{dir}/{mode}-{}.png", NAMES[mode as usize]),
@@ -579,6 +1014,134 @@ fn main() -> Result<()> {
             ),
             read(&r, &staging, size)?,
         )?;
+    }
+    let mut full_rows = vec![];
+    if hybrid {
+        let mut full_modes = vec![2];
+        full_modes.extend(modes.iter().copied().filter(|m| *m >= 20));
+        for frame_index in 0..32 {
+            for offset in 0..full_modes.len() {
+                let mode = full_modes[(frame_index as usize + offset) % full_modes.len()];
+                let t = Instant::now();
+                let mut frame = engine.render_frame();
+                frame.suppress_diagnostic_grid = true;
+                let prep = ms(t);
+                let t = Instant::now();
+                r.draw(&frame, &nv, W, H)?;
+                let cpu = ms(t);
+                let gpu = r.read_gpu_timing()?.unwrap()["sum_ms"].as_f64().unwrap();
+                p.dims[3] = mode;
+                grid(&mut p, true);
+                p.counts[3] = frame_index;
+                p.energy[3] = 0.;
+                let cost = lab.run(&r, &p, "full")?;
+                full_rows.push(json!({"frame":frame_index,"mode":mode,"cpu_ms":prep+cpu+cost.0,"gpu_ms":gpu+cost.1,"raster_gpu_ms":gpu,"complete_compute_gpu_ms":cost.1}));
+            }
+        }
+    }
+    let mut hybrid_oracles = false;
+    if hybrid {
+        grid(&mut p, true);
+        p.dims[3] = 10;
+        p.counts[3] = 55;
+        p.sun[3] = 1e20;
+        lab.run(&r, &p, "shade")?;
+        let all = lab.values(&r)?;
+        let direct = fs::read(format!("{dir}/quality-2-3.rgba32f"))?;
+        ensure!(
+            all.chunks_exact(16)
+                .zip(direct.chunks_exact(16))
+                .all(|(a, b)| a[..12] == b[..12]),
+            "All-direct hybrid changed samples"
+        );
+        p.sun[3] = -1.;
+        lab.run(&r, &p, "shade")?;
+        let none = lab.values(&r)?;
+        let probe = fs::read(format!("{dir}/quality-6-3.rgba32f"))?;
+        ensure!(
+            none.chunks_exact(16)
+                .zip(probe.chunks_exact(16))
+                .zip(direct.chunks_exact(16))
+                .all(|((a, b), d)| {
+                    let flag = f32::from_le_bytes(a[12..].try_into().unwrap());
+                    if flag == 2. {
+                        a[..12] == d[..12]
+                    } else {
+                        a[..12] == b[..12]
+                    }
+                }),
+            "All-probe hybrid/fallback changed samples"
+        );
+        p.sun[3] = 0.;
+        hybrid_oracles = true;
+    }
+    let mut reconstruction_oracles = false;
+    if hybrid {
+        let guide_bytes = fs::read(format!("{dir}/guides.bin"))?;
+        r.queue
+            .write_buffer(&lab.guides, 0, &vec![0u8; guide_bytes.len()]);
+        grid(&mut p, true);
+        p.counts[3] = 55;
+        for mode in [17, 18, 19] {
+            p.dims[3] = mode;
+            lab.run(&r, &p, "shade")?;
+            let value = lab.values(&r)?;
+            let expected = fs::read(format!(
+                "{dir}/quality-{}-3.rgba32f",
+                if mode == 18 { 1 } else { 2 }
+            ))?;
+            ensure!(
+                value
+                    .chunks_exact(16)
+                    .zip(expected.chunks_exact(16))
+                    .all(|(a, b)| a[..12] == b[..12]),
+                "Empty reconstruction guide changed direct samples"
+            );
+        }
+        r.queue.write_buffer(&lab.guides, 0, &guide_bytes);
+        let constant = vec![[0.001f32, 0.002, 0.003, 0.]; (W * H) as usize];
+        r.queue
+            .write_buffer(&lab.values, 0, bytemuck::cast_slice(&constant));
+        p.dims[3] = 19;
+        lab.run(&r, &p, "filter")?;
+        fs::write(format!("{dir}/constant-filter.rgba32f"), lab.values(&r)?)?;
+        r.queue
+            .write_buffer(&lab.guides, 0, &vec![0u8; guide_bytes.len()]);
+        lab.run(&r, &p, "compact")?;
+        p.dims[3] = 20;
+        lab.run(&r, &p, "shade")?;
+        let all64 = lab.values(&r)?;
+        let direct = fs::read(format!("{dir}/quality-2-3.rgba32f"))?;
+        ensure!(
+            all64
+                .chunks_exact(16)
+                .zip(direct.chunks_exact(16))
+                .all(|(a, b)| a[..12] == b[..12]),
+            "Empty compact low list changed64-ray output"
+        );
+        let all_low: Vec<u32> = receiver_raw
+            .chunks_exact(48)
+            .map(|b| {
+                if f32::from_le_bytes(b[12..16].try_into().unwrap()) > 0. {
+                    512u32 | 16u32
+                } else {
+                    0
+                }
+            })
+            .collect();
+        r.queue
+            .write_buffer(&lab.guides, 0, bytemuck::cast_slice(&all_low));
+        lab.run(&r, &p, "compact")?;
+        lab.run(&r, &p, "shade")?;
+        ensure!(
+            lab.values(&r)?
+                .chunks_exact(16)
+                .all(|b| f32::from_le_bytes(b[12..16].try_into().unwrap()) == 0.),
+            "Empty compact high list sampled64"
+        );
+        r.queue.write_buffer(&lab.guides, 0, &guide_bytes);
+        lab.run(&r, &p, "compact")?;
+        reconstruction_oracles = true;
     }
     // Rebuild timing has its own repeated study; four quality seeds are not enough.
     for sample in 0..32 {
@@ -656,10 +1219,25 @@ fn main() -> Result<()> {
     p.dims[3] = 3;
     lab.run(&r, &p, "shade")?;
     fs::write(format!("{dir}/constant-field.rgba32f"), lab.values(&r)?)?;
+    let mut compact_empty = false;
+    if hybrid {
+        r.queue
+            .write_buffer(&lab.receivers, 0, &vec![0u8; recv_size as usize]);
+        p.dims[3] = 20;
+        lab.run(&r, &p, "compact")?;
+        lab.run(&r, &p, "shade")?;
+        ensure!(
+            lab.values(&r)?
+                .chunks_exact(4)
+                .all(|b| f32::from_le_bytes(b.try_into().unwrap()) == 0.),
+            "Empty compact lists retained indirect RGB"
+        );
+        compact_empty = true;
+    }
     fs::write(
         format!("{dir}/results.json"),
         serde_json::to_vec_pretty(
-            &json!({"width":W,"height":H,"thin_wall":thin,"adapter":r.adapter.get_info().name,"backend":format!("{:?}",r.adapter.get_info().backend),"resource_setup_cpu_ms":resource_cpu,"primary_cpu_ms":primary.0,"primary_gpu_ms":primary.1,"receiver_bytes":recv_size,"probe_bytes":[nodes(false)*96,nodes(true)*96],"probe_nodes":[nodes(false),nodes(true)],"builds":builds,"references":references,"native_profile_identity":true,"passthrough_identity":true,"zero_sun_direct":true,"zero_sun_rebuilt_probe":true,"channel_isolation":true,"monotonic_gpu_timestamps":true,"rows":rows}),
+            &json!({"width":W,"height":H,"hybrid_audit":hybrid,"validation_a":validation_a,"validation_b":validation_b,"validation_c":validation_c,"validation_d":validation_d,"selection":selection,"hybrid_oracles":hybrid_oracles,"reconstruction_oracles":reconstruction_oracles,"compact_empty_lists":compact_empty,"primary_study":primary_study,"guide_study":guide_study,"compact_study":compact_study,"full_rows":full_rows,"thin_wall":thin,"adapter":r.adapter.get_info().name,"backend":format!("{:?}",r.adapter.get_info().backend),"resource_setup_cpu_ms":resource_cpu,"primary_cpu_ms":primary.0,"primary_gpu_ms":primary.1,"receiver_bytes":recv_size,"probe_bytes":[nodes(false)*96,nodes(true)*96],"probe_nodes":[nodes(false),nodes(true)],"builds":builds,"references":references,"native_profile_identity":true,"passthrough_identity":true,"zero_sun_direct":true,"zero_sun_rebuilt_probe":true,"channel_isolation":true,"monotonic_gpu_timestamps":true,"rows":rows}),
         )?,
     )?;
     Ok(())
