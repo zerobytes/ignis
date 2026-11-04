@@ -35,20 +35,20 @@ def radial(angle,h):return (math.cos(angle),h,math.sin(angle))
 def palm(seed=42):
     x=Builder('Palmeirinha · touceira pinada',seed)
     for stem in range(12):
-        a=stem*2.4;h=.55+1.45*b.uniform(x.seed,str(stem),'cane_height')**.85
-        root=x.axis(f'caule{stem}',None,0.,radial(a,4.5),h,.036,position=((.22+.025*math.sqrt(stem))*math.cos(a),0.,(.22+.025*math.sqrt(stem))*math.sin(a)),young=3e8)
+        a=stem*2.4;h=.18+.50*b.uniform(x.seed,str(stem),'cane_height')**.85
+        root=x.axis(f'caule{stem}',None,0.,radial(a,4.5),h,.024,position=((.22+.025*math.sqrt(stem))*math.cos(a),0.,(.22+.025*math.sqrt(stem))*math.sin(a)),young=3e8)
         for j in range(7):
-            az=j*2.4+stem+.25*b.uniform(x.seed,f'{root}/{j}','frond_azimuth');u=.95-.045*j
-            length=1.45*(.84+.30*b.uniform(x.seed,f'{root}/{j}','frond_length'))
+            az=j*2.4+stem+.25*b.uniform(x.seed,f'{root}/{j}','frond_azimuth');u=.95-.075*j
+            length=2.0*(.84+.30*b.uniform(x.seed,f'{root}/{j}','frond_length'))
             # Inner fronds rise; outer fronds open and recurve at the tip.
-            elevation=math.radians(78.-5.*j)
-            turn=math.radians(68.+6.5*j+6.*b.uniform(x.seed,f'{root}/{j}','frond_arch'))
+            elevation=math.radians(76.-5.*j)
+            turn=math.radians(72.+7.*j+6.*b.uniform(x.seed,f'{root}/{j}','frond_arch'))
             curvature=b.Field(-turn/length,drivers=(('u',b.Curve(((0.,.22),(1.,1.78)))),))
             frond=x.axis(f'{root}/raquis{j}',root,u,radial(az,math.tan(elevation)),length,.0045,bend=curvature,normal=b.UP,young=8e7)
             x.organs[-1]['connection']='sheath'
             for k in range(24):
-                v=.09+.88*k/23;frame=x.sample(frond,v)
-                long=.50*b.LEAFLET_LENGTH_PROFILE.at(v);width=.033*b.LEAFLET_WIDTH_PROFILE.at(v)
+                v=.28+.69*k/23;frame=x.sample(frond,v)
+                long=.50*b.LEAFLET_LENGTH_PROFILE.at(v);width=.045*b.LEAFLET_WIDTH_PROFILE.at(v)
                 for side in [-1,1]:
                     lateral=b.mul(frame.b,side);direction=b.add(b.add(b.mul(lateral,.92),b.mul(frame.t,.26)),(0.,.17,0.))
                     x.leaf(f'{frond}/foliolo{k}_{side}',frond,v,direction,long,width,bend=-.15,normal=frame.t,attraction=1.5,target=(0,-1,0),birth=1.+v)

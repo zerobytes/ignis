@@ -18,3 +18,13 @@ passed. The current renderer produced 4,128 organs, 481,728 vertices and 946,944
 triangles. Captures and report use stable paths under artifacts/botany-native/
 (palmeirinha.png, palmeirinha-structure.png, palmeirinha-report.json).
 Artistic acceptance remains pending. No new binary was built for this recipe edit.
+
+## Structural revision after user rejection
+
+The first revision was rejected: long straight canes still dominated the plant.
+The supplied photographs show short basal canes and longer petiole-to-rachis
+arcs. The revised recipe shortens basal canes, lengthens continuous frond axes,
+opens older fronds further and leaves the proximal 28% free of leaflets. Leaflet
+width is increased. Native full/structure captures passed with the same organ
+and mesh counts; total bounds now reach 3.14 m high rather than 5.38 m.
+Human artistic acceptance is still pending.
