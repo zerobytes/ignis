@@ -268,3 +268,86 @@ lighting uses the existing shadow pass. No fixed1024 material maps are baked.
 Native captures were opened and scene-save/reload produced exact PNG bytes.
 Reproducible script and render metadata are retained; no new test suite/build
 was needed for this presentation-only change. Morphology acceptance stays open.
+
+## All-around strata and turntable — requested continuation
+
+Before construction, the user identified the diagnostic as a rectangular body
+with one worked face and requested rotation, more divisions and more layers of
+actual protruding stone. This extends P1/P5/P6/P7 rather than approving the old
+body. Its rear/endcaps were deliberately simple; camera rotation alone cannot
+correct that.
+
+| ID | Required construction / check |
+|---|---|
+| A1 | Retain the prior one-face example as a separate comparison; rotate it enough to expose its original rear and ends. |
+| A2 | A single closed new body with an asymmetric perimeter; all four sides must contain authored relief. |
+| A3 | Six banks of varying thickness with localized tilted rock lenses, recessed joins and a broken rim. Compare front/side/rear silhouettes and source ray intersections. |
+| A4 | More meaningful surface divisions, not a subdivision-only copy of the coarse wall. Check side-face areas and actual source-position changes. |
+| A5 | A reproducible360° native turntable plus fixed front/side/rear views with identical material/light settings. Hidden faces are authored hypotheses, not facts recovered from the Genshin crop. |
+| A6 | Preserve the existing MCP/native-source route, editable seed/parameters, plane/sphere compilation and flat controllable top. |
+
+Static performance review before this increment: author bounded perimeter and
+section controls once; Rust compiles the mesh. No geometry sampling/triangulation
+in Python, per-frame generation, new engine dependency or material bake. Existing
+per-artifact budgets bound the source; reuse one source mesh for every camera.
+Turntable captures are explicit offline work. Frames/GIF replace one current
+output in a stable directory; preserve parallel lighting work and human windows.
+
+### Delivered source and views
+
+`examples/plateau-strata.recipe.json` is the compact authored recipe;
+`scripts/plateau_strata.py` emits ordinary native contour/section data from its
+seed. The compiled geometry still comes entirely from Rust through MCP. The
+output source is saved as `artifacts/plateau-strata/plateau.ignis-landform` and
+the complete scene as `plateau.scene.json` in that directory. Neither requires
+an agent to execute after publication. This example uses existing Landform2
+controls; no new engine operator/format or runtime-world integration is claimed.
+
+The new body has64 contour controls,41 section levels, six irregular banks and
+seeded local rock lenses/faults distributed over the entire perimeter. It is one
+closed oriented mesh island:2,624vertices/5,244triangles, compared with470/936 in
+the previous front-wall example. All four sides have measured source relief:
+six height probes vary by≈12.64m(front),7.46m(rear),3.53m(left),3.56m(right).
+Plane and Earth-domain compilation passed. These are geometric measurements,
+not texture-bump or an artistic match to the Genshin image.
+
+Side-face area diagnostics (faces with abs(normal.y)<0.85) decreased from a
+mean23.39m²/P90=52.93m² to3.59m²/P90=6.05m². This verifies smaller source faces;
+it does not establish rendering performance or visual fidelity. Source authoring
+is bounded to96 contour controls,128 levels,64 lenses/bank, eight banks and a
+2M cold-work estimate; native artifact quotas remain authoritative. The script
+does not regenerate geometry for each camera. Increased geometry still has a
+real memory/draw cost; no FPS measurement was made.
+
+The first all-around candidate had overly continuous rounded rings. The recipe
+was revised with staggered lens heights/tilts, interrupted deeper joins, stronger
+local projections and faults. Flat and smooth native shading were inspected;
+the current presentation uses smooth normals on the same actual source geometry.
+There are still broad layered motifs; this is an inspectable procedural example,
+not acceptance of the complete reference morphology.
+
+Native views `overview/detail/front/left/right/rear.png` are1600×1000. A fixed
+camera orbit supplies24 actual960×600 PNG captures around the new body, with
+the same world light. Frames6/12/18 and the fixed views were opened to check ends
+and rear; the old body also has a12-frame orbit, exposing its original flat rear.
+`scripts/encode_turntable.swift` only assembles the native captures into a GIF
+and checks decoded frame count. It synthesizes no new camera frames or geometry.
+Current GIFs are `artifacts/plateau-strata/turntable.gif` (new) and
+`artifacts/plateau-relief/materials/turntable.gif` (previous). Swift/ImageIO is a
+local macOS export helper, not an engine dependency.
+
+```sh
+python3 scripts/render_plateau_materials.py --strata --orbit-frames 24 --shading smooth
+swift scripts/encode_turntable.swift artifacts/plateau-strata/frames artifacts/plateau-strata/turntable.gif
+python3 scripts/render_plateau_materials.py --orbit-frames 12
+swift scripts/encode_turntable.swift artifacts/plateau-relief/materials/frames artifacts/plateau-relief/materials/turntable.gif
+```
+
+Native schema, single-island/manifold checks, deterministic source generation,
+typed-source save/load and exact scene-save/reload PNG checks passed on build
+83930355ffbce727. Applying materials preserved the already-generated new shape.
+Evidence: `render.json` and `shape-comparison.json` beside the images; the saved
+source was independently compared with the current generator through MCP.
+Python compilation/diff checks and GIF decoding passed. No Rust/renderer changes,
+extra engine build, window or broad test-suite rerun was needed for this authored
+example. Human shape acceptance and live planetary residency remain open.

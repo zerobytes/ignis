@@ -1,0 +1,13 @@
+{
+  "seed": 221741,
+  "height_meters": 40,
+  "half_width_meters": 68,
+  "half_depth_meters": 30,
+  "profile_samples": 64,
+  "vertical_spacing_meters": 1.25,
+  "bank_boundaries_meters": [0, 6, 12.5, 19.5, 26.5, 33.5, 40],
+  "rock_spacing_meters": 23,
+  "projection_meters": [2.5, 8.0],
+  "front_projection_meters": 12,
+  "joint_depth_meters": 2.0
+}

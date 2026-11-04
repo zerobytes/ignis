@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Native material/lighting review of the unchanged plateau, through MCP offscreen."""
+"""Native material, all-around strata and orbit reviews through MCP offscreen."""
+import argparse
 import copy
 import hashlib
 import json
+import math
+from pathlib import Path
 from verify_lab import Client, ROOT
 from open_earth_walk import init
 from relief_compositions import position, ZERO
@@ -27,6 +30,18 @@ def grass(seed, ground=False):
 
 
 def main():
+    global OUT, PREFIX
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--strata', action='store_true')
+    parser.add_argument('--orbit-frames', type=int, default=0)
+    parser.add_argument('--shading', choices=['flat', 'smooth'], default='flat')
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args()
+    if not 0 <= args.orbit_frames <= 48:
+        parser.error('Orbit supports0..48 frames')
+    if args.output or args.strata:
+        OUT = (args.output or ROOT / 'artifacts/plateau-strata').resolve()
+        PREFIX = str(OUT.relative_to(ROOT))
     # Static performance review: explicit cold authoring only; existing materials,
     # lighting and shadow pass. Grass reuses selected roof faces through native
     # RemoveFaces, not a new procedural mesh or a per-frame geometry generator.
@@ -39,11 +54,43 @@ def main():
         assert all(x in schema for x in ['publish_landform', 'set_material', 'remove_faces'])
         c.call('generate', recipe={'width': 20, 'depth': 20, 'seed': 221, 'obstacles': 0})
         c.call('edit_scene', edits=[{'op': 'remove', 'id': e['id']} for e in c.call('inspect')['scene']['entities']])
-        doc = json.loads((ROOT / 'examples/plateau-wall.recipe.json').read_text())
+        if args.strata:
+            from plateau_strata import document
+            params = json.loads((ROOT / 'examples/plateau-strata.recipe.json').read_text())
+            doc = document(params)
+            assert doc == document(params)
+        else:
+            params = None
+            doc = json.loads((ROOT / 'examples/plateau-wall.recipe.json').read_text())
+        doc = c.call('query_landform', query={'kind': 'inspect', 'document': doc})['document']
+        c.call('save_landform', path=f'{PREFIX}/plateau.ignis-landform', document=doc)
+        assert c.call('load_landform', path=f'{PREFIX}/plateau.ignis-landform')['document'] == doc
         c.call('publish_landform', publication={'document': doc, 'asset': 'rock', 'instance': 'rock',
-            'frame_origin': ZERO, 'color': [1, 1, 1], 'shading': 'flat', 'collision': True})
+            'frame_origin': ZERO, 'color': [1, 1, 1], 'shading': args.shading, 'collision': True})
         original = c.call('inspect_mesh', asset='rock')['asset']
         rock_hash = fingerprint(original['geometry'])
+        topology = c.call('inspect_mesh_topology', asset='rock')['topology']
+        assert topology['boundary_edges'] == topology['non_manifold_edges'] == 0
+        assert len(c.call('inspect_mesh_islands', asset='rock')['topology']['islands']) == 1
+        probes = None
+        if args.strata:
+            rays = []
+            sides = [('front',[0,0,-160],[0,0,1]), ('rear',[0,0,160],[0,0,-1]),
+                     ('left',[-160,0,0],[1,0,0]), ('right',[160,0,0],[-1,0,0])]
+            for _, origin, direction in sides:
+                for y in [5,11,17,23,29,35]:
+                    rays.append({'origin':[origin[0],y,origin[2]],'direction':direction,'max_distance_meters':320})
+            hits = c.call('query_landform', query={'kind':'raycast','document':doc,'rays':rays})['hits']
+            probes = {}
+            for i,(side,_,_) in enumerate(sides):
+                distances = [h[0]['distance_meters'] for h in hits[i*6:(i+1)*6]]
+                assert max(distances)-min(distances) > .75, (side,distances)
+                probes[side] = distances
+            sphere = copy.deepcopy(doc)
+            sphere['origin'] = position(0,6371000,0)
+            sphere['domain'] = {'kind':'sphere','center':ZERO,'radius_meters':6371000,'forward':[0,0,1]}
+            mapped = c.call('query_landform', query={'kind':'compile','document':sphere})
+            assert all(p['closed_oriented'] for p in mapped['parts'])
         # Apply an editable copy of the existing Rock2 source, at landscape scale.
         material = copy.deepcopy(json.loads((ROOT / 'assets/materials/rock/alpine.ignis-material').read_text())['material'])
         recipe = material['procedural']['recipe']
@@ -89,10 +136,27 @@ def main():
         c.call('set_light', light=light)
         views = {'overview': VIEWS['oblique'],
                  'detail': {'position': [90, 42, -110], 'target': [18, 23, -28], 'fov_degrees': 44}}
+        if args.orbit_frames:
+            views.update(front=VIEWS['front'], left={'position':[-175,65,-15],'target':[0,20,0],'fov_degrees':48},
+                         right=VIEWS['side'], rear=VIEWS['rear'])
         for name, camera in views.items():
             c.call('set_camera', camera=camera)
             c.call('capture', path=f'{PREFIX}/{name}.png', width=1600, height=1000)
             print('captured', name, flush=True)
+        orbit = []
+        frames = OUT / 'frames'
+        frames.mkdir(exist_ok=True)
+        # Replace this task's generated frame set when the requested count changes.
+        for old in frames.glob('frame-*.png'):
+            old.unlink()
+        for i in range(args.orbit_frames):
+            a = math.tau*i/args.orbit_frames
+            camera = {'position':[180*math.sin(a),76,-180*math.cos(a)],
+                      'target':[0,19,0],'fov_degrees':44}
+            c.call('set_camera', camera=camera)
+            c.call('capture', path=f'{PREFIX}/frames/frame-{i:03}.png', width=960, height=600)
+            orbit.append(camera)
+            if i%6 == 0: print('orbit',i,'/',args.orbit_frames,flush=True)
         c.call('set_camera', camera=views['overview'])
         assert fingerprint(c.call('inspect_mesh', asset='rock')['asset']['geometry']) == rock_hash
         c.call('save_scene', path=f'{PREFIX}/plateau.scene.json')
@@ -104,7 +168,10 @@ def main():
                   'rock_material': material, 'grass_faces': len(geometry['triangles'])-len(removed),
                   'material_mapping': 'u=x+0.55z, v=y+0.2z; explicit planar coordinates, not triplanar',
                   'grass_vertical_offset_meters': .045, 'native_window': False,
-                  'save_reload_pixels_equal': True}
+                  'save_reload_pixels_equal': True, 'orbit':orbit,'parameters':params,
+                  'vertices':len(original['geometry']['positions']),
+                  'triangles':len(original['geometry']['triangles']), 'side_probes':probes,
+                  'shading':args.shading}
         (OUT / 'render.json').write_text(json.dumps(report, indent=2))
         print(json.dumps({'rendered': True, 'shape_unchanged': True, 'build': report['build']}))
     finally:
