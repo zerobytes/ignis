@@ -82,6 +82,7 @@ pub(super) fn properties(
             for (id,name) in [("palmeirinha","Palmeirinha"),("platano","Plátano"),("eucalipto","Eucalipto"),("figueira","Figueira ornamental"),("figueira_rs","Figueira campestre · RS")] {
                 if ui.button(name).clicked(){send(commands,Op::Load{path:format!("assets/botany/{id}.ignis-botany"),publish:true});}
             }
+            if ui.button("Sequoia-gigante viva").clicked(){send(commands,Op::CreateLiving{definition:crate::botany::growth::sequoia::definition("sequoia".into(),83),born:0});}
             ui.text_edit_singleline(&mut state.path);
             if ui.button("Carregar fonte").clicked(){send(commands,Op::Load{path:state.path.clone(),publish:true});}
         });
@@ -136,7 +137,7 @@ pub(super) fn properties(
             let observed=(recipe.prefix.clone(),born,plant.production.plant.time,preview_time);
             if state.living_observed.as_ref()!=Some(&observed) {
                 state.living_age_years=preview_time.unwrap_or(plant.production.plant.time).saturating_sub(born) as f64/365.;
-                if plant.definition.version>=2 {state.living_horizon_years=state.living_horizon_years.max(30.);}
+                if plant.definition.version>=2 {state.living_horizon_years=state.living_horizon_years.max(if plant.definition.version==5 {3000.}else{30.});}
                 state.living_observed=Some(observed);
             }
             let maximum_age=(crate::botany::growth::MAX_TIME-born) as f64/365.;
@@ -171,7 +172,7 @@ pub(super) fn properties(
             ui.collapsing("Poda persistente",|ui|{for site in plant.production.sites.keys().filter(|s|!plant.production.removed_sites.contains(*s)){
                 if ui.button(format!("Podar {site}")).clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Prune{site:site.clone()}});}
             }});
-            if plant.definition.version>=2 {ui.collapsing("Crescimento contínuo e nós foliares",|ui|{
+            if (2..=4).contains(&plant.definition.version) {ui.collapsing("Crescimento contínuo e nós foliares",|ui|{
                 continuous_controls(ui,&mut state.living_continuous);
                 if ui.button("Aplicar matemática contínua").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::SetContinuous{profile:state.living_continuous.clone()}});}
             });}

@@ -1669,6 +1669,18 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         vertices[i] = b.vertices;
         owners[i] = b.owners;
     }
+    if recipe.living.as_ref().is_some_and(|p| p.definition.version == 5) {
+        let mut bark = crate::materials::library::Preset::Wood.recipe();
+        bark.seed = recipe.source.seed as u32;
+        bark.tile_size = [4., 60.];
+        bark.height_m = 0.045;
+        bark.base.color_roughness = [0.25, 0.12, 0.07, 0.95];
+        bark.layers[0].frequency = [28, 2];
+        bark.layers[0].target.color_roughness = [0.9, 0.58, 0.33, 0.88];
+        bark.layers[1].target.color_roughness = [0.5, 0.29, 0.16, 0.95];
+        document.assets[0].material = crate::materials::library::material(
+            bark, crate::materials::library::Execution::Runtime)?;
+    }
     super::reproduction::append(recipe, &poses, &mut document)?;
     document.validate()?;
     Ok(Compiled {
