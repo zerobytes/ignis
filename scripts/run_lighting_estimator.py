@@ -30,6 +30,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import lighting_pilot_report
+import lighting_epoch_report
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "artifacts/lighting-estimator"
@@ -570,8 +571,13 @@ def main():
     parser.add_argument("--timing-blocks", type=int, default=9)
     parser.add_argument("--bootstrap-replicates", type=int, default=1000)
     parser.add_argument("--pilot-samples", type=int, default=32)
+    parser.add_argument("--epoch-trials", type=int, default=128)
+    parser.add_argument("--epoch-steps", type=int, default=48)
+    parser.add_argument("--epoch-horizons", type=int_list, default=[1, 8, 32])
     parser.add_argument("--verify-reproducibility", action="store_true")
     args = parser.parse_args()
+    epoch_trials = min(args.epoch_trials, args.trials)
+    epoch_budgets = [b for b in args.samples if b in [64, 256]] or [args.samples[-1]]
     if not (
         32 <= args.trials <= 2048
         and 0 <= args.seed < 2**64
@@ -582,10 +588,25 @@ def main():
         and 5 <= args.timing_blocks <= 31
         and 100 <= args.bootstrap_replicates <= 2000
         and 4 <= args.pilot_samples <= 256
+        and 32 <= args.epoch_trials <= 512
+        and 32 <= args.epoch_steps <= 128
+        and all(1 <= h <= 128 for h in args.epoch_horizons)
+        and epoch_trials
+        * sum(epoch_budgets)
+        * len(args.epoch_horizons)
+        * 4
+        * 5
+        * args.epoch_steps
+        <= 150_000_000
         and args.trials * sum(args.samples) * len(args.cache_grids) * 6 <= 100_000_000
     ):
         parser.error("configuration outside bounded experiment limits")
     config = vars(args)
+    config.update(
+        epoch_trials_effective=epoch_trials,
+        epoch_budgets=epoch_budgets,
+        epoch_grid=8 if 8 in args.cache_grids else args.cache_grids[0],
+    )
     OUTPUT.mkdir(parents=True, exist_ok=True)
     work = OUTPUT / ".pending"
     # Creation is also an exclusive run lock. Never remove another run's stage.
@@ -620,6 +641,21 @@ def main():
             str(args.timing_blocks),
         ]
         run(pilot_command)
+        epoch_command = [
+            str(work / "estimator"),
+            "--epoch",
+            str(work),
+            str(epoch_trials),
+            str(args.seed),
+            ",".join(map(str, epoch_budgets)),
+            ",".join(map(str, args.epoch_horizons)),
+            str(config["epoch_grid"]),
+            str(args.epoch_steps),
+            str(args.pilot_samples),
+            str(args.timing_blocks),
+            "8",
+        ]
+        run(epoch_command)
         report = summarize(work, config)
         # Scientific red/green controls: these check inference risks rather
         # than mirroring implementation details or demanding random CI passes.
@@ -636,12 +672,16 @@ def main():
         plot(work, report)
         review(work, report)
         lighting_pilot_report.build(work, config, report, analytic_moments)
+        lighting_epoch_report.build(work, config, report)
         numerical_files = [
             "references.csv",
             "caches.csv",
             "trials.csv",
             "maps.csv",
             "pilot_trials.csv",
+            "epoch_trials.csv",
+            "epoch_curves.csv",
+            "epoch_trace.csv",
         ]
         numerical_digest = hashlib.sha256(
             b"".join((work / n).read_bytes() for n in numerical_files)
@@ -656,6 +696,9 @@ def main():
             repeated_pilot = pilot_command.copy()
             repeated_pilot[2] = str(replay)
             run(repeated_pilot)
+            repeated_epoch = epoch_command.copy()
+            repeated_epoch[2] = str(replay)
+            run(repeated_epoch)
             replay_digest = hashlib.sha256(
                 b"".join((replay / n).read_bytes() for n in numerical_files)
             ).hexdigest()
@@ -674,6 +717,18 @@ def main():
                     for n in ["references.csv", "caches.csv", "trials.csv", "maps.csv"]
                 )
             ).hexdigest(),
+            pilot_numerical_sha256=hashlib.sha256(
+                b"".join(
+                    (work / n).read_bytes()
+                    for n in [
+                        "references.csv",
+                        "caches.csv",
+                        "trials.csv",
+                        "maps.csv",
+                        "pilot_trials.csv",
+                    ]
+                )
+            ).hexdigest(),
             source_sha256={
                 str(p.relative_to(ROOT)): digest(p)
                 for p in [
@@ -681,6 +736,8 @@ def main():
                     Path(__file__),
                     ROOT / "scripts/lighting_estimator_pilot.rs",
                     ROOT / "scripts/lighting_pilot_report.py",
+                    ROOT / "scripts/lighting_estimator_epoch.rs",
+                    ROOT / "scripts/lighting_epoch_report.py",
                 ]
             },
             provenance=dict(

@@ -166,3 +166,8 @@ cache invalidation and makes no Lumen or game-frame claim.
   rejected configurations (pilot size zero, budget below 16) were verified to
   preserve the published report. Rust warnings/fmt and Python F checks pass.
   Pilot plots were visually inspected, including exact-parity axis scaling.
+
+The next [shared-decision lifetime experiment](lighting-epoch-experiment.md)
+tests amortization and response to changes. The same runner/executable now
+includes it; this stage's five-file digest is retained separately in the
+manifest as `pilot_numerical_sha256`.

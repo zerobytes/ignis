@@ -2,6 +2,8 @@
 use std::{fmt::Write as _, fs, hint::black_box, path::Path, time::Instant};
 
 type Rgb = [f64; 3];
+#[path = "lighting_estimator_epoch.rs"]
+mod epoch;
 #[path = "lighting_estimator_pilot.rs"]
 mod pilot;
 const CASES: [&str; 6] = [
@@ -323,10 +325,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.get(1).map(String::as_str) == Some("--verify") {
         verify();
         pilot::verify();
+        epoch::verify();
         return Ok(());
     }
     if args.get(1).map(String::as_str) == Some("--pilot") {
         return pilot::run(&args[2..]);
+    }
+    if args.get(1).map(String::as_str) == Some("--epoch") {
+        return epoch::run(&args[2..]);
     }
     if args.len() != 8 {
         return Err(

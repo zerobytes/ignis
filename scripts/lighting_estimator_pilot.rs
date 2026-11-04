@@ -7,7 +7,7 @@ const EVALUATION_STREAM: u64 = 0x243f6a8885a308d3;
 const METHODS: [&str; 4] = ["plain", "fixed", "learned", "gated"];
 
 #[derive(Default)]
-struct Moments {
+pub(super) struct Moments {
     n: usize,
     mean_f: Rgb,
     mean_g: Rgb,
@@ -16,7 +16,7 @@ struct Moments {
     covariance: Rgb,
 }
 impl Moments {
-    fn push(&mut self, f: Rgb, g: Rgb) {
+    pub(super) fn push(&mut self, f: Rgb, g: Rgb) {
         self.n += 1;
         for c in 0..3 {
             let df = f[c] - self.mean_f[c];
@@ -28,7 +28,7 @@ impl Moments {
             self.covariance[c] += df * (g[c] - self.mean_g[c]);
         }
     }
-    fn alpha(&self) -> f64 {
+    pub(super) fn alpha(&self) -> f64 {
         let var_g: f64 = self.m2_g.iter().sum();
         if var_g <= 1e-20 {
             return 0.0;
@@ -129,7 +129,7 @@ fn decide(
     }
     result
 }
-fn weighted(case: usize, cache: &Cache, points: &[[f64; 2]], alpha: f64) -> Rgb {
+pub(super) fn weighted(case: usize, cache: &Cache, points: &[[f64; 2]], alpha: f64) -> Rgb {
     if alpha == 0.0 {
         return estimate(case, 0, cache, points, &[]);
     }
