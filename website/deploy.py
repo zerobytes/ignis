@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from runtime_assets import declarations, materialize
 
 ROOT = Path(__file__).resolve().parent
 REPO = 'zerobytes/ignis'
@@ -39,6 +40,7 @@ def read_dist():
 
 
 def prepare():
+    materialize(ROOT / 'dist')
     files = read_dist()
     files.pop('version.json', None)
     hashes = {p: hashlib.sha256(b).hexdigest() for p, b in files.items()}
@@ -58,7 +60,13 @@ def github_publish(files, version):
         raise RuntimeError('Remote tree truncated; refusing partial synchronization')
     remote = {x['path']: x['sha'] for x in tree['tree'] if x['type'] == 'blob' and x['path'].startswith('website/dist/')}
     expected = {}
+    runtime = declarations(ROOT / 'dist')
     for path, data in files.items():
+        if path in runtime:
+            item = runtime[path]
+            if len(data) != item['bytes'] or hashlib.sha256(data).hexdigest() != item['sha256']:
+                raise RuntimeError('Unverified runtime preview in deployment')
+            continue
         full = 'website/dist/' + path
         sha = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
         expected[full] = sha

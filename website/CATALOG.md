@@ -62,7 +62,7 @@ Publishing the website does not publish unrelated native commits.
 | Allocation | One device/context/pipeline. Replace material/program/VB/IB resources on changes; destroy old buffers and resized depth targets. Page exit/device loss disposes the host. |
 | Data | Exact native ABI; bounded IGWP1 packet, little-endian words, SHA-256 and original source version. No scene serialization or recipe parsing per frame. |
 | Repetition | One shared shader and context across all cards. Cached compiled pipeline, retained geometry until a shape/material-domain change. Static lazy thumbnails have no per-card renderers. |
-| Limits | 500 records at admission, 1 MiB shader/packet budget, 560k preview pixels, DPR capped at 1.5; current sphere 2665 vertices / 5120 triangles. These are preview budgets, not engine limits. |
+| Limits | 500 records at admission, 1 MiB shader/material-packet budget, 560k preview pixels, DPR capped at 1.5; current sphere 2665 vertices / 5120 triangles. These are preview budgets, not engine limits. |
 | GPU / IO | Two storage buffers for one material; event-time fetch/upload only, no GPU readback or network in draw. Site data snapshot is about 0.92 MB including all thumbnails, sources and packets. |
 | Concurrency | Abort obsolete asset fetches; generation token prevents an old selection taking over. One queued RAF, no worker/engine locks. Native export runs outside the interactive host. |
 | Invalidation | Locale/search/filter changes update DOM without reinitializing GPU. Camera/light reuse data. Hidden/offscreen view does not schedule draws. |
@@ -83,3 +83,53 @@ the separate Ignis engine license, included in `data/engine-license.txt`.
 Next content kinds need their own native export/loader contracts and budgets;
 the material host is not a universal scene/character/plant player. New catalog
 versions require an explicit snapshot refresh, validation and paired publication.
+
+## Meshes and trees
+
+The catalog also admits static meshes. The first eight are the five canonical
+botanical trees and three golden birch variants. Large payloads live in pinned
+`ignis-catalog` GitHub Releases: one ZIP and one compressed preview per asset.
+Git tracks metadata, SHA-256 digests and native-capture JPEGs only. No account,
+upload service, database or paid storage plan was added.
+
+Each ZIP includes the original `.ignis-botany`, a full editable Ignis scene with
+its source binding and native materials, full-geometry GLB, checksums, attribution
+and CC BY 4.0. Birch includes its original `.ignis-material` files. GLB uses
+representative portable PBR colors; Ignis procedural patterns remain in the
+native scene/materials. Reference photographs and unfinished game assets are
+excluded. Source provenance can refer to an unpublished local engine snapshot;
+the complete licensed asset is supplied in the release itself.
+
+`examples/export_web_meshes.rs` compiles the original source for the download and
+native thumbnail, then recompiles a **preview-only** recipe at axis8 / sides6 /
+blade4. This keeps organs, positions and appearance parameters while reducing
+native tessellation. Palmate outlines retain the compiler's native 48 contour
+samples. Full and preview vertex/triangle counts and bounds are separate metadata.
+This is a static presentation, not a biological simulation or a full web editor.
+
+`src/meshes/preview.rs` packs the actual native static position-coordinate stream
+and original GPU material programs. IGMP1 has a 16-byte header (magic, version,
+padded JSON bytes, binary bytes), JSON metadata and little-endian binary data:
+1392-byte material records, native program vec4 words, position/normal vertices
+at24 bytes, u32 indices and80-byte native instances. The browser invokes the
+existing `vs_shared_position_coordinates` and `fs_main` shader entry points,
+frames the world bounds and draws trunk/foliage parts with their original tints
+and materials. It does not substitute spheres or reimplement the shader.
+
+Compressed `.igmpz` previews are fetched only after activation, verified by size
+and SHA-256, decompressed with a bounded `DecompressionStream`, then verified
+again before GPU upload. Limits:64 MiB compressed per asset,192 MiB decoded,
+128 parts and384 MiB total assembled runtime snapshot. These are portal limits,
+not engine limits. Only one selected mesh is resident on the GPU; requests are
+cancelled on selection changes and frames are submitted only after interaction,
+resize or visibility changes. Material previews retain their1 MiB packet limit.
+
+`website/runtime_assets.py` assembles previews from immutable release URLs into
+ignored `website/dist/catalog/data/meshes/`. Both the Pages workflow and paired
+deployment use the same hash-pinned manifest. The public Git check verifies all
+tracked site files plus every declared runtime file; the release fingerprint and
+post-deployment verification include **all** assembled bytes on both hosts.
+`python3 scripts/build_web_catalog.py --catalog ../ignis-catalog --mesh-cache
+artifacts/catalog-meshes` can reuse locally verified release payloads. A free
+hosting allowance is finite: downloads and GPU activation remain explicit;
+no unlimited bandwidth or performance guarantee is implied.

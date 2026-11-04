@@ -17,6 +17,7 @@ def sha(data):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--catalog', type=Path, required=True)
+    parser.add_argument('--mesh-cache', type=Path, help='Verified local release packets; otherwise hydrate from public Releases')
     parser.add_argument('--exporter', type=Path, default=ROOT / 'target/release/examples/export_web_materials')
     args = parser.parse_args()
     catalog = args.catalog.resolve()
@@ -35,8 +36,30 @@ def main():
         (output / 'sources').mkdir(parents=True)
         (output / 'thumbs').mkdir()
         inputs = []
+        runtime = {}
         for asset in records:
-            if asset['kind'] != 'material' or asset['license'] != 'CC-BY-4.0':
+            if asset['license'] != 'CC-BY-4.0':
+                raise RuntimeError('Explicit CC BY asset license required')
+            if asset['kind'] == 'mesh':
+                if asset['native_preview']['format'] != 'IGMP1+gzip':
+                    raise RuntimeError('Unsupported mesh preview')
+                preview = next(f for f in asset['files'] if f['media_type'] == 'application/vnd.ignis.mesh-preview+gzip')
+                thumbnail = next(f for f in asset['files'] if f['media_type'] == 'image/jpeg')
+                image = (catalog / thumbnail['path']).resolve()
+                if not image.is_relative_to(catalog) or len(image.read_bytes()) != thumbnail['bytes'] or sha(image.read_bytes()) != thumbnail['sha256']:
+                    raise RuntimeError('Mesh thumbnail integrity failure')
+                shutil.copyfile(image, output / 'thumbs' / f'{asset["id"]}.jpg')
+                relative = f'catalog/data/meshes/{asset["id"]}.igmpz'
+                runtime[relative] = {key: preview[key] for key in ['url', 'bytes', 'sha256']}
+                asset['preview'] = dict(path=f'data/meshes/{asset["id"]}.igmpz', packet_bytes=preview['bytes'], packet_sha256=preview['sha256'], decoded_bytes=asset['native_preview']['decoded_bytes'], decoded_sha256=asset['native_preview']['decoded_sha256'], thumbnail_sha256=thumbnail['sha256'])
+                if args.mesh_cache:
+                    cached = args.mesh_cache / f'{asset["id"]}.igmpz'
+                    if cached.stat().st_size != preview['bytes'] or sha(cached.read_bytes()) != preview['sha256']:
+                        raise RuntimeError('Local release packet differs from catalog')
+                    (output / 'meshes').mkdir(exist_ok=True)
+                    shutil.copyfile(cached, output / 'meshes' / cached.name)
+                continue
+            if asset['kind'] != 'material':
                 raise RuntimeError('Preview1 requires a supported, explicitly licensed material')
             source_record = next(f for f in asset['files'] if f['role'] == 'source')
             source = (catalog / source_record['path']).resolve()
@@ -70,11 +93,14 @@ def main():
         if (output / 'ignis.wgsl').read_text() != shader:
             raise RuntimeError('Exporter was compiled with a different shader; rebuild it')
         for asset in records:
+            if asset['kind'] != 'material':
+                continue
             packet = (output / f'{asset["id"]}.bin').read_bytes()
             asset['preview'].update(packet_sha256=sha(packet), packet_bytes=len(packet))
         (output / 'packets.json').unlink()
-        native_files = ['src/materials.rs', 'src/materials/preview.rs', 'src/materials/recipe.rs', 'src/materials/marble.rs', 'src/materials/rock.rs', 'src/scene.wgsl', 'src/particles.wgsl']
-        data.update(source_revision=revision, source_repository='https://github.com/zerobytes/ignis-catalog', shader_sha256=sha(shader.encode()), renderer_source={'repository': 'https://github.com/zerobytes/ignis', 'local_snapshot': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'source_state': 'working-tree', 'source_sha256': {p: sha((ROOT / p).read_bytes()) for p in native_files}, 'scope': 'native-material-shader-webgpu-host'})
+        native_files = ['src/meshes/preview.rs', 'src/materials.rs', 'src/materials/preview.rs', 'src/materials/recipe.rs', 'src/materials/marble.rs', 'src/materials/rock.rs', 'src/scene.wgsl', 'src/particles.wgsl']
+        data.update(source_revision=revision, source_repository='https://github.com/zerobytes/ignis-catalog', shader_sha256=sha(shader.encode()), renderer_source={'repository': 'https://github.com/zerobytes/ignis', 'local_snapshot': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'source_state': 'working-tree', 'source_sha256': {p: sha((ROOT / p).read_bytes()) for p in native_files}, 'scope': 'native-material-and-static-mesh-shader-webgpu-host'})
+        (output / 'runtime-files.json').write_text(json.dumps({'version': 1, 'files': runtime}, indent=2) + '\n')
         (output / 'catalog.json').write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
         shutil.copyfile(catalog / 'LICENSES/CC-BY-4.0.txt', output / 'LICENSE.txt')
         shutil.copyfile(ROOT / 'LICENSE', output / 'engine-license.txt')

@@ -1,5 +1,6 @@
 /target
 /artifacts/
+/website/dist/catalog/data/meshes/
 .DS_Store
 __pycache__/
 

@@ -1001,17 +1001,866 @@
         "packet_sha256": "e8976e0ead953291e29fb465b89afb00081e13d3356d54f42ae3d6b200d415de",
         "packet_bytes": 1648
       }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.birch-0",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Golden birch — Golden spire",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Golden birch — Golden spire by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "birch-0"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/genshin-birch/birch_0.ignis-botany",
+        "source_sha256": "62bbd94e32c09a7c2535721d28561318ce230d2add67b54005e5aa39891dc87c",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 7
+      },
+      "mesh": {
+        "vertices": 376330,
+        "triangles": 721264,
+        "bounds": {
+          "max": [
+            2.2650840282440186,
+            8.353785514831543,
+            1.806638240814209
+          ],
+          "min": [
+            -1.9761940240859985,
+            -0.0003055271226912737,
+            -2.368387460708618
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 22664648,
+        "decoded_sha256": "b5ec0da772128fb9569a13d3185e7879ae7ecc2ead789acb46cb0dfab2969ac9",
+        "vertices": 305180,
+        "triangles": 578964,
+        "bounds": {
+          "max": [
+            2.265087842941284,
+            8.353787422180176,
+            1.8066389560699463
+          ],
+          "min": [
+            -1.9761958122253418,
+            -0.0003055271226912737,
+            -2.3683876991271973
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 27667949,
+          "sha256": "5eea56623cf920f8bc84441e2f9d46f2be07d98810b3ad82d84bf922e734eb6a",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-0.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 11079999,
+          "sha256": "6c59cfde1ae3c7545b064dbed6690bad9da3cf049d39afee841b1a2b6a03c48b",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 19931,
+          "sha256": "f940ab6510c71a364ddf2696b47edc24fc5284280208bdb720d7203ad46a44ee",
+          "path": "assets/meshes/trees/birch-0/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/birch-0/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.birch-0.igmpz",
+        "packet_bytes": 11079999,
+        "packet_sha256": "6c59cfde1ae3c7545b064dbed6690bad9da3cf049d39afee841b1a2b6a03c48b",
+        "decoded_bytes": 22664648,
+        "decoded_sha256": "b5ec0da772128fb9569a13d3185e7879ae7ecc2ead789acb46cb0dfab2969ac9",
+        "thumbnail_sha256": "f940ab6510c71a364ddf2696b47edc24fc5284280208bdb720d7203ad46a44ee"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.birch-1",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Golden birch — Broad golden crown",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Golden birch — Broad golden crown by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "birch-1"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/genshin-birch/birch_1.ignis-botany",
+        "source_sha256": "376c674b4d6c5fef1b80898eef5a1c893ffcfa1eaf7da90ddbaac5033fe76c3b",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 7
+      },
+      "mesh": {
+        "vertices": 376242,
+        "triangles": 721088,
+        "bounds": {
+          "max": [
+            2.276397705078125,
+            7.440774440765381,
+            2.515186309814453
+          ],
+          "min": [
+            -2.452301025390625,
+            -0.0005466574802994728,
+            -2.375291585922241
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 22663492,
+        "decoded_sha256": "bd14a74843f6ce87cf7045e6f51bf05c5b0a2284780794f5363d0418f4eb02b5",
+        "vertices": 305156,
+        "triangles": 578916,
+        "bounds": {
+          "max": [
+            2.276395559310913,
+            7.440781593322754,
+            2.51518177986145
+          ],
+          "min": [
+            -2.452303647994995,
+            -0.0005466574802994728,
+            -2.3752944469451904
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 27629661,
+          "sha256": "2aa8bf5732f0866fbf12612cd6431714639893de6d28b257c6e3362cdf40bd39",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-1.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 11071558,
+          "sha256": "c5d6668c866c00a1207a3549f319af3c18219d12fea6d57d27762dbc437d97cd",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 18929,
+          "sha256": "f81696af389f522d4d10d660d2a9610ad56613fe35726170451d8e3453677316",
+          "path": "assets/meshes/trees/birch-1/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/birch-1/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.birch-1.igmpz",
+        "packet_bytes": 11071558,
+        "packet_sha256": "c5d6668c866c00a1207a3549f319af3c18219d12fea6d57d27762dbc437d97cd",
+        "decoded_bytes": 22663492,
+        "decoded_sha256": "bd14a74843f6ce87cf7045e6f51bf05c5b0a2284780794f5363d0418f4eb02b5",
+        "thumbnail_sha256": "f81696af389f522d4d10d660d2a9610ad56613fe35726170451d8e3453677316"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.birch-2",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Golden birch — Slender leaning crown",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Golden birch — Slender leaning crown by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "birch-2"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/genshin-birch/birch_2.ignis-botany",
+        "source_sha256": "367ffe4adbc0b165b934bc05b3838a8c1cb1e63025d9cfd951ee52a41c714f56",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 7
+      },
+      "mesh": {
+        "vertices": 376426,
+        "triangles": 721456,
+        "bounds": {
+          "max": [
+            1.9690372943878174,
+            8.825493812561035,
+            2.0730960369110107
+          ],
+          "min": [
+            -2.0068182945251465,
+            -0.0005342367803677917,
+            -2.1207854747772217
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 22664932,
+        "decoded_sha256": "606e5fbb11c9587f65c6e3e178259eb49c45eb490a54fafa978fb93ec8c69062",
+        "vertices": 305186,
+        "triangles": 578976,
+        "bounds": {
+          "max": [
+            1.9690403938293457,
+            8.825498580932617,
+            2.073091983795166
+          ],
+          "min": [
+            -2.0068132877349854,
+            -0.0005342367803677917,
+            -2.120788335800171
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 27691791,
+          "sha256": "7feacd401e2e2ba3d9192fd357c7e3c85f9faf10b1f2c26188e3195ba118064d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-2.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 11085268,
+          "sha256": "4fa8c0e9feba09b36edb4036fc0a2b9d7b5427e384163bdc5cba0559cbf70e4f",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-2.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 18091,
+          "sha256": "4d8fe7877fb148e1fadef631c4ae826c72015c6ae137f47e5676eaf2dc91310f",
+          "path": "assets/meshes/trees/birch-2/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/birch-2/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.birch-2.igmpz",
+        "packet_bytes": 11085268,
+        "packet_sha256": "4fa8c0e9feba09b36edb4036fc0a2b9d7b5427e384163bdc5cba0559cbf70e4f",
+        "decoded_bytes": 22664932,
+        "decoded_sha256": "606e5fbb11c9587f65c6e3e178259eb49c45eb490a54fafa978fb93ec8c69062",
+        "thumbnail_sha256": "4d8fe7877fb148e1fadef631c4ae826c72015c6ae137f47e5676eaf2dc91310f"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.eucalipto",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Eucalyptus",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Eucalyptus by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "eucalipto"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/eucalipto.ignis-botany",
+        "source_sha256": "f6085a14b09f3b6d3dfe9a1c666dad486e6feb68238a37e115947a05baa2ac86",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 4
+      },
+      "mesh": {
+        "vertices": 1512222,
+        "triangles": 2953400,
+        "bounds": {
+          "max": [
+            8.037596702575684,
+            22.904958724975586,
+            8.63642406463623
+          ],
+          "min": [
+            -8.994375228881836,
+            -0.013933655805885792,
+            -9.187928199768066
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 35460592,
+        "decoded_sha256": "f5cb818f06293f65dda779859f4e994982c3ea3b8c25d070d8383e7924978225",
+        "vertices": 756438,
+        "triangles": 1441832,
+        "bounds": {
+          "max": [
+            8.026850700378418,
+            22.90592384338379,
+            8.635483741760254
+          ],
+          "min": [
+            -8.994643211364746,
+            -0.013933655805885792,
+            -9.185460090637207
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 84054202,
+          "sha256": "149b7d38f66ca7fa8b5ecf97d9d4e2dad6f486a4e1ce9b97637374431ca8c2fb",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.eucalipto.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 21266400,
+          "sha256": "1be809da529f5cc6695df25d37f9ece1eae34cc370aea7b3d6f8840061329f55",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.eucalipto.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 11837,
+          "sha256": "d7c94144ba76f70d09b18523ecc6a27d40a160d277a1e38babd541ac01d77676",
+          "path": "assets/meshes/trees/eucalipto/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/eucalipto/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.eucalipto.igmpz",
+        "packet_bytes": 21266400,
+        "packet_sha256": "1be809da529f5cc6695df25d37f9ece1eae34cc370aea7b3d6f8840061329f55",
+        "decoded_bytes": 35460592,
+        "decoded_sha256": "f5cb818f06293f65dda779859f4e994982c3ea3b8c25d070d8383e7924978225",
+        "thumbnail_sha256": "d7c94144ba76f70d09b18523ecc6a27d40a160d277a1e38babd541ac01d77676"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.figueira",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Broad-crown fig",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Broad-crown fig by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "figueira"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/figueira.ignis-botany",
+        "source_sha256": "8504e34e7b9daa55b337cbe8325979cfd2ef18c2f461f078a73e976573cf2c73",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 4
+      },
+      "mesh": {
+        "vertices": 2120570,
+        "triangles": 4092656,
+        "bounds": {
+          "max": [
+            13.571788787841797,
+            12.919195175170898,
+            11.864731788635254
+          ],
+          "min": [
+            -13.949251174926758,
+            -2.1016080379486084,
+            -11.965088844299316
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 70144920,
+        "decoded_sha256": "b2f8641303176c02fd8fc12b1b4c693f19f9679dcc7d25b4de37a68c9a233e70",
+        "vertices": 1498388,
+        "triangles": 2848292,
+        "bounds": {
+          "max": [
+            13.573077201843262,
+            12.909526824951172,
+            11.861016273498535
+          ],
+          "min": [
+            -13.948681831359863,
+            -2.1016979217529297,
+            -11.964497566223145
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 123976365,
+          "sha256": "1c05eea7ef5a03defbfb8024f290e50266e216d2755fc82b28fbf29e07c19e6d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 42203940,
+          "sha256": "e840b18469d6945c723969625c83143baaa8448eac7c180d89038dafa5f9f2c1",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 12736,
+          "sha256": "4ff2e64fddd3187d959000230fa4c8dcb82918141edb67d4ed1f4cb6167b4b1d",
+          "path": "assets/meshes/trees/figueira/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/figueira/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.figueira.igmpz",
+        "packet_bytes": 42203940,
+        "packet_sha256": "e840b18469d6945c723969625c83143baaa8448eac7c180d89038dafa5f9f2c1",
+        "decoded_bytes": 70144920,
+        "decoded_sha256": "b2f8641303176c02fd8fc12b1b4c693f19f9679dcc7d25b4de37a68c9a233e70",
+        "thumbnail_sha256": "4ff2e64fddd3187d959000230fa4c8dcb82918141edb67d4ed1f4cb6167b4b1d"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.figueira-rs",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Countryside fig",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Countryside fig by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "figueira-rs"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/figueira_rs.ignis-botany",
+        "source_sha256": "ff55cb8d68b3d6fb9d3d3f4bbe37d17035f48efd29a37c9eb205b410ffebce41",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 7
+      },
+      "mesh": {
+        "vertices": 2884806,
+        "triangles": 5644424,
+        "bounds": {
+          "max": [
+            14.4595365524292,
+            15.566461563110352,
+            15.569226264953613
+          ],
+          "min": [
+            -12.110258102416992,
+            -1.3071138858795166,
+            -14.375956535339355
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 69144220,
+        "decoded_sha256": "a9eb38a4a6fbf5030c7addeca45e4af28bed9ef931472ef9a27ef67535fa2d10",
+        "vertices": 1471716,
+        "triangles": 2818244,
+        "bounds": {
+          "max": [
+            14.447172164916992,
+            15.574305534362793,
+            15.518535614013672
+          ],
+          "min": [
+            -12.110258102416992,
+            -1.3071134090423584,
+            -14.364788055419922
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 159960651,
+          "sha256": "ae9c7b23322075328aff6241b6a294eaf63822911a7108e444753c6093e33ccb",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira-rs.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 41451657,
+          "sha256": "17cf5108730adf0f80858c834a0cf71b5f0afb36d390b8e3c31c5a959850b0cb",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira-rs.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 11508,
+          "sha256": "6428fe76faf46f6034559547f8cd8497018504518689ea5866f61ceaa7e19695",
+          "path": "assets/meshes/trees/figueira-rs/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/figueira-rs/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.figueira-rs.igmpz",
+        "packet_bytes": 41451657,
+        "packet_sha256": "17cf5108730adf0f80858c834a0cf71b5f0afb36d390b8e3c31c5a959850b0cb",
+        "decoded_bytes": 69144220,
+        "decoded_sha256": "a9eb38a4a6fbf5030c7addeca45e4af28bed9ef931472ef9a27ef67535fa2d10",
+        "thumbnail_sha256": "6428fe76faf46f6034559547f8cd8497018504518689ea5866f61ceaa7e19695"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.palmeirinha",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Areca palm",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Areca palm by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "palmeirinha"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/palmeirinha.ignis-botany",
+        "source_sha256": "032ae6e4fab86548bf2e0b1459fb3c2ee37357859ffd45fad5b67ad50558c241",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 3
+      },
+      "mesh": {
+        "vertices": 481728,
+        "triangles": 946944,
+        "bounds": {
+          "max": [
+            1.7266637086868286,
+            4.980625152587891,
+            1.8326197862625122
+          ],
+          "min": [
+            -1.7714852094650269,
+            -0.004694212228059769,
+            -1.5932869911193848
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 6644224,
+        "decoded_sha256": "2a155aefb144c00b28c72e4cf66caedc1c4995c8e6bae739163412eeb57537ff",
+        "vertices": 142464,
+        "triangles": 268416,
+        "bounds": {
+          "max": [
+            1.7266452312469482,
+            4.9804768562316895,
+            1.8326197862625122
+          ],
+          "min": [
+            -1.7714728116989136,
+            -0.004694212228059769,
+            -1.593258261680603
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 25446762,
+          "sha256": "86ccf6c2eadf7ce1fbdec33afe319b9a835b0f4bae0678d3a083adc22e111266",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.palmeirinha.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 4025278,
+          "sha256": "17e49b013152ff22775f0332b263759bd6d71ca2e5d9aa490e1f10ded61213fa",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.palmeirinha.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 11396,
+          "sha256": "6e63dd71699c4a31c1b3d66ad22461b0d59c8774fcc5991891dd20144630ec06",
+          "path": "assets/meshes/trees/palmeirinha/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/palmeirinha/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.palmeirinha.igmpz",
+        "packet_bytes": 4025278,
+        "packet_sha256": "17e49b013152ff22775f0332b263759bd6d71ca2e5d9aa490e1f10ded61213fa",
+        "decoded_bytes": 6644224,
+        "decoded_sha256": "2a155aefb144c00b28c72e4cf66caedc1c4995c8e6bae739163412eeb57537ff",
+        "thumbnail_sha256": "6e63dd71699c4a31c1b3d66ad22461b0d59c8774fcc5991891dd20144630ec06"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.platano",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Plane tree",
+      "summary": "Editable native botanical tree with full mesh, source recipe and materials.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Plane tree by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "platano"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis",
+        "commit": "5e2d0e976937629270b04c23bfe9630cdc5ea2b1",
+        "path": "assets/botany/platano.ignis-botany",
+        "source_sha256": "e16c68f39ccef28662840669e3d4ab6be8f8623066d51feb41a7f290ea2beb87",
+        "availability": "local-unpublished",
+        "note": "The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "runtime_validation": "Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.",
+        "botany_recipe_version": 4
+      },
+      "mesh": {
+        "vertices": 2335750,
+        "triangles": 4650248,
+        "bounds": {
+          "max": [
+            8.01821517944336,
+            18.563261032104492,
+            8.500114440917969
+          ],
+          "min": [
+            -7.824755668640137,
+            -0.04086841642856598,
+            -8.54809856414795
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "sides": 6
+        },
+        "decoded_bytes": 102003916,
+        "decoded_sha256": "57732e04bde3b5c3f23c82244a0d0cc8028f72ca5885d190ba6cacdb7fae52d9",
+        "vertices": 2130310,
+        "triangles": 4239368,
+        "bounds": {
+          "max": [
+            8.015301704406738,
+            18.56914520263672,
+            8.496986389160156
+          ],
+          "min": [
+            -7.820223331451416,
+            -0.04086841642856598,
+            -8.5431547164917
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 117207096,
+          "sha256": "2538de82b6e7b4b18b373c41cf45bf46299b8954d149324b2cc2e576c29852a0",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.platano.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 58192692,
+          "sha256": "c1ff602b0db6b376a5bfb8b23cacb99a5d1a89979e55b829ab62b73c2142abaa",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.platano.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 13318,
+          "sha256": "a849b65f230a2abf8251fa1069c133233a7a77b673155b2b0019e5477678240a",
+          "path": "assets/meshes/trees/platano/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/platano/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.platano.igmpz",
+        "packet_bytes": 58192692,
+        "packet_sha256": "c1ff602b0db6b376a5bfb8b23cacb99a5d1a89979e55b829ab62b73c2142abaa",
+        "decoded_bytes": 102003916,
+        "decoded_sha256": "57732e04bde3b5c3f23c82244a0d0cc8028f72ca5885d190ba6cacdb7fae52d9",
+        "thumbnail_sha256": "a849b65f230a2abf8251fa1069c133233a7a77b673155b2b0019e5477678240a"
+      }
     }
   ],
-  "source_revision": "80f36ed00197260ad6cd4ea6a9fc7f246764cab7",
+  "source_revision": "0bab64f2d535b64f85fabeb12be3f5201a92f696",
   "source_repository": "https://github.com/zerobytes/ignis-catalog",
   "shader_sha256": "cc69495172bf46ee7e735b1ff4afae02fbe99bd26c0ad89d1243b00ab32120e7",
   "renderer_source": {
     "repository": "https://github.com/zerobytes/ignis",
-    "local_snapshot": "137856860255683a9b7097ce5c0d987d0e515ba6",
+    "local_snapshot": "51bdfdbc0dee86312aabba2139b42805f377dc55",
     "source_state": "working-tree",
     "source_sha256": {
-      "src/materials.rs": "59ee68a43441f3c2c2809c8faa9833b975fb2e77cbe991bb20334670c92572f8",
+      "src/meshes/preview.rs": "38a52b1ddb1c39efae0980288775eb67dfce1507b97b39da27b0b0301dc1d132",
+      "src/materials.rs": "092b4cbaf3ae81146c94781cc0fc4a88bb0048b6d52468c6c9cdd12a1138cfb1",
       "src/materials/preview.rs": "392ee73f790b5eb2e0e4d176a02eee502ca09fc1bb9832dbb90aeeb24ea17311",
       "src/materials/recipe.rs": "437a2504b4815bd310b43c8df267078e144279731d332d905d8abbf3148d6d21",
       "src/materials/marble.rs": "1c19011fc5d3e09dd09544fb1d1bcaf61fc4a9a414ae63dddaf019e220ac1d59",
@@ -1019,6 +1868,6 @@
       "src/scene.wgsl": "c19298e9ddc83996a0f950bbf0fc4652ce1aa589b8cebc78c33c304a46604b1f",
       "src/particles.wgsl": "d9ce4a54ce7002590d8f044790cb0df9c02f5e1ef680eebbe5a2183836f96d15"
     },
-    "scope": "native-material-shader-webgpu-host"
+    "scope": "native-material-and-static-mesh-shader-webgpu-host"
   }
 }
