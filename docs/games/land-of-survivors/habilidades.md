@@ -4,6 +4,8 @@ Anexo do [GDD](GDD.md). Preserva as 284 habilidades como design, com nomes em in
 
 Os números são balanceamento provisório. Distâncias e velocidades foram expressas em metros e metros por segundo; tempos em segundos. Os demais valores conservam a escala original do design. Campos como lentidão, mitigação e execução ficam na escala herdada, sem inventar uma porcentagem ou regra ausente da descrição. Parâmetros que não afetam determinada modalidade continuam apenas como referência de sua ficha.
 
+O [runtime funcional no Ignis](habilidades-runtime.md) transforma estas entradas em conteúdo executável. As interpretações necessárias para regras incompletas estão documentadas separadamente como balanceamento provisório, sem reescrever o catálogo herdado.
+
 ## Bases e crescimento das classes
 
 Ordem dos atributos: Força, Destreza, Vigor, Inteligência e Espírito. A base da espécie e os pontos livres se somam a esses valores de classe.

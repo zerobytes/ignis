@@ -1,6 +1,6 @@
 # Land of Survivors GDD
 
-Versão 1.2 · 3 de novembro de 2026 · Desenvolvimento no Ignis.
+Versão 1.3 · 4 de novembro de 2026 · Desenvolvimento no Ignis.
 
 Land of Survivors é um RPG 3D de fantasia clássica, com exploração de um planeta esférico finito do tamanho da Terra, evolução do personagem, combate PvE/PvP e histórias com consequências permanentes. Preserva a lore, a história e as decisões não técnicas do projeto anterior. Toda a construção do jogo no Ignis será nova.
 
@@ -81,6 +81,8 @@ Habilidades direcionais usam a mira central. Habilidades de chão mostram uma á
 
 O repertório preserva dano, cura, escudos, mitigação, controle, lentidão, imobilização, limpeza de efeitos, restauração de recurso, provocação, deslocamentos, áreas persistentes, cones, encadeamentos e múltiplos disparos. Tempo de conjuração, custo, recarga, duração e seleção de aliados/inimigos fazem parte do design de cada habilidade.
 
+O [componente funcional das 284 habilidades](habilidades-runtime.md) executa esse catálogo no Ignis em um laboratório de combate por terminal/MCP, sem animações ou HUD gráfico. Valores não definidos no design têm parametrização provisória documentada. A integração com personagens finais, a interface gráfica e o mundo planetário permanece pendente; ter o catálogo executável não declara o RPG completo.
+
 O dano considera armadura, mitigação temporária e escudos antes da vida. Cura, efeitos periódicos e proteção mantêm destinatários próprios. Efeitos de aliados e inimigos podem coexistir na mesma área sem aplicar o mesmo resultado a todos.
 
 ### Magias obrigatórias
@@ -116,7 +118,7 @@ A topografia terá Genshin Impact como referência de linguagem geográfica. Pri
 
 Direção de autoria definida em 4 de novembro de 2026: o relevo deverá permitir geração procedural e escultura manual combinadas. As ferramentas usadas pelo gerador também serão utilizáveis manualmente, incluindo controle de região, máscaras e intensidade. Será possível gerar uma base, esculpir ajustes e voltar à geração preservando o trabalho manual; esse requisito de autoria não define escavação ou deformação pelo jogador durante o gameplay. O contrato e o estado da implementação estão no [diagnóstico do protótipo](prototipo-relevo.md#procedural-e-escultura-compartilham-as-ferramentas).
 
-O [projeto nativo](../../../games/land-of-survivors/README.md) contém uma região original de [protótipo de relevo](prototipo-relevo.md), comparando cristas suaves e patamares na mesma composição. Ela serve para avaliar a linguagem geográfica e as ferramentas, sem replicar localizações de Genshin. Continentes, oceanos e hidrografia global continuam pendentes; o restante da esfera ainda não tem composição geográfica. A etapa atual inclui somente o mundo, sem construir personagens, vilas, vegetação ou gameplay.
+O [projeto nativo](../../../games/land-of-survivors/README.md) contém uma região original de [protótipo de relevo](prototipo-relevo.md), comparando cristas suaves e patamares na mesma composição. Ela serve para avaliar a linguagem geográfica e as ferramentas, sem replicar localizações de Genshin. Continentes, oceanos e hidrografia global continuam pendentes; o restante da esfera ainda não tem composição geográfica. Em 4 de novembro, o trabalho do mundo foi deixado temporariamente de lado para implementar as habilidades em um laboratório separado. Personagens finais, vilas e vegetação não foram construídos nessa etapa.
 
 Os biomas iniciais são floresta temperada, pradaria, floresta úmida, deserto, tundra, terras alpinas, costa e oceano. A cultura de um povo não é determinada automaticamente pelo bioma. A construção anterior desses ambientes não será reutilizada.
 

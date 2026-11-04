@@ -1,5 +1,6 @@
 mod avatar_support;
 mod checkpoint;
+mod gameplay;
 mod planet;
 mod player_view;
 mod portable;

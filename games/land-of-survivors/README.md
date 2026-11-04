@@ -1,6 +1,16 @@
 # Land of Survivors
 
-Projeto nativo Ignis, iniciado em 3 de novembro de 2026. Mundo esférico finito do tamanho médio terrestre, agora com uma região original de estudo de relevo. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Geografia](../../docs/games/land-of-survivors/geografia.md) · [Protótipo e ferramentas](../../docs/games/land-of-survivors/prototipo-relevo.md).
+Projeto nativo Ignis, iniciado em 3 de novembro de 2026. Mundo esférico finito do tamanho médio terrestre, com uma região original de estudo de relevo. A etapa atual implementa as 284 habilidades em um laboratório funcional separado; o mundo está preservado. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Habilidades funcionais](../../docs/games/land-of-survivors/habilidades-runtime.md) · [Geografia](../../docs/games/land-of-survivors/geografia.md) · [Protótipo e ferramentas](../../docs/games/land-of-survivors/prototipo-relevo.md).
+
+## Habilidades funcionais
+
+```sh
+python3 games/land-of-survivors/abilities.py --verify
+python3 games/land-of-survivors/abilities.py
+python3 games/land-of-survivors/abilities.py --mcp
+```
+
+264 habilidades humanoides e vinte de Urso/Felino, com custos, conjuração, recargas, projéteis, áreas, efeitos periódicos, controles e barras de dez posições. O componente nativo em `src/combat.rs` usa Engine/Rapier e um encontro técnico de primitivas novas. O terminal e o MCP compartilham o dispatcher. Não há HUD gráfico, animações ou integração com o runtime planetário nesta etapa. Comandos, balanceamento provisório, persistência e limites estão no [relatório funcional](../../docs/games/land-of-survivors/habilidades-runtime.md).
 
 ## Mundo atual
 
@@ -49,4 +59,4 @@ O primeiro comando compara controle suave e patamares regionais, sem substituir 
 
 Python compõe dados e envia comandos de sessão; não calcula alturas, malhas ou trabalho por frame. Leitura das fontes, queries e capturas são explícitas. Física, amostragem, residência e renderização permanecem no Ignis. A vista aceita até 1.536 tiles, sujeita também ao limite nativo de vértices. No chão, o bound solicitado ainda não é atingido; ver o diagnóstico antes de aumentar escala ou detalhe.
 
-Mantém-se um único executável corrente da engine, sem builds ou bundles adicionais para o jogo. A captura, o log e o relatório usam caminhos estáveis em `artifacts/` e são substituídos pela verificação seguinte. Esses outputs locais ficam fora do Git; manifesto, cena, fontes próprias e comandos de abertura são versionados.
+Mantém-se um executável corrente da engine e um executável corrente do laboratório de habilidades em `target/release/examples/land_of_survivors`, sem bundles ou cópias históricas. A captura, o log, o save de jogo e os relatórios usam caminhos estáveis em `artifacts/` e são substituídos pela verificação seguinte. Esses outputs locais ficam fora do Git; manifesto, cena, fontes próprias e comandos de abertura são versionados.
