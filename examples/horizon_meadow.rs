@@ -202,6 +202,7 @@ fn compile(out: &Path) -> Result<()> {
         },
     ];
     let mut pack = Pack {
+        continuous: None,
         origin: [-500., -500.],
         spacing: 0.25,
         tiles: [250, 250],

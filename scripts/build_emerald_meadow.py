@@ -35,6 +35,12 @@ def digest(p):
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+def review(cameras):
+    before = '<section class="compare"><figure><img src="rejected-walk.png"><figcaption>Antes: LOD por bloco</figcaption></figure><figure><img src="walk.png"><figcaption>Agora: LOD por folha, mesma câmera</figcaption></figure></section>' if (OUT / 'rejected-walk.png').exists() else ''
+    cards = ''.join(f'<figure><a href="{n}.png"><img src="{n}.png"></a><figcaption>{html.escape(n)}</figcaption></figure>' for n in [*cameras, 'player'])
+    (OUT / 'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Esmeralda 1 km²</title><style>body{background:#17211c;color:#eee;font:16px system-ui;margin:24px}img{max-width:100%;width:1400px}.compare{display:grid;grid-template-columns:1fr 1fr}figure{margin:12px}</style><h1>Esmeralda · 1 km × 1 km</h1><p>Capturas nativas sem filtro. player é a câmera real do personagem. Campo experimental vinculado pelo iniciador; SaveScene sozinho não inclui a grama.</p>' + before + cards)
+
+
 def light(center=(0, 12, 0), extent=45):
     return dict(direction=[.72, -.35, -.45], ambient=.23, direct_intensity=1.12,
         environment=dict(sky=[.52, .65, .83], horizon=[.68, .75, .74],
@@ -136,22 +142,25 @@ def leaf_templates():
             assert math.dist(points[0], organ['path'][0]) < .0002
             ns = normals[start:start + 17]
             ns = [[x / max(math.sqrt(sum(v*v for v in n)), 1e-20) for x in n] for n in ns]
-            leaves.append((points, ns))
+            color = recipe['settings']['leaf_color']
+            tint = sum(a*b for a,b in zip(color,[.2126,.7152,.0722])) / sum(a*b for a,b in zip([.13,.29,.035],[.2126,.7152,.0722]))
+            leaves.append((points, ns, tint))
     # Stable spatial selection spreads representatives across the square rather
     # than taking the first row of the source. These remain approximate scales.
     leaves.sort(key=lambda leaf: hash32(int((leaf[0][0][0] + .2) * 100000) ^
                                        (int((leaf[0][0][2] + .2) * 100000) << 12)))
-    levels = []
-    for count, longitudinal, across, stride in [(384, 3, 1, 1), (192, 2, 1, 1),
-            (48, 2, 1, 2), (12, 2, 1, 4), (3, 2, 1, 8), (1, 2, 1, 16)]:
+    levels, metadata = [], []
+    for count, longitudinal, across, stride in [(192, 4, 2, 1), (192, 2, 2, 1),
+            (48, 2, 1, 1), (12, 2, 1, 2), (3, 2, 1, 4), (1, 2, 1, 8)]:
         raw = array('f')
+        aux = array('f')
         def station(u, v):
             if u == 0:
                 return 0
             if u == 4:
                 return 16
             return 1 + (u - 1) * 5 + v
-        for points, normals in leaves[:count]:
+        for leaf_id, (points, normals, tint) in enumerate(leaves[:count]):
             for step in range(longitudinal):
                 for cross in range(across):
                     a = station(step * 4 // longitudinal, cross * 4 // across)
@@ -162,14 +171,13 @@ def leaf_templates():
                         if len(set(tri)) < 3:
                             continue
                         for i in tri:
-                            # The existing diagnostic shader multiplies local
-                            # X/Z by stride. Counteract it in the recipe: distant
-                            # grass retains physical width instead of becoming
-                            # metre-wide leaves and inflating every block bound.
                             p = points[i]
-                            raw.extend([p[0] / stride, p[1], p[2] / stride, 0., *normals[i], 0.])
+                            raw.extend([*p, 0., *normals[i], 0.])
+                            mid = 0 if i == 0 else 16 if i == 16 else 3 + ((i - 1) // 5) * 5
+                            aux.extend([*points[0], float(leaf_id), *points[mid], tint])
         levels.append((stride, raw))
-    return levels, len(leaves), dict(manifest_sha256=digest(DEST / 'library.json'),
+        metadata.append(aux)
+    return levels, metadata, 192, dict(manifest_sha256=digest(DEST / 'library.json'),
         native_library_sha256=digest(library_path), source_sha256=built['source_sha256'],
         source_entry=entry['id'])
 
@@ -178,23 +186,26 @@ def refresh_templates():
     """Replace only the six representations; preserve all compiled root heights."""
     path = OUT / 'ground.ignis-field'
     candidate = OUT / 'ground.ignis-field.candidate'
-    levels, _, _ = leaf_templates()
+    levels, metadata, _, _ = leaf_templates()
     payload_hash = hashlib.sha256()
     try:
         with path.open('rb') as old, candidate.open('wb') as new:
             header = old.read(40)
-            assert header[:8] == b'IGFLD1\0\0'
+            assert header[:8] == b'IGFLD2\0\0', 'Rebuild field to generate regular terrain samples'
+            old.read(32)
             values = struct.unpack('<6f2I', header[8:])
             assert values[:3] == (-500., -500., SPACING) and values[-2:] == (TILES, TILES)
             for _ in range(6):
                 _, count = struct.unpack('<2I', old.read(8))
-                old.seek(count * 32, 1)
+                old.seek(count * 64, 1)
             new.write(header)
-            for stride, vertices in levels:
+            new.write(struct.pack('<8f', .004, .015, .050, .16, .50, .30, .0032, .055))
+            for (stride, vertices), aux in zip(levels, metadata):
                 new.write(struct.pack('<2I', stride, len(vertices) // 8))
                 if __import__('sys').byteorder != 'little':
                     vertices.byteswap()
                 vertices.tofile(new)
+                aux.tofile(new)
             count = 0
             while block := old.read(4 * 1024 * 1024):
                 payload_hash.update(block)
@@ -219,7 +230,7 @@ def prepare_field():
     assert surface.bounds == [-500., -500., 500., 500.]
     points = surface.points
     n = surface.width
-    levels, blades, provenance = leaf_templates()
+    levels, metadata, blades, provenance = leaf_templates()
     heights = array('f')
     occupancy = [0] * 400
     def sample(x, z):
@@ -234,11 +245,9 @@ def prepare_field():
         for tx in range(TILES):
             for z in range(SIDE):
                 for x in range(SIDE):
-                    h = hash32(len(heights))
-                    jx, jz = (h & 65535) / 65535 - .5, (h >> 16) / 65535 - .5
-                    wx = -500 + (tx * SIDE + x + .5 + jx * .9) * SPACING
-                    wz = -500 + (tz * SIDE + z + .5 + jz * .9) * SPACING
-                    heights.append(sample(wx, wz) - .004)
+                    wx = -500 + (tx * SIDE + x + .5) * SPACING
+                    wz = -500 + (tz * SIDE + z + .5) * SPACING
+                    heights.append(sample(wx, wz))
                     occupancy[(tz * SIDE + z) // 400 * 20 + (tx * SIDE + x) // 400] += 1
         if tz % 25 == 24:
             print('field rows', tz + 1, '/', TILES, flush=True)
@@ -246,13 +255,15 @@ def prepare_field():
     candidate = OUT / 'ground.ignis-field.candidate'
     try:
         with candidate.open('wb') as f:
-            f.write(b'IGFLD1\0\0')
+            f.write(b'IGFLD2\0\0')
             f.write(struct.pack('<6f2I', -500., -500., SPACING, .13, .29, .035, TILES, TILES))
-            for stride, vertices in levels:
+            f.write(struct.pack('<8f', .004, .015, .050, .16, .50, .30, .0032, .055))
+            for (stride, vertices), aux in zip(levels, metadata):
                 f.write(struct.pack('<2I', stride, len(vertices) // 8))
                 if __import__('sys').byteorder != 'little':
                     vertices.byteswap()
                 vertices.tofile(f)
+                aux.tofile(f)
             if __import__('sys').byteorder != 'little':
                 heights.byteswap()
             heights.tofile(f)
@@ -273,6 +284,7 @@ def prepare_field():
         panorama=dict(position=[660, 540, 720], target=[0, 13, 0], fov_degrees=58),
         hills=dict(position=[-160, surface.sample(-160, 260)[0] + 18, 260], target=[130, 16, -220], fov_degrees=62),
         walk=dict(position=[cx, cy + 1.65, z], target=[cx, surface.sample(cx, z - 20)[0] + .5, z - 20], fov_degrees=65),
+        walk_down=dict(position=[cx, cy + 1.65, z], target=[cx, surface.sample(cx, z - 2.5)[0] + .02, z - 2.5], fov_degrees=65),
         close=dict(position=[cx + .29, cy + .20, z + .48], target=[cx, cy + .015, z + .02], fov_degrees=46))
     scene['camera'] = cameras['walk']
     scene['light'] = light([x, y, z])
@@ -287,9 +299,10 @@ def prepare_field():
         field_sha256=digest(OUT / 'ground.ignis-field'), field_bytes=(OUT / 'ground.ignis-field').stat().st_size,
         compile_seconds=time.monotonic()-started, provenance=provenance,
         height_payload_sha256=hashlib.sha256(heights).hexdigest(),
+        profile='IGFLD2 continuous per-blade placement and LOD',
         limitations=['Experimental session sidecar; SaveScene does not persist or bind it',
-            'Approximate field representations; no image equivalence certificate',
-            'Root datums sample the true terrain; individual blades are not terrain-warped']))
+            'Approximate distant coverage; no image equivalence certificate',
+            'Native raster remains single-sample; subpixel aliasing is not solved universally']))
 
 
 def capture(binary):
@@ -339,14 +352,19 @@ def capture(binary):
         c.call('capture', path=rel(OUT / 'roundtrip.png'), width=1800, height=1100)
         assert (OUT / 'close.png').read_bytes() == (OUT / 'roundtrip.png').read_bytes()
         report['save_load_png_exact_in_bound_session'] = True
+        c.call('set_player_view', view=dict(actor='player', yaw_degrees=0, pitch_degrees=-28,
+            eye_height=1.65, fov_degrees=65, mode='first_person'))
+        c.call('step', ticks=45)
+        report['captures']['player'] = c.call('capture', path=rel(OUT / 'player.png'), width=1800, height=1100)
+        report['player_view'] = c.call('inspect_player_view')
         atomic_json(OUT / 'lights.json', lights)
         atomic_json(OUT / 'native-validation.json', report)
         atomic_json(OUT / 'bundle.json', dict(version=1, scene='world.scene.json',
             scene_sha256=digest(OUT / 'world.scene.json'), field='ground.ignis-field',
             field_sha256=digest(OUT / 'ground.ignis-field'), native_build_id=build,
+            native_binary=str(binary.resolve()), native_binary_sha256=digest(binary),
             binding='IGNIS_HORIZON_FIELD session sidecar; use scripts/open_emerald_meadow.py'))
-        cards = ''.join(f'<figure><a href="{n}.png"><img src="{n}.png"></a><figcaption>{html.escape(n)}</figcaption></figure>' for n in cameras)
-        (OUT / 'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Esmeralda 1 km²</title><style>body{background:#17211c;color:#eee;font:16px system-ui;margin:24px}img{max-width:100%;width:1400px}</style><h1>Esmeralda · 1 km × 1 km</h1><p>Capturas nativas. Campo experimental vinculado por launcher; SaveScene sozinho não inclui a grama.</p>'+cards)
+        review(cameras)
         for name in ['world.candidate.scene.json', 'roundtrip.scene.json']:
             (OUT / name).unlink(missing_ok=True)
     finally:

@@ -1,13 +1,11 @@
-# Emerald meadow: 1 km × 1 km
+# Emerald meadow: native grass quality correction
 
-EAF-218 is an independent finite scene using the approved emerald grass sources
-from EAF-216 and the existing experimental IGFLD1 field renderer from EAF-215.
-The terrain, grass sources and captures are native Ignis data. Renderer and
-botanical-library sources are unchanged by this composition.
+EAF-218 contains a finite 1000×1000m rolling terrain with native collision and a
+continuous emerald-grass field. The user rejected the initial rendering: the
+nearby blades lacked shape and density/brightness changed in visible squares.
+The earlier occupancy and performance checks did not constitute visual acceptance.
 
-## Open and reproduce
-
-From the repository root:
+## Reproduce and open
 
 ```sh
 python3 scripts/build_emerald_meadow.py
@@ -15,109 +13,117 @@ python3 scripts/verify_emerald_meadow.py
 python3 scripts/open_emerald_meadow.py
 ```
 
-The launcher verifies the scene and field SHA256 values in
-`artifacts/emerald-meadow/bundle.json`, binds its own field resource and opens a
-new first-person window. Click captures the mouse; WASD moves, Shift runs,
-Escape releases the mouse and F3 displays the existing frame-rate meter.
-It preserves other windows. The launcher itself was statically checked; the
-native window, bundle binding, free-camera presentation and walking/collision
-were exercised by the measurement and verification workflows.
+The native executable must include IGFLD2 support. On a cold checkout, compile
+the native lawn library first with `python3 scripts/demo_lawns.py`. During concurrent renderer
+work, this unit was validated in the isolated active worktree
+`/Volumes/Zero/dev/games/custom-engine-emerald-quality`, based on 150d971, with one
+current executable at `target/release/ignis`. Existing dependency libraries were
+reused; no second SDK/dependency cache was made. Source/compiler/binary provenance
+is in that worktree's `target/release/native-build.json`.
 
-**Open through this launcher.** `world.scene.json` contains terrain and the
-walking actor; grass lives in `ground.ignis-field`. The existing diagnostic field
-is a process/session resource selected through `IGNIS_HORIZON_FIELD`, not a
-persisted Scene component. Loading the Scene alone omits grass. A normal
-SaveScene does not include or safely rebind this resource to another scene.
-The bundle and launcher make this specific pairing explicit, without changing
-global persistence formats or claiming production MCP/UI parity for fields.
+The local `bundle.json` binds the terrain Scene, field and validated executable
+by SHA256. The launcher automatically chooses that executable. `--binary PATH`
+explicitly selects another compatible build; rebuilding/capturing updates the
+bundle. Reopen through the launcher to use the new field and executable: an
+already-running window keeps its previous resident data. Other user windows and
+parallel work are preserved.
 
-Build phases can be repeated individually with `--stage terrain`, `field`,
-`templates` or `capture`. `templates` preserves every compiled planting height
-while replacing only the six approximate geometry representations. Outputs use
-stable paths; no engine rebuild or extra app bundle is produced. A local
-native release library mismatch prevented the separate draw-timing diagnostic;
-its temporary link inputs/executable were removed. Current measurements use
-the actual native executable instead of altering a Scene version for a stale
-library.
+This remains a diagnostic session sidecar selected with `IGNIS_HORIZON_FIELD`.
+SaveScene alone does not persist or safely rebind the field. The bundle is the
+reviewable local composition; generic persistent MCP/UI field authoring and
+production streaming are outside this change. The launcher starts first-person
+mode; click captures the mouse, WASD moves, Shift runs, Escape releases the mouse.
 
-## Terrain and coverage
+## What changed
 
-The terrain footprint is exactly [-500,500]m on X and Z: 1,000,000m². Native
-Terrain2 raises, three broad ridges and low-amplitude noise form rolling hills
-and shallow valleys, with heights 5.438–28.200m. The grid has 251×251 vertices,
-4m spacing and 125,000 triangles. The same complete mesh supplies collision.
-There are no roads, water, flower clearings, exclusions or camera-specific
-planting zones.
+The old field chose one LOD for each 2×2m block and used flat two-triangle leaves
+near the character. Patch-wide tint and shared root height reinforced the grid.
+Merely increasing occupancy did not repair these problems.
 
-The field has an 8000×8000 planting lattice at 12.5cm pitch, stored as 500×500
-blocks of 16×16 sites. All 64,000,000 root sites are occupied. Every 50×50m audit
-cell contains 160,000 sites. This is an occupancy check, not proof that every
-surface point/pixel is covered by an individual grass triangle. Oblique, close
-and aerial views provide separate visual review. The earlier 25cm candidate
-left visible gaps; uniform overlap was increased across the entire square.
+The opt-in IGFLD2 profile carries each vertex's native blade root, identity and
+centre-line station. The emerald recipe now:
 
-The source is `esmeralda_0` from the verified native lawn library. Blade width,
-height variation and curvature come from its native compiled stations. Mature
-and fresh leaf geometry is combined into a single green field with patch tint
-variation; separate per-leaf source colours are not carried by IGFLD1. The source
-library remains byte-identical. The logical full-source population would contain
-49.152 billion blades; this is not the number drawn or resident as geometry.
+- Keeps native curvature and the central fold near the camera: 192 blades with
+  twelve triangles each in the closest representation, then 192 folded blades
+  with four triangles each. The canonical botanical library remains unchanged.
+- Places and rotates blades individually using stable world/cell/leaf identities;
+  colour varies per blade instead of tinting an entire clump or block.
+- Interpolates regular terrain samples at each blade root. A 2mm embedding offset
+  replaces one flat root plane shared by a complete tuft. The field is upright
+  grass, not a mechanical simulation or species-level growth calibration.
+- Chooses detail per blade by distance and physical pixel footprint. Stable
+  stochastic transitions span 30% on either side of each threshold. CPU blocks
+  submit overlapping relevant representations; their edges no longer define the
+  visible transition. Blocks remain a spatial batching mechanism.
+- Uses two-sided thin-leaf shading and a base-to-tip colour gradient. The five
+  metric thresholds are 0.004/0.015/0.050/0.16/0.50 metres per pixel; the final
+  three levels remain approximate distant coverage, not a fidelity certificate.
 
-The authored field representations select 384/192/48/12/3/1 blades and use
-1,536/384/96/24/6/2 thin-ribbon triangles per selected module. They are approximate
-representations of native stations, not the closed high-detail source mesh or
-an image-error certificate. The existing renderer chooses scale/stride by
-projected resolution and frustum-tests spatial blocks. No source-name special
-case, hard distance cutoff or new engine renderer code is introduced here.
+Far leaf-width compensation is capped and based on the centre-line rather than
+stretching the entire blade. Bounds account for this width/crease deformation
+and neighbouring terrain samples. The regular grid clamps at the outer half-cell;
+perfect root contact at every perimeter point is not asserted.
 
-The recipe counteracts the diagnostic shader's stride-based X/Z enlargement.
-This retains physical grass dimensions at distant scales and limits the effective
-template radius to 0.1812m, avoiding distant templates inflating every near-block
-bound. Sparse far representatives still lose fine appearance, and raw captures
-show subpixel aliasing and scale transitions. Large-scale quality equivalence
-has not passed. The field package is 256,196,696 bytes; its height payload alone
-is 256,000,000 bytes, before GPU command buffers and renderer overhead.
+IGFLD1 reading and writing remain supported. Its original shader is preserved in
+`surface_field_legacy.wgsl`, avoiding numerical changes caused by sharing the
+larger continuous shader. One native legacy fixture matches its original PNG
+byte for byte; this is a scoped regression check, not a universal engine promise.
+No global Scene/replay/network format change belongs to this unit.
 
-Root datums use the persisted terrain's exact triangle diagonal and an embedded
-4mm offset. Independent Grid interpolation of 4,096 distributed root datums
-found maximum error below 1 micrometre. Each blade remains in the module's local
-rest shape: IGFLD1 does not warp each blade root onto the slope or provide grass
-physics. Datum correctness is not a proof of universal individual-leaf contact.
+## Geometry sharing and validation
 
-## Native validation and presentation
+IGFLD2 templates are internally indexed using the exact position, normal, blade
+identity and centre-line bits as the key. Identities are never merged just because
+positions coincide. Triangle order, inputs and the rendered image remain the
+same; only repeated vertex work is shared. `IGNIS_FIELD_INDEXED=0` is a diagnostic
+ablation, not an authoring control. walk/walk_down/close native PNGs are byte-exact
+between indexed and unindexed representations. The final bounds/legacy-shader
+refinement also retains the same quality-view PNG.
 
-`verification.json` records bounds, complete occupancy, sampled datum error,
-finite template geometry/radius, bundle hashes and a 7.945m grounded KCC walk.
-Native save/load produces a byte-identical close PNG in the same bound session;
-this does not mean the Scene persisted its field binding. `command-schema.json`
-records the actual MCP schema. Python compile and focused artifact checks pass.
-No Rust engine changes, global-format changes, prior scene edits or approved
-botanical-source changes belong to this task.
+The field remains uniformly occupied across 1km²: 64 million sites at 12.5cm pitch,
+with 160,000 in each of 400 audit cells of 50×50m. The six template triangle counts
+are 2304/768/96/24/6/2. The height payload is 256,000,000 bytes and the complete
+sidecar is 256,614,520 bytes. This is source occupancy, not the number of plants
+or triangles submitted in each frame. No paths, water exclusions, camera-specific
+planting zones or approved grass-source edits were introduced.
 
-`review.html` contains native 1800×1100 panorama/hills/walk/close captures.
-`*-preview.png` files are those native rasters downsampled to 1024×626 with macOS
-`sips`; this is still-image presentation, not a runtime AA feature.
+Validation includes five focused source-module tests (format bounds/roundtrip,
+legacy bytes, blade metadata/identity, exact indexed reconstruction, frustum and
+both WGSL programs), focused Clippy with `-D warnings`, Python compilation,
+4,096 regular height samples against persisted native terrain triangles, a 7.945m
+grounded KCC walk and byte-exact save/load in the same bound session. These tests
+were linked against identified existing libraries for model/projection types and
+validate the current field source; they are not a claim that the shared checkout's
+full concurrent Cargo suite passed. Native Metal captures and presentation tests
+exercise the actual isolated executable.
 
-The actual window was measured at 2200×1520 on the Apple M4 Pro. The existing
-counter reports present-call cadence over up to 1 second/512 intervals. Ten fresh,
-overlapping reports per camera were collected after 2 seconds of warm-up. The
-following values are medians of those reports, not isolated GPU timings,
-scanout, independent benchmark runs or a universal FPS guarantee. No-vsync was
-requested; the reported mode string is `AutoNoVsync (requested)`. Other desktop
-processes were preserved and listed in the local report.
+`artifacts/emerald-meadow/review.html` compares the rejected and corrected images
+at the same camera and includes raw 1800×1100 walk, downward eye-height, close,
+aerial and actual first-person-player captures. `player.png` comes from the
+session's PlayerView after the actor settles on the terrain, with its body hidden
+by the existing first-person path. These quality captures are unfiltered native
+rasters. Preview files, if generated separately, are not runtime antialiasing.
 
-| Camera | Observed median FPS |
+## Observed performance and remaining limits
+
+The actual 2200×1520 native window on the M4 Pro was sampled ten times per camera
+after a two-second warm-up. These are overlapping present-call cadence reports,
+including UI/scheduling, not GPU timestamps or scanout. No-vsync was requested;
+other desktop processes were preserved. Measurements are observations on this
+Mac and are not a universal FPS guarantee.
+
+| Camera | Median observed FPS |
 | --- | ---: |
-| walk | 14.03 |
-| hills | 22.34 |
-| panorama | 31.24 |
-| close | 9.84 |
+| walk | 15.63 |
+| hills | 19.49 |
+| panorama | 47.70 |
+| close | 11.38 |
 
-Measurements and raw samples: `artifacts/emerald-meadow/presentation.json`.
-Native capture build: `aarch64-apple-darwin|release|rustc 1.97.1 (8bab26f4f 2026-07-14)|677e88e92de00145`.
-Native presentation build: `aarch64-apple-darwin|release|rustc 1.97.1 (8bab26f4f 2026-07-14)|677e88e92de00145`.
+Build: `aarch64-apple-darwin|release|rustc 1.97.1 (8bab26f4f 2026-07-14)|11a516ba06ed0dfc`.
 
-The scene is still heavy near the ground. Performance is not declared solved,
-and human visual/runtime acceptance remains open. Engine-wide optimisation,
-field persistence, safe generic MCP/UI field editing, grass dynamics and broad
-quality certification remain outside this authored-scene unit.
+The rectangular LOD steps are no longer visible in the reviewed poses and the
+near blades retain their fold. Fine distant grass still aliases because the
+native raster is single-sample. Distant appearance, smooth motion and performance
+are not fully solved. This unit does not claim AAA parity, 60FPS, a production LOD
+certificate or human artistic acceptance. EAF-218 remains open for visual/runtime
+review; broader engine work stays separate.

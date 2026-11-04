@@ -17,11 +17,13 @@ OUT = ROOT / 'artifacts/emerald-meadow'
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--binary', type=Path, default=ROOT / 'target/release/ignis')
+    p.add_argument('--binary', type=Path)
     args = p.parse_args()
     views = json.loads((OUT / 'views.json').read_text())
     lights = json.loads((OUT / 'lights.json').read_text())
     bundle = json.loads((OUT / 'bundle.json').read_text())
+    if args.binary is None:
+        args.binary = Path(bundle.get('native_binary', ROOT / 'target/release/ignis'))
     for key in ['scene', 'field']:
         assert hashlib.sha256((OUT / bundle[key]).read_bytes()).hexdigest() == bundle[key + '_sha256']
     report = dict(method='Native editor present-call cadence; no GPU timestamp or scanout claim',

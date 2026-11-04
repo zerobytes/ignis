@@ -12,9 +12,13 @@ OUT = ROOT / 'artifacts/emerald-meadow'
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--binary', type=Path, default=ROOT / 'target/release/ignis')
+    parser.add_argument('--binary', type=Path)
     args = parser.parse_args()
     bundle = json.loads((OUT / 'bundle.json').read_text())
+    if args.binary is None:
+        args.binary = Path(bundle.get('native_binary', ROOT / 'target/release/ignis'))
+        if not args.binary.is_file() or (bundle.get('native_binary_sha256') and hashlib.sha256(args.binary.read_bytes()).hexdigest() != bundle['native_binary_sha256']):
+            parser.error('The verified native build changed; rebuild the scene or supply --binary explicitly')
     for key in ['scene', 'field']:
         path = OUT / bundle[key]
         if hashlib.sha256(path.read_bytes()).hexdigest() != bundle[key + '_sha256']:

@@ -22,19 +22,23 @@ def main():
     effective_radius = 0.
     triangles = []
     with (OUT / bundle['field']).open('rb') as f:
-        assert f.read(8) == b'IGFLD1\0\0'
+        assert f.read(8) == b'IGFLD2\0\0'
         ox, oz, spacing, _, _, _, nx, nz = struct.unpack('<6f2I', f.read(32))
         assert (ox, oz, nx, nz, spacing) == (-500., -500., 500, 500, .125)
         assert nx * 16 * spacing == 1000 and nz * 16 * spacing == 1000
+        profile = struct.unpack('<8f', f.read(32))
+        assert all(math.isfinite(v) and v > 0 for v in profile)
         for _ in range(6):
             stride, count = struct.unpack('<2I', f.read(8))
             assert count > 0 and count % 3 == 0
             triangles.append(count // 3)
             values = struct.unpack('<' + 'f' * count * 8, f.read(count * 32))
             assert all(math.isfinite(v) for v in values)
+            aux = struct.unpack('<' + 'f' * count * 8, f.read(count * 32))
+            assert all(math.isfinite(v) for v in aux)
             for i in range(0, len(values), 8):
-                effective_radius = max(effective_radius, math.hypot(values[i], values[i+2]) * stride)
-        assert effective_radius < .25, 'Distant templates inflate near block bounds'
+                effective_radius = max(effective_radius, math.hypot(aux[i+4]-aux[i], aux[i+6]-aux[i+2]) + 8*math.hypot(values[i]-aux[i+4],values[i+2]-aux[i+6]))
+        assert effective_radius < .1, 'Continuous blade bounds exceed native leaf dimensions'
         offset = f.tell()
         assert (OUT / bundle['field']).stat().st_size - offset == nx * nz * 256 * 4
         payload = hashlib.sha256()
@@ -46,14 +50,12 @@ def main():
             tile, local = divmod(index, 256)
             tx, tz = tile % nx, tile // nx
             lx, lz = local % 16, local // 16
-            h = hash32(index)
-            jx, jz = (h & 65535) / 65535 - .5, (h >> 16) / 65535 - .5
-            x = ox + (tx * 16 + lx + .5 + jx * .9) * spacing
-            z = oz + (tz * 16 + lz + .5 + jz * .9) * spacing
+            x = ox + (tx * 16 + lx + .5) * spacing
+            z = oz + (tz * 16 + lz + .5) * spacing
             f.seek(offset + index * 4)
             y, = struct.unpack('<f', f.read(4))
             # Independent Grid interpolation of the persisted source triangles.
-            errors.append(abs(y - (surface.sample(x, z)[0] - .004)))
+            errors.append(abs(y - (surface.sample(x, z)[0])))
         assert max(errors) < .00002
     assert triangles == report['triangle_templates']
     walk = json.loads((OUT / 'native-validation.json').read_text())
@@ -65,7 +67,7 @@ def main():
         triangles_per_level=triangles, height_payload_sha256=payload.hexdigest(),
         walk_meters=walk['walk_meters'], native_build_id=walk['build_id'],
         save_load_png_exact_in_bound_session=True,
-        individual_blade_terrain_warp=False, artistic_acceptance=False))
+        individual_blade_terrain_warp=True, artistic_acceptance=False))
     print('Bundle, whole-area planting,4096 root datums, template bounds and native walk verified')
 
 
