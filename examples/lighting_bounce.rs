@@ -13,6 +13,8 @@ use std::{
     time::{Duration, Instant},
 };
 use wgpu::util::DeviceExt;
+#[path = "lighting_bounce/bake.rs"]
+mod bake;
 const W: u32 = 480;
 const H: u32 = 320;
 const NAMES: [&str; 24] = [
@@ -103,6 +105,8 @@ enum Dispatch<'a> {
     Indirect(&'a wgpu::Buffer, u64),
 }
 struct Lab {
+    atlas_build: wgpu::ComputePipeline,
+    atlas_query: wgpu::ComputePipeline,
     uniform: wgpu::Buffer,
     receivers: wgpu::Buffer,
     values: wgpu::Buffer,
@@ -137,6 +141,16 @@ impl Lab {
         boxes: &[BoxData],
         native: &wgpu::TextureView,
         target: &wgpu::TextureView,
+    ) -> Self {
+        Self::new_sized(r, p, boxes, native, target, 0)
+    }
+    fn new_sized(
+        r: &Renderer,
+        p: &Params,
+        boxes: &[BoxData],
+        native: &wgpu::TextureView,
+        target: &wgpu::TextureView,
+        atlas_bytes: u64,
     ) -> Self {
         let uniform = r
             .device
@@ -193,7 +207,7 @@ impl Lab {
             buffer(
                 r,
                 "six-axis incident probes",
-                nodes(fine) * 96,
+                (nodes(fine) * 96).max(if fine { atlas_bytes } else { 0 }),
                 wgpu::BufferUsages::STORAGE
                     | wgpu::BufferUsages::COPY_SRC
                     | wgpu::BufferUsages::COPY_DST,
@@ -268,7 +282,14 @@ impl Lab {
             });
         let shader = r.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("one bounce transport"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("lighting_bounce/transport.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                concat!(
+                    include_str!("lighting_bounce/transport.wgsl"),
+                    "\n",
+                    include_str!("lighting_bounce/bake.wgsl")
+                )
+                .into(),
+            ),
         });
         let pipeline = |entry| {
             r.device
@@ -336,6 +357,8 @@ impl Lab {
         let groups = std::array::from_fn(|i| make_group(i, &dummy));
         let finalize_group = make_group(0, &indirect);
         Self {
+            atlas_build: pipeline("atlas_build"),
+            atlas_query: pipeline("atlas_query"),
             work,
             indirect,
             finalize_group,
@@ -407,6 +430,9 @@ impl Lab {
     }
     fn run(&self, r: &Renderer, p: &Params, stage: &str) -> Result<(f64, f64)> {
         let t = Instant::now();
+        if stage.starts_with("bake") {
+            self.filtered_output.set(false);
+        }
         let reconstruction = (stage == "shade" || stage == "full") && p.dims[3] >= 17;
         if stage == "shade" || stage == "filter" || stage == "full" {
             self.filtered_output
@@ -418,7 +444,22 @@ impl Lab {
         let group = &self.groups[usize::from(fine)];
         let mut e = r.device.create_command_encoder(&Default::default());
         let image = || Dispatch::Grid(W.div_ceil(8), H.div_ceil(8), 1);
-        if stage == "full" {
+        if stage == "bake-full" {
+            self.pass(&mut e, &self.primary, group, [Some(0), None], image());
+            self.pass(&mut e, &self.atlas_query, group, [None, Some(1)], image());
+        } else if stage == "bake-build" {
+            self.pass(
+                &mut e,
+                &self.atlas_build,
+                group,
+                [Some(0), Some(1)],
+                Dispatch::Grid(
+                    (p.dims[2] * 6 * p.counts[0] * p.counts[0]).div_ceil(64),
+                    1,
+                    1,
+                ),
+            );
+        } else if stage == "full" {
             self.pass(&mut e, &self.primary, group, [Some(0), None], image());
             if p.dims[3] >= 20 {
                 self.pass(&mut e, &self.guide, group, [None, None], image());
@@ -585,12 +626,26 @@ fn main() -> Result<()> {
                 "--validation-a",
                 "--validation-b",
                 "--validation-c",
-                "--validation-d"
+                "--validation-d",
+                "--bake-audit",
+                "--bake-validation",
+                "--bake-final"
             ]
             .contains(&arg.as_str()),
             "Unknown one-bounce argument: {arg}"
         );
     }
+    let baking = std::env::args().any(|s| s == "--bake-audit");
+    let bake_final = std::env::args().any(|s| s == "--bake-final");
+    let bake_validation = std::env::args().any(|s| s == "--bake-validation");
+    ensure!(
+        !bake_validation || baking,
+        "Bake validation requires bake audit"
+    );
+    ensure!(
+        !bake_final || bake_validation,
+        "Final bake audit requires validation"
+    );
     let hybrid = std::env::args().any(|s| s == "--hybrid-audit");
     let validation_a = std::env::args().any(|s| s == "--validation-a");
     let validation_b = std::env::args().any(|s| s == "--validation-b");
@@ -626,7 +681,17 @@ fn main() -> Result<()> {
     } else {
         None
     };
-    let dir = if hybrid {
+    ensure!(
+        !baking || !(hybrid || validation_a || validation_b || validation_c || validation_d),
+        "Choose one experiment"
+    );
+    let dir = if baking {
+        if thin {
+            "artifacts/lighting-bake/thin-wall"
+        } else {
+            "artifacts/lighting-bake/open"
+        }
+    } else if hybrid {
         if validation_c {
             "artifacts/lighting-hybrid/validation-c"
         } else if validation_d {
@@ -802,6 +867,19 @@ fn main() -> Result<()> {
         counts: [0; 4],
     };
     grid(&mut p, false);
+    if baking {
+        return bake::run(
+            &mut r,
+            engine,
+            boxes,
+            native,
+            target,
+            p,
+            dir,
+            bake_validation,
+            bake_final,
+        );
+    }
     let t = Instant::now();
     let lab = Lab::new(&r, &p, &boxes, &nv, &tv);
     let resource_cpu = ms(t);
