@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--years', type=int, default=12)
     args = parser.parse_args()
-    if not 0 <= args.years <= 100: parser.error('--years must be between0 and100')
+    if args.years < 0: parser.error('--years must be nonnegative; native time budgets apply')
     out = ROOT / 'artifacts/living-tree'
     c = Client(ROOT/'target/release/ignis', window=True, detached=True,
         log_path=out/'window.log', startup_args=('--editor', '--scene', 'artifacts/living-tree/tree.scene.json'))

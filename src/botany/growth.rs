@@ -2,6 +2,7 @@
 //! Scene ownership and automatic gameplay ticking remain separate integration work.
 use super::{lifecycle::Schedule, production::Production, *};
 mod tree;
+pub mod continuous;
 pub mod foliage;
 mod stature;
 pub use stature::Stature;
@@ -17,6 +18,8 @@ pub struct Definition {
     pub maximum_nodes: u16,
     pub internode_length: f64,
     pub schedule: Schedule,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub continuous: Option<continuous::Profile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub foliage: Option<foliage::Profile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -39,6 +42,7 @@ pub const MAX_ATTACHED: usize = 128;
 pub enum Action {
     Inspect,
     SetStature { stature: Stature },
+    SetContinuous { profile: continuous::Profile },
     Advance { time: u64 },
     Harvest { fruit: production::FruitId },
     Prune { site: String },
@@ -48,6 +52,7 @@ impl Default for Definition {
         Self {
             version: 1,
             foliage: None,
+            continuous: None,
             stature: None,
             prefix: "living".into(),
             seed: 42,
@@ -68,6 +73,11 @@ impl Default for Definition {
 impl Definition {
     pub fn validate(&self) -> Result<()> {
         self.schedule.validate().map_err(invalid)?;
+        if (self.version==4)!=self.continuous.is_some() {return Err(invalid("Independent growth requires grammar4"));}
+        if let Some(p)=&self.continuous {
+            p.validate()?;
+            if self.foliage.as_ref().is_none_or(|f|p.leaf_turnover_days<f.expansion_days) {return Err(invalid("Independent growth requires foliage with expansion no longer than turnover"));}
+        }
         if let Some(profile) = &self.foliage {
             if self.version < 2 {
                 return Err(invalid("Early foliage requires a broadleaf grammar"));
@@ -93,7 +103,7 @@ impl Definition {
         {
             return Err(invalid("Living time/profile budget exceeded"));
         }
-        if !(1..=3).contains(&self.version)
+        if !(1..=4).contains(&self.version)
             || !identifier(&self.prefix)
             || self.prefix.len() > 20
             || self.interval == 0
@@ -210,6 +220,7 @@ impl Plant {
         self.validate()?;
         if self.definition.version >= 2 {
             let mut recipe=tree::recipe(self)?;
+            if let Some(profile)=&self.definition.continuous {profile.apply(&mut recipe,self)?;}
             if let Some(stature)=&self.definition.stature {
                 stature.apply(&mut recipe,self.production.plant.time-self.production.plant.born)?;
             }
@@ -339,6 +350,7 @@ mod tests {
             definition: Definition {
                 version: 1,
                 foliage: None,
+                continuous: None,
                 stature: None,
                 prefix: "living".into(),
                 seed: 42,

@@ -113,7 +113,7 @@ pub fn normal(t: DVec3, n: DVec3) -> DVec3 {
         (a - t * a.dot(t)).normalize()
     }
 }
-fn curve(points: &[DVec3], u: f64) -> (DVec3, DVec3) {
+pub(super) fn curve(points: &[DVec3], u: f64) -> (DVec3, DVec3) {
     let x = u.clamp(0., 1.) * (points.len() - 1) as f64;
     let i = (x as usize).min(points.len() - 2);
     let t = x - i as f64;

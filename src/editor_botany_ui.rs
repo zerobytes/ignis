@@ -16,6 +16,7 @@ pub(super) struct State {
     roots_enabled: bool,
     living_definition: crate::botany::growth::Definition,
     living_stature: crate::botany::growth::Stature,
+    living_continuous: crate::botany::growth::continuous::Profile,
     living_age_years: f64,
     living_observed: Option<(String, u64, u64, Option<u64>)>,
     living_horizon_years: f64,
@@ -37,6 +38,7 @@ impl Default for State {
             roots_enabled: false,
             living_definition: Default::default(),
             living_stature: Default::default(),
+            living_continuous: Default::default(),
             living_age_years: 0.,
             living_observed: None,
             living_horizon_years: 2.,
@@ -52,6 +54,15 @@ fn stature_controls(ui:&mut egui::Ui,stature:&mut crate::botany::growth::Stature
     ui.label("O diâmetro adulto define o porte proporcional desta gramática.");
     for (label,value) in [("Diâmetro adulto (m) ",&mut stature.adult_diameter_m),("Diâmetro inicial da muda (m) ",&mut stature.seedling_diameter_m),("Idade de maturidade (anos) ",&mut stature.maturity_years)] {
         ui.add(egui::DragValue::new(value).range(f64::MIN_POSITIVE..=f64::MAX).speed(0.01).prefix(label));
+    }
+}
+fn continuous_controls(ui:&mut egui::Ui,p:&mut crate::botany::growth::continuous::Profile) {
+    ui.label("Altura e diâmetro independentes. Referência = 95% do incremento até o limite.");
+    for (label,value) in [("Altura inicial (m) ",&mut p.seedling_height_m),("Limite suave de altura (m) ",&mut p.height_limit_m),("Referência de altura (anos) ",&mut p.height_reference_years),("Diâmetro inicial (m) ",&mut p.seedling_diameter_m),("Limite suave de diâmetro (m) ",&mut p.diameter_limit_m),("Referência de diâmetro (anos) ",&mut p.diameter_reference_years),("Distância entre nós (m) ",&mut p.internode_m)] {
+        ui.add(egui::DragValue::new(value).range(f64::MIN_POSITIVE..=f64::MAX).speed(0.01).prefix(label));
+    }
+    for (label,value) in [("Dias por nó foliar ",&mut p.internode_days),("Expansão do broto (dias) ",&mut p.shoot_expansion_days),("Renovação de folhas (dias) ",&mut p.leaf_turnover_days)] {
+        ui.add(egui::DragValue::new(value).range(1..=crate::botany::growth::MAX_TIME).prefix(label));
     }
 }
 pub(super) fn properties(
@@ -78,8 +89,8 @@ pub(super) fn properties(
             let d=&mut state.living_definition;
             ui.text_edit_singleline(&mut d.prefix);
             ui.add(egui::DragValue::new(&mut d.seed).prefix("Semente "));
-            egui::ComboBox::from_id_salt("growth_grammar").selected_text(match d.version {1=>"Planta de diagnóstico",2=>"Árvore viva",_=>"Árvore · porte configurável"}).show_ui(ui,|ui|{
-                ui.selectable_value(&mut d.version,1,"Planta de diagnóstico");ui.selectable_value(&mut d.version,2,"Árvore viva");ui.selectable_value(&mut d.version,3,"Árvore · porte configurável");
+            egui::ComboBox::from_id_salt("growth_grammar").selected_text(match d.version {1=>"Planta de diagnóstico",2=>"Árvore viva",3=>"Árvore · porte legado",_=>"Árvore · crescimento contínuo"}).show_ui(ui,|ui|{
+                ui.selectable_value(&mut d.version,1,"Planta de diagnóstico");ui.selectable_value(&mut d.version,2,"Árvore viva");ui.selectable_value(&mut d.version,3,"Árvore · porte legado");ui.selectable_value(&mut d.version,4,"Árvore · crescimento contínuo");
             });
             if d.version>=2 {
                 let p=d.foliage.get_or_insert_with(Default::default);
@@ -92,6 +103,7 @@ pub(super) fn properties(
                     ui.add(egui::DragValue::new(&mut p.width_m).range(0.005..=p.length_m.min(0.5)).speed(0.005).prefix("Largura da folha (m) "));
                 });
             }else{d.foliage=None;}
+            if d.version==4 {continuous_controls(ui,d.continuous.get_or_insert_with(Default::default));}else{d.continuous=None;}
             if d.version==3 {stature_controls(ui,d.stature.get_or_insert_with(Default::default));}else {d.stature=None;}
 
             ui.add(egui::DragValue::new(&mut d.interval).range(1..=100000).prefix("Dias por novo ramo "));
@@ -110,6 +122,7 @@ pub(super) fn properties(
         }
         if state.key!=key{state.draft=Some(recipe.clone());state.key=key;
             state.living_stature=recipe.living.as_ref().and_then(|p|p.definition.stature.clone()).unwrap_or_default();
+            state.living_continuous=recipe.living.as_ref().and_then(|p|p.definition.continuous.clone()).unwrap_or_default();
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
             let system=recipe.source.root_systems.iter().find(|r|r.stem==state.root_stem);state.roots_enabled=system.is_some();state.roots=system.map(|s|s.settings.clone()).unwrap_or_default();
         }
@@ -158,7 +171,11 @@ pub(super) fn properties(
             ui.collapsing("Poda persistente",|ui|{for site in plant.production.sites.keys().filter(|s|!plant.production.removed_sites.contains(*s)){
                 if ui.button(format!("Podar {site}")).clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Prune{site:site.clone()}});}
             }});
-            if plant.definition.version>=2 {ui.collapsing("Porte e crescimento do tronco",|ui|{
+            if plant.definition.version>=2 {ui.collapsing("Crescimento contínuo e nós foliares",|ui|{
+                continuous_controls(ui,&mut state.living_continuous);
+                if ui.button("Aplicar matemática contínua").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::SetContinuous{profile:state.living_continuous.clone()}});}
+            });}
+            if (2..=3).contains(&plant.definition.version) {ui.collapsing("Porte e crescimento do tronco",|ui|{
                 stature_controls(ui,&mut state.living_stature);
                 if let Some(stature)=&plant.definition.stature {ui.label(format!("Diâmetro salvo de base: {:.3} m antes de escala manual",stature.diameter(plant.production.plant.time-born)));}
                 if ui.button("Aplicar perfil de porte").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::SetStature{stature:state.living_stature.clone()}});}

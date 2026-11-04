@@ -3,6 +3,9 @@
 Research checkpoint: 2026-11-04. This is a diagnosis and design proposal;
 no growth curve, asset, renderer or running scene was changed in this checkpoint.
 
+The subsequent implementation is [grammar4 continuous growth](botany-continuous-growth.md).
+The audit below describes the preserved earlier grammars and the research proposal.
+
 ## Botanical evidence
 
 Woody trees have separate mechanisms for shoot extension and cambial thickening.

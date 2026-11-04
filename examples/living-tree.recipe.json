@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 4,
   "prefix": "living",
   "seed": 724,
   "interval": 365,
@@ -20,5 +20,17 @@
     "secondary_leaves": 8,
     "length_m": 0.25,
     "width_m": 0.085
+  },
+  "continuous": {
+    "seedling_height_m": 0.6,
+    "height_limit_m": 8.5,
+    "height_reference_years": 90.0,
+    "seedling_diameter_m": 0.025,
+    "diameter_limit_m": 0.28,
+    "diameter_reference_years": 250.0,
+    "internode_m": 0.12,
+    "internode_days": 14,
+    "shoot_expansion_days": 120,
+    "leaf_turnover_days": 730
   }
 }

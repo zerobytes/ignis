@@ -61,3 +61,7 @@ removed along with their supporting branch by pruning.
 The review includes young closeups at0/1/2years, leaf counts and the same-camera
 age series. Reversible editor preview validation remains available with
 `uv run scripts/verify_living_preview.py`.
+
+The current exemplar now selects [grammar4 continuous growth](botany-continuous-growth.md).
+Earlier sections describe the preserved grammar2 specimen; new files explicitly
+carry independent growth curves and metric leaf-node/renewal parameters.
