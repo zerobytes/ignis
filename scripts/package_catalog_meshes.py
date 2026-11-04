@@ -4,6 +4,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -30,10 +31,21 @@ def record(path, role, media):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inputs', type=Path, default=ROOT / 'examples/catalog-trees.json')
+    parser.add_argument('--only', help='Export only this stable asset id')
+    parser.add_argument('--asset-version', default='1.0.0')
+    parser.add_argument('--release-tag', default=TAG)
     args = parser.parse_args()
+    if not re.fullmatch(r'\d+\.\d+\.\d+', args.asset_version):
+        parser.error('Expected a semantic asset version')
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]*', args.release_tag):
+        parser.error('Expected an immutable release tag')
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     OUTPUT.mkdir(parents=True, exist_ok=True)
     entries = json.loads(args.inputs.read_text())
+    if args.only:
+        entries = [item for item in entries if item['id'] == args.only]
+        if not entries:
+            parser.error('Asset id is not in the input manifest')
     for item in entries:
         asset_id = item['id']
         item['path'] = str((ROOT / item['path']).resolve())
@@ -61,7 +73,7 @@ def main():
         with raw.open('rb') as src, packed.open('wb') as dst, gzip.GzipFile(fileobj=dst, mode='wb', compresslevel=6, mtime=0) as compressed:
             shutil.copyfileobj(src, compressed)
         preview_record = record(packed, 'preview', 'application/vnd.ignis.mesh-preview+gzip')
-        base = f'https://github.com/zerobytes/ignis-catalog/releases/download/{TAG}/'
+        base = f'https://github.com/zerobytes/ignis-catalog/releases/download/{args.release_tag}/'
         preview_record['url'] = base + packed.name
         files = {p.name: p for p in originals}
         files.update({p: directory / p for p in ['mesh.glb', 'tree.scene.json']})
@@ -87,6 +99,9 @@ geometry: {sum(p['vertices'] for p in full['parts']):,} vertices / {sum(p['indic
 Source repository https://github.com/zerobytes/ignis
 Snapshot {revision}
 Source {source.relative_to(ROOT).as_posix()}
+Botanical recipe format {json.loads(source.read_text())['version']}; use an Ignis editor
+that supports this format to regenerate or edit the native botanical binding.
+Browser preview and portable GLB do not execute botanical growth.
 The code/editor has its own license; this asset's CC BY license does not relicense it.
 '''
         archive = OUTPUT / f'{asset_id}.zip'
@@ -113,7 +128,7 @@ The code/editor has its own license; this asset's CC BY license does not relicen
         thumb['path'] = (target / 'thumbnail.jpg').relative_to(CATALOG).as_posix()
         def stats(metadata):
             return dict(vertices=sum(p['vertices'] for p in metadata['parts']), triangles=sum(p['indices']//3 for p in metadata['parts']), bounds=metadata['bounds'])
-        manifest = dict(format_version=1, id=asset_id, version='1.0.0', kind='mesh', name=item['name'], summary='Editable native botanical tree with full mesh, source recipe and materials.', author=dict(name='Guilherme Oliveira / Zerobytes', url='https://github.com/zerobytes'), license='CC-BY-4.0', attribution=f"{item['name']} by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog", tags=['trees','mesh','botany',asset_id.rsplit('.',1)[-1]], provenance=dict(repository='https://github.com/zerobytes/ignis',commit=revision,path=source.relative_to(ROOT).as_posix(),source_sha256=before[str(source)],availability='local-unpublished',note='The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included.'), compatibility=dict(engine='ignis',runtime_validation='Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.',botany_recipe_version=json.loads(source.read_text())['version']), mesh=stats(full), native_preview=dict(format='IGMP1+gzip',quality='reduced-tessellation',tessellation=preview['tessellation'],decoded_bytes=decoded['bytes'],decoded_sha256=decoded['sha256'],**stats(preview)), files=[download,preview_record,thumb])
+        manifest = dict(format_version=1, id=asset_id, version=args.asset_version, kind='mesh', name=item['name'], summary='Editable native botanical tree with full mesh, source recipe and materials.', author=dict(name='Guilherme Oliveira / Zerobytes', url='https://github.com/zerobytes'), license='CC-BY-4.0', attribution=f"{item['name']} by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog", tags=['trees','mesh','botany',asset_id.rsplit('.',1)[-1]], provenance=dict(repository='https://github.com/zerobytes/ignis',commit=revision,path=source.relative_to(ROOT).as_posix(),source_sha256=before[str(source)],availability='local-unpublished',note='The tracked source snapshot was local at transfer time; this release includes its complete licensed source. No reference images included.'), compatibility=dict(engine='ignis',runtime_validation='Native bake, scene validation and native renderer capture. Static preview only; botanical physics is not run in the browser.',botany_recipe_version=json.loads(source.read_text())['version']), mesh=stats(full), native_preview=dict(format='IGMP1+gzip',quality='reduced-tessellation',tessellation=preview['tessellation'],decoded_bytes=decoded['bytes'],decoded_sha256=decoded['sha256'],**stats(preview)), files=[download,preview_record,thumb])
         (target / 'asset.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n')
         print(f'Packaged {asset_id}: zip={download["bytes"]:,} preview={preview_record["bytes"]:,} full={manifest["mesh"]} preview_mesh={stats(preview)}', flush=True)
         shutil.rmtree(directory)  # Retain one current ZIP and web packet; no redundant raw build copies.
