@@ -85,8 +85,8 @@ fn rock_sources_are_periodic_distinct_and_lossless_with_meaningful_channels() {
             }
         }
         assert!(
-            height_max - height_min > 0.2,
-            "{family:?} lost its surface relief"
+            height_max - height_min > 0.05 && (height_max - height_min) * recipe.height_m < 0.004,
+            "{family:?} must keep shallow mineral relief instead of macro blocks"
         );
         fingerprints.insert(fingerprint);
         for execution in [Execution::Runtime, Execution::Fixed { resolution: 64 }] {
@@ -159,6 +159,14 @@ fn rock_validation_rejects_conflicts_invalid_controls_and_old_scenes_atomically(
     let mut old = source(Family::Alpine.recipe());
     old.version = 116;
     assert!(Engine::new(old).is_err());
+    let legacy = library::decode(include_bytes!("fixtures/rock1.ignis-material")).unwrap();
+    let mut old = source(Recipe::default());
+    old.meshes.assets[0].material = legacy;
+    old.version = 117;
+    assert!(Engine::new(old).is_ok());
+    let mut old = source(Family::Alpine.recipe());
+    old.version = 118;
+    assert!(Engine::new(old).is_err());
     let mut old = source(Recipe::default());
     old.version = 116;
     let mut engine = Engine::new(old).unwrap();
@@ -174,7 +182,7 @@ fn rock_validation_rejects_conflicts_invalid_controls_and_old_scenes_atomically(
             .into(),
         )
         .unwrap();
-    assert!(engine.scene.version >= 117);
+    assert!(engine.scene.version >= 119);
 }
 fn srgb(v: f32) -> u8 {
     let v = v.clamp(0., 1.);
@@ -200,8 +208,13 @@ fn native_rock_cpu_gpu_layers_fixed_maps_and_lighting_agree() {
     let instance = wgpu::Instance::default();
     let mut gpu = pollster::block_on(Renderer::new(&instance, None)).unwrap();
     let n = 512usize;
-    for family in Family::ALL {
-        let mut r = family.recipe();
+    let legacy = library::decode(include_bytes!("fixtures/rock1.ignis-material")).unwrap();
+    let legacy = legacy.procedural.as_ref().unwrap().recipe.clone();
+    for (family, mut r) in Family::ALL
+        .into_iter()
+        .map(|f| (f.label(), f.recipe()))
+        .chain(std::iter::once(("Legacy rock1", legacy)))
+    {
         r.seed = u32::MAX;
         r.height_m = 0.;
         r.layers.push(Layer {
@@ -274,6 +287,7 @@ fn native_rock_cpu_gpu_layers_fixed_maps_and_lighting_agree() {
         assert_eq!(uploads, gpu.info()["procedural_materials"]["uploads"]);
     }
     let mut r = Family::Fractured.recipe();
+    r.height_m = 0.2;
     let mut s = source(r.clone());
     s.light.ambient = 0.12;
     s.light.direction = [-0.5, -0.7, -1.];

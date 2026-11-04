@@ -4,6 +4,7 @@ import argparse
 import copy
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -30,6 +31,37 @@ def panel(n=1):
             a = y*(n+1)+x
             triangles.extend([[a, a+1, a+n+2], [a, a+n+2, a+n+1]])
     return {'positions': positions, 'triangles': triangles, 'material_coordinates': coordinates}
+
+
+def boulder(seed=0, count=32):
+    """Small authored convex source mesh; independent of every material channel."""
+    points = []
+    for i in range(count):
+        y = 1 - 2 * (i + .5) / count
+        angle = i * 2.399963229728653 + seed * .41
+        radius = .46 + .07 * math.sin(i * 4.31 + seed)
+        ring = math.sqrt(1-y*y)
+        points.append([radius * ring * math.cos(angle), radius * y * 1.07,
+                       radius * ring * math.sin(angle) * .8])
+    faces = []
+    def sub(a, b): return [a[k]-b[k] for k in range(3)]
+    def dot(a, b): return sum(x*y for x, y in zip(a, b))
+    def cross(a, b): return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]
+    for i in range(count):
+        for j in range(i+1, count):
+            for k in range(j+1, count):
+                normal = cross(sub(points[j], points[i]), sub(points[k], points[i]))
+                if dot(normal, normal) < 1e-12: continue
+                signs = [dot(normal, sub(p, points[i])) for p in points]
+                if max(signs) < 1e-8: faces.append([i,j,k])
+                elif min(signs) > -1e-8: faces.append([i,k,j])
+    edges = {}
+    for face in faces:
+        for a,b in zip(face, face[1:]+face[:1]):
+            key = tuple(sorted((a,b))); edges[key] = edges.get(key, 0) + 1
+    assert faces and all(v == 2 for v in edges.values()), 'Closed manifold hull required'
+    return {'positions': points, 'triangles': faces,
+            'material_coordinates': [[p[0]+.5, p[1]+.5, p[2]] for p in points]}
 
 
 def main():
@@ -60,9 +92,9 @@ def main():
         def light(direction=(-.6, -.75, -1), ambient=.14):
             c.call('set_light', light={'direction': list(direction), 'ambient': ambient})
 
-        def asset(name, geometry):
+        def asset(name, geometry, shading='smooth'):
             c.call('edit_mesh', edit={'kind': 'put_asset', 'asset': {
-                'id': name, 'geometry': geometry, 'shading': 'smooth', 'material': {}}})
+                'id': name, 'geometry': geometry, 'shading': shading, 'material': {}}})
 
         def instance(name, source, position=(0, 0, 0), scale=1, color=(1, 1, 1)):
             c.call('edit_mesh', edit={'kind': 'put_instance', 'instance': {
@@ -79,10 +111,13 @@ def main():
         for family, _ in FAMILIES:
             reset(); asset('slab', panel()); instance('slab', 'slab'); light()
             info = rock('slab', family)
-            assert info['recipe']['normal_filter'] == 'pixel'
+            assert info['recipe']['normal_filter'] == 'pixel' and info['recipe']['rock']['version'] == 2
             materials[family] = info['recipe']
             c.call('material', operation={'kind': 'save', 'asset': 'slab', 'path': f'library/{family}.ignis-material'})
             capture(family)
+            target = SOURCE/f'assets/materials/rock/{family}.ignis-material'
+            library = json.loads((OUTPUT/f'library/{family}.ignis-material').read_text())
+            target.write_text(json.dumps(library, indent=2)+'\n')
             c.call('save_scene', path=f'examples/{family}.scene.json')
             light((.8, -.2, -.6)); capture(f'{family}-opposing')
             light(ambient=1); capture(f'{family}-ambient')
@@ -106,23 +141,23 @@ def main():
             fixed_reports.append({'family': family, 'bake_seconds': seconds, 'sample_bytes': info['sample_bytes'],
                                   'file_bytes': (OUTPUT/f'library/{family}.fixed.ignis-material').stat().st_size,
                                   'gpu': warm['adapter']['procedural_materials']})
-        checks.append('Four runtime families saved/rendered under two directional lights and ambient illumination')
+        checks.append('Four continuous rock2 families saved/rendered under two directional lights and ambient illumination')
         geometry = None
         marble_checks = []
         if not args.quick:
             checks.append('Four fixed1024 libraries reload with byte-identical native PNGs and warm uploads unchanged')
             # Same program, palette and seed; vary structural controls.
             reset(); light()
-            controls = [('massive', [2, 3], .18, .1, .015), ('shattered', [8, 9], .9, .25, .025),
-                        ('weathered', [4, 5], .55, .95, .055)]
-            for i, (name, blocks, secondary, wear, width) in enumerate(controls):
+            controls = [('fine', .35, .08, .12), ('coarse', .95, .3, .65),
+                        ('weathered', .7, .9, .9)]
+            for i, (name, grain, wear, pits) in enumerate(controls):
                 asset(name, panel()); instance(name, name, (i-1, 0, 0), .96)
                 recipe = copy.deepcopy(materials['fractured'])
-                recipe['rock'].update(blocks=blocks, secondary_joints=secondary, weathering=wear, joint_width=width)
+                recipe['rock'].update(grain=grain, weathering=wear, pitting=pits, inclusions=pits)
                 c.call('material', operation={'kind': 'generate', 'asset': name, 'recipe': recipe})
             capture('structure-controls', 1536, 512)
             c.call('save_scene', path='examples/structure-controls.scene.json')
-            checks.append('Joint density, scale and weathering vary independently from the palette and seed')
+            checks.append('Grain, inclusions and shallow wear vary independently from palette and seed')
 
             reset(); light(); asset('shared', panel()); rock('shared', 'ochre', unique=True)
             for i in range(4):
@@ -133,36 +168,31 @@ def main():
             assert len(mesh['assets']) == 1 and len(mesh['instances']) == 4
             checks.append('Four stable instance seeds share one source geometry and recipe')
 
-            # Explicit geometry: heightfield surface, not a solid mountain or overhang.
-            # Keep the2MiB MCP envelope intact: the large authored grid travels
-            # through the existing buffered local-scene reader, not inline RPC.
-            scene = json.loads((OUTPUT/'examples/fractured.scene.json').read_text())
-            scene['meshes']['assets'][0]['id'] = 'source'
-            scene['meshes']['assets'][0]['geometry'] = panel(512)
-            scene['meshes']['instances'][0].update(id='relief', asset='source')
-            (OUTPUT/'examples/geometry-source.scene.json').write_text(json.dumps(scene, separators=(',', ':')))
-            c.call('load_scene', path='examples/geometry-source.scene.json')
-            light()
-            asset('receiver', panel()); instance('receiver', 'receiver', (0, 0, -.22), 1.5, (.16, .18, .2))
-            reference = c.call('inspect_mesh_topology', asset='receiver')['reference']
-            c.call('material', operation={'kind': 'bake_displacement', 'instance': 'relief', 'id': 'baked', 'reference': reference})
-            assert c.call('material', operation={'kind': 'inspect', 'asset': 'baked'})['recipe']['height_m'] == 0
-            geometry = c.call('inspect_meshes')
-            assert len(geometry['assets']) == 3
-            source = next(a for a in geometry['assets'] if a['id'] == 'source')
-            baked = next(a for a in geometry['assets'] if a['id'] == 'baked')
-            assert source['vertices'] == baked['vertices'] == 263169
-            assert source['triangles'] == baked['triangles'] == 524288
-            c.call('set_camera', camera={'position': [.68, .45, 1.12], 'target': [0, 0, -.055], 'fov_degrees': 48})
-            illumination = {'direction': [-.6, -.75, -1], 'ambient': .12,
-                            'shadow': {'center': [0, 0, -.1], 'extent': 1.2, 'resolution': 2048,
-                                       'bias': .0008, 'receiver_plane_bias': True}}
-            c.call('set_light', light=illumination); capture('geometry-relief')
-            c.call('save_scene', path='examples/geometry-relief.scene.json')
-            illumination['direction'] = [.8, -.2, -.6]
-            c.call('set_light', light=illumination); capture('geometry-relief-opposing')
-            assert (OUTPUT/'artifacts/geometry-relief.png').read_bytes() != (OUTPUT/'artifacts/geometry-relief-opposing.png').read_bytes()
-            checks.append('Explicit512x512 mesh bake preserves source, removes duplicate shader displacement and casts light-dependent world shadows')
+            # Apply one independent source material to different authored meshes.
+            reset(); light()
+            shapes = [('flat', panel(), 'smooth'), ('angular', boulder(), 'flat'),
+                      ('rounded', boulder(4, 90), 'smooth')]
+            hashes = {}
+            for i, (name, shape, shading) in enumerate(shapes):
+                asset(name, shape, shading); instance(name, name, (i-1, 0, 0), .94)
+                hashes[name] = hashlib.sha256(json.dumps(shape, sort_keys=True).encode()).hexdigest()
+            c.call('set_camera', camera={'position': [0, 0, 2], 'target': [0, 0, 0], 'fov_degrees': 35})
+            for name, _, _ in shapes:
+                c.call('edit_mesh', edit={'kind':'set_material','asset':name,
+                    'material':{'reflectance':{'roughness':.9,'f0':.04}}})
+            capture('geometry-neutral', 1536, 512)
+            before = c.call('inspect')['scene']['meshes']
+            for name, _, _ in shapes: rock(name, 'fractured')
+            after = c.call('inspect')['scene']['meshes']
+            for a,b in zip(before['assets'], after['assets']):
+                assert a['geometry'] == b['geometry'], 'Material must never change source geometry'
+            assert before['instances'] == after['instances']
+            capture('geometry-material', 1536, 512)
+            light((.8, -.2, -.6)); capture('geometry-opposing', 1536, 512)
+            c.call('save_scene', path='examples/geometry-material.scene.json')
+            geometry = {'source_sha256':hashes, 'material_changes_geometry':False,
+                        'shapes':[{'id':n,'vertices':len(g['positions']),'triangles':len(g['triangles'])} for n,g,_ in shapes]}
+            checks.append('Identical material on flat, angular and rounded source meshes; geometry/instances exactly unchanged; opposing lights')
 
             # Preserve the accepted marble appearances. Never replace their review outputs.
             for family in ['verde_breccia', 'emerald_white_gold', 'emerald_gold']:
@@ -177,11 +207,12 @@ def main():
             if marble_checks:
                 checks.append('Accepted green marble native captures remain byte identical')
 
+        # Native hero: mass and broken planes exist in authored geometry, even untextured.
         reset(); light()
         for i, (family, _) in enumerate(FAMILIES):
-            asset(f'm-{i}', panel()); rock(f'm-{i}', family)
-            instance(f'm-{i}', f'm-{i}', ((i % 2-.5)*1.04, (.5-i//2)*1.04, 0))
-        c.call('set_camera', camera={'position': [0, 0, 2.2], 'target': [0, 0, 0], 'fov_degrees': 53.130104})
+            asset(f'm-{i}', boulder(i), 'flat'); rock(f'm-{i}', family)
+            instance(f'm-{i}', f'm-{i}', ((i % 2-.5)*1.08, (.5-i//2)*1.08, 0))
+        c.call('set_camera', camera={'position': [.2, .1, 2.5], 'target': [0, 0, 0], 'fov_degrees': 53.130104})
         capture('collection', 1536)
         c.call('save_scene', path='examples/collection.scene.json')
         state = c.call('inspect')
@@ -202,12 +233,16 @@ def main():
             pairs += '</p>'
         extra = '' if args.quick else '''<h2>Structure controls · same palette and seed</h2><img src="artifacts/structure-controls.png">
 <h2>Shared geometry · distinct instance seeds</h2><img src="artifacts/unique-instances.png">
-<h2>Explicit geometry and world shadows</h2><div class="pair"><img src="artifacts/geometry-relief.png"><img src="artifacts/geometry-relief-opposing.png"></div>
-<p>Explicit mesh displacement on an authored grid. The source is preserved; this surface is not a solid mountain or an overhang generator.</p>'''
+<h2>Shape belongs to the mesh</h2><div class="pair"><img src="artifacts/geometry-neutral.png"><img src="artifacts/geometry-material.png"></div>
+<p>Left: neutral geometry. Right: same geometry coated with continuous stone. No displacement bake or material-derived shape. <a href="artifacts/geometry-opposing.png">Same meshes under opposing light</a>.</p>'''
         (OUTPUT/'review.html').write_text('''<!doctype html><meta charset="utf-8"><title>Ignis · mountain rock materials</title>
 <style>body{background:#111719;color:#e4ebe8;font:16px system-ui;max-width:1500px;margin:40px auto;padding:0 26px}p{line-height:1.6;color:#bdcac4}img{max-width:100%;display:block}.pair{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}a{color:#bfd9c7}h2{margin-top:48px}</style>
-<h1>Ignis · mountain rock materials</h1><p>Configurable angular faces, fractures, weathering, mineral grain and wavy layers. Left: supplied visual reference. Right: native procedural material under scene lighting. The reference pixels are not generator inputs.</p>'''+pairs+extra+'''
+<h1>Ignis · mountain rock materials</h1><p>Continuous mineral surfaces, sparse fissures, fine grain and shallow wear. Large broken planes and silhouettes belong to the source mesh. Left: supplied visual reference. Right: native procedural material under scene lighting. The reference pixels are not generator inputs.</p><img src="artifacts/collection.png">'''+extra+pairs+'''
 <h2>Collection</h2><img src="artifacts/collection.png"><p>Same source for runtime and fixed execution. See <a href="verification.json">validation and storage evidence</a> and the <a href="examples/collection.scene.json">editable native scene</a>. Human artistic acceptance is separate from automated correctness.</p>''')
+        if not args.quick:
+            for old in ['examples/geometry-source.scene.json', 'examples/geometry-relief.scene.json',
+                        'artifacts/geometry-relief.png', 'artifacts/geometry-relief-opposing.png']:
+                (OUTPUT/old).unlink(missing_ok=True)
         print(json.dumps({'review': str(OUTPUT/'review.html'), 'checks': len(checks), 'quick': args.quick, 'binary_sha256': binary_sha}))
     finally:
         c.close()

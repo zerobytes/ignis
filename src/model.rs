@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 118;
+pub const SCENE_VERSION: u32 = 119;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;
 
@@ -640,7 +640,7 @@ impl Scene {
                 a.material
                     .procedural
                     .as_ref()
-                    .is_some_and(|p| p.recipe.requires_extended_surface())
+                    .is_some_and(|p| p.recipe.required_scene_version() > self.version)
             };
             if self.meshes.assets.iter().any(rock)
                 || self.plants.entries.iter().any(|e| {
@@ -658,10 +658,12 @@ impl Scene {
                         s.material
                             .procedural
                             .as_ref()
-                            .is_some_and(|p| p.recipe.requires_extended_surface())
+                            .is_some_and(|p| p.recipe.required_scene_version() > self.version)
                     })
             {
-                return Err(invalid("Rock programs and pixel normals require scene117"));
+                return Err(invalid(
+                    "Rock program/normal mode requires a newer scene version",
+                ));
             }
         }
         if self.version < crate::materials::marble::SCENE_VERSION {

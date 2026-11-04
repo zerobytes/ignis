@@ -96,7 +96,7 @@ The latter computes relief differences separately per pixel, reducing 2x2 blocks
 on steep height transitions at the cost of two extra neighboring material reads.
 It also uses the shifted lookup coordinate with parallax. It changes neither
 silhouette nor collision. Rock presets choose it; other recipes retain their
-previous mode. The opt-in mode requires Scene117, as does the rock program.
+previous mode. The opt-in mode and legacy rock1 require Scene117; continuous rock2 requires Scene119.
 
 Recipe1 has at most eight layers. A sample contains three four-channel vectors:
 

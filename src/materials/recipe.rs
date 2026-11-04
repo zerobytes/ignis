@@ -438,8 +438,14 @@ fn field(uv: [f32; 2], n: [i32; 2], seed: u32, kind: Field, aa: f32) -> f32 {
     smooth(0.02 - aa, 0.12 + aa, second - first)
 }
 impl Recipe {
-    pub(crate) fn requires_extended_surface(&self) -> bool {
-        self.rock.is_some() || self.normal_filter != NormalFilter::Screen
+    pub(crate) fn required_scene_version(&self) -> u32 {
+        if self.rock.as_ref().is_some_and(|r| r.version >= 2) {
+            super::rock::SCENE_VERSION
+        } else if self.rock.is_some() || self.normal_filter != NormalFilter::Screen {
+            117
+        } else {
+            0
+        }
     }
     fn program_words(&self) -> usize {
         if self.rock.is_some() {
@@ -588,8 +594,8 @@ pub(crate) fn pack(source: &[super::Material]) -> (Vec<super::GpuMaterial>, Vec<
                     f32::from((r.seed & 65535) as u16),
                     r.layers.len() as f32,
                     f32::from((r.seed >> 16) as u16),
-                    if r.rock.is_some() {
-                        2.
+                    if let Some(rock) = &r.rock {
+                        if rock.version >= 2 { 3. } else { 2. }
                     } else if r.marble.is_some() {
                         1.
                     } else {

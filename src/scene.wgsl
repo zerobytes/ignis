@@ -467,6 +467,33 @@ fn rock_sample(at:u32,uv:vec2<f32>,footprint:f32,seed:u32)->SurfaceSample {
     let ao=clamp(1.0-0.5*joint*blocks.w-0.2*(1.0-shelf)*strata.y-0.12*pits,0.25,1.0);
     return SurfaceSample(vec4<f32>(color,roughness),vec4<f32>(0.0,height,1.0,ao),vec4<f32>(0.0));
 }
+// Rock2 coats a continuous surface. Large fracture planes belong to source geometry.
+fn rock_surface_sample(at:u32,uv:vec2<f32>,footprint:f32,seed:u32)->SurfaceSample {
+    let dark=procedural_data.items[at];let light=procedural_data.items[at+1u];let oxide=procedural_data.items[at+2u];let mineral=procedural_data.items[at+3u];
+    let blocks=procedural_data.items[at+4u];let finish=procedural_data.items[at+5u];let strata=procedural_data.items[at+6u];let shape=procedural_data.items[at+7u];let detail=procedural_data.items[at+8u];
+    let a=marble_fbm(uv,2,seed+31u,4u,footprint);let b=marble_fbm(uv,3,seed+71u,4u,footprint);
+    let q=vec2<f32>(uv.x+shape.x*uv.y,uv.y)+finish.x*(vec2<f32>(a,b)-0.5);
+    let fp=footprint*(1.0+finish.x*3.0+abs(shape.x));
+    let coarse=marble_fbm(q,4,seed+317u,4u,fp);let small=marble_fbm(q,37,seed+389u,4u,fp);let fine=marble_fbm(q,128,seed+467u,2u,fp);
+    let grain=marble_grain(uv,i32(finish.w),seed+431u,footprint);
+    let frequency=i32(blocks.x)*7+i32(blocks.y)*3;
+    let seam=abs(marble_fbm(q,frequency,seed+151u,3u,fp)-0.5);let cross=abs(marble_fbm(q,frequency*2,seed+233u,2u,fp)-0.5);
+    let aa=min(fp*f32(frequency)*0.12,0.08);let width=blocks.z*(0.35+1.3*small);
+    let interrupted=smoothstep(0.53,0.7,coarse)*smoothstep(0.42,0.64,small);
+    let fissure=min(1.0,(1.0-smoothstep(width,width+0.008+aa,seam))+detail.z*(1.0-smoothstep(width*0.4,width*0.4+0.008+aa,cross)))*interrupted*(1.0-smoothstep(0.3,0.9,fp*f32(frequency)));
+    let phase=dot(uv,shape.xy)*strata.x+strata.z*strata.x*0.15*(a-0.5)+strata.w*0.8*(small-0.5);
+    let band=sin(6.28318530718*phase)*(1.0-smoothstep(0.2,0.75,footprint*strata.x*length(shape.xy)));
+    let pits=smoothstep(0.62,0.83,fine)*shape.z;
+    let height=clamp(0.5+detail.y*((small-0.5)*0.55+(fine-0.5)*0.3)+finish.y*0.04*(coarse-0.5)+strata.y*band*(0.015+0.025*detail.w)-fissure*blocks.w*0.2-pits*0.08,0.02,0.98);
+    let value=pow(clamp(0.52+0.65*(coarse-0.5)+0.25*(small-0.5)+finish.z*0.32*(grain-0.5)+strata.y*0.17*band,0.0,1.0),light.w);
+    var color=mix(dark.xyz,light.xyz,value);
+    let rust=oxide.w*smoothstep(0.45,0.75,b)*(0.35+0.65*small);color=mix(color,oxide.xyz,rust);
+    let crystals=smoothstep(0.54,0.76,small)*smoothstep(0.56,0.8,grain)*mineral.w;
+    color=mix(color,mineral.xyz,crystals*0.65);color=mix(color,dark.xyz,fissure*blocks.w*0.25);
+    let roughness=clamp(dark.w+detail.x*(grain-0.5)+shape.w*0.06*(small-0.5)+pits*0.08,0.2,1.0);
+    let ao=clamp(1.0-0.12*fissure*blocks.w-0.08*pits,0.85,1.0);
+    return SurfaceSample(vec4<f32>(color,roughness),vec4<f32>(0.0,height,1.0,ao),vec4<f32>(0.0));
+}
 fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
     if info.x==2u {
         let last=u32(log2(f32(info.z)));let lod=clamp(log2(max(1.0,footprint*f32(info.z))),0.0,f32(last));
@@ -476,7 +503,8 @@ fn recipe_sample(info:vec4<u32>,uv:vec2<f32>,footprint:f32)->SurfaceSample {
     var sample=sample_load(info.y+2u);let metadata=procedural_data.items[info.y+5u];let uv0=fract(uv);
     let seed0=u32(metadata.x)|(u32(metadata.z)<<16u);
     var words=0u;
-    if metadata.w>1.5 {sample=rock_sample(info.y+6u,uv0,footprint,seed0);words=9u;}
+    if metadata.w>2.5 {sample=rock_surface_sample(info.y+6u,uv0,footprint,seed0);words=9u;}
+    else if metadata.w>1.5 {sample=rock_sample(info.y+6u,uv0,footprint,seed0);words=9u;}
     else if metadata.w>0.5 {sample=marble_sample(info.y+6u,uv0,footprint,seed0);words=8u;}
     for(var layer=0u;layer<8u;layer++) {
         if layer>=u32(metadata.y) {break;}

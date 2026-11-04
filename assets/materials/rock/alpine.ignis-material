@@ -5,11 +5,11 @@
       "version": 1,
       "recipe": {
         "rock": {
-          "version": 1,
+          "version": 2,
           "dark": [
-            0.09989874,
-            0.12477184,
-            0.14412849
+            0.1682694,
+            0.1980693,
+            0.21586053
           ],
           "light": [
             0.47932023,
@@ -29,30 +29,30 @@
           "roughness": 0.84,
           "contrast": 1.25,
           "blocks": [
-            3,
+            4,
             5
           ],
-          "joint_width": 0.018,
-          "joint_depth": 0.85,
-          "warp": 0.06,
-          "faceting": 1.0,
+          "joint_width": 0.008,
+          "joint_depth": 0.12,
+          "warp": 0.2,
+          "faceting": 0.0,
           "layers": 24,
-          "stratification": 0.0,
+          "stratification": 0.02,
           "layer_warp": 0.28,
           "layer_disorder": 0.7,
-          "grain": 0.3,
+          "grain": 0.6,
           "grain_frequency": 1024,
-          "oxidation": 0.0,
-          "inclusions": 0.12,
-          "pitting": 0.25,
-          "weathering": 0.2,
+          "oxidation": 0.03,
+          "inclusions": 0.25,
+          "pitting": 0.2,
+          "weathering": 0.45,
           "roughness_variation": 0.18,
-          "detail_height": 0.065,
-          "secondary_joints": 0.45,
+          "detail_height": 0.65,
+          "secondary_joints": 0.35,
           "erosion": 0.4,
           "direction": [
-            1,
-            2
+            0,
+            1
           ]
         },
         "normal_filter": "pixel",
@@ -84,7 +84,7 @@
           ]
         },
         "layers": [],
-        "height_m": 0.22,
+        "height_m": 0.008,
         "relief": "bump",
         "view_steps": 16,
         "shadow_steps": 8

@@ -2548,11 +2548,19 @@ fn rock_ui(ui: &mut egui::Ui, r: &mut crate::materials::rock::Rock) {
             design_ui::color(ui, color);
         });
     }
-    design_ui::field(ui, "Escala dos blocos", |ui| {
-        for v in &mut r.blocks {
-            ui.add(egui::DragValue::new(v).range(1..=32));
-        }
-    });
+    design_ui::field(
+        ui,
+        if r.version >= 2 {
+            "Escala das fissuras"
+        } else {
+            "Escala dos blocos"
+        },
+        |ui| {
+            for v in &mut r.blocks {
+                ui.add(egui::DragValue::new(v).range(1..=32));
+            }
+        },
+    );
     design_ui::field(ui, "Direção dos estratos", |ui| {
         for v in &mut r.direction {
             ui.add(egui::DragValue::new(v).range(-4..=4));
@@ -2566,7 +2574,14 @@ fn rock_ui(ui: &mut egui::Ui, r: &mut crate::materials::rock::Rock) {
     for (label, value) in [
         ("Profundidade das juntas", &mut r.joint_depth),
         ("Fraturas secundárias", &mut r.secondary_joints),
-        ("Planos angulares", &mut r.faceting),
+        (
+            if r.version >= 2 {
+                "Ondulação mineral"
+            } else {
+                "Planos angulares"
+            },
+            &mut r.faceting,
+        ),
         ("Deformação", &mut r.warp),
         ("Estratificação", &mut r.stratification),
         ("Ondulação das camadas", &mut r.layer_warp),

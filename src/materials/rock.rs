@@ -7,8 +7,8 @@ use crate::model::{Result, invalid};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const VERSION: u16 = 1;
-pub const SCENE_VERSION: u32 = 117;
+pub const VERSION: u16 = 2;
+pub const SCENE_VERSION: u32 = 119;
 pub(crate) const WORDS: usize = 9;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
@@ -64,23 +64,23 @@ impl Default for Rock {
             roughness: 0.84,
             contrast: 1.25,
             blocks: [4, 5],
-            joint_width: 0.035,
-            joint_depth: 0.85,
-            warp: 0.24,
-            faceting: 0.8,
+            joint_width: 0.008,
+            joint_depth: 0.2,
+            warp: 0.2,
+            faceting: 0.,
             layers: 24,
-            stratification: 0.12,
+            stratification: 0.02,
             layer_warp: 0.28,
             layer_disorder: 0.7,
-            grain: 0.5,
+            grain: 0.6,
             grain_frequency: 768,
             oxidation: 0.15,
-            inclusions: 0.25,
-            pitting: 0.25,
+            inclusions: 0.35,
+            pitting: 0.2,
             weathering: 0.45,
             roughness_variation: 0.18,
-            detail_height: 0.065,
-            secondary_joints: 0.6,
+            detail_height: 0.65,
+            secondary_joints: 0.35,
             erosion: 0.4,
             direction: [0, 1],
         }
@@ -114,72 +114,50 @@ impl Family {
         let mut m = Rock::default();
         let depth = match self {
             Self::Alpine => {
-                m.dark = color(0x59636a);
+                m.dark = color(0x727b80);
                 m.light = color(0xb8bdbc);
-                m.blocks = [3, 5];
-                m.direction = [1, 2];
-                m.faceting = 1.;
-                m.warp = 0.06;
-                m.stratification = 0.;
-                m.joint_width = 0.018;
-                m.oxidation = 0.;
-                m.inclusions = 0.12;
-                m.grain = 0.3;
+                m.oxidation = 0.03;
+                m.inclusions = 0.25;
                 m.grain_frequency = 1024;
-                m.weathering = 0.2;
-                m.secondary_joints = 0.45;
-                0.22
+                m.joint_depth = 0.12;
+                0.008
             }
             Self::Fractured => {
-                m.dark = color(0x182125);
-                m.light = color(0x737b76);
-                m.joint_depth = 1.;
-                m.warp = 0.1;
-                m.stratification = 0.;
-                m.faceting = 0.65;
-                m.oxidation = 0.4;
-                m.inclusions = 0.45;
-                m.secondary_joints = 0.8;
-                m.pitting = 0.45;
-                0.13
+                m.dark = color(0x303a3f);
+                m.light = color(0x76807d);
+                m.oxidation = 0.3;
+                m.inclusions = 0.65;
+                m.joint_depth = 0.3;
+                m.secondary_joints = 0.55;
+                m.pitting = 0.35;
+                0.01
             }
             Self::Ochre => {
-                m.dark = color(0x514638);
-                m.light = color(0xc0a67e);
-                m.oxide = color(0xb97d49);
-                m.blocks = [3, 6];
+                m.dark = color(0x85715a);
+                m.light = color(0xc0ad8c);
+                m.oxide = color(0xb98959);
                 m.direction = [1, 2];
                 m.stratification = 0.08;
-                m.warp = 0.12;
                 m.layers = 14;
-                m.layer_warp = 0.12;
-                m.oxidation = 0.55;
-                m.grain = 0.7;
+                m.oxidation = 0.4;
+                m.grain = 0.8;
                 m.weathering = 0.7;
-                m.erosion = 0.6;
-                0.16
+                0.008
             }
             Self::Sedimentary => {
-                m.dark = color(0x302e27);
+                m.dark = color(0x635b4d);
                 m.light = color(0xb7a084);
-                m.oxide = color(0xc47a44);
-                m.mineral = color(0xe3d7b6);
-                m.blocks = [3, 2];
-                m.warp = 0.15;
-                m.secondary_joints = 0.18;
-                m.joint_width = 0.016;
-                m.joint_depth = 0.6;
-                m.faceting = 0.25;
-                m.layers = 56;
-                m.stratification = 1.;
-                m.layer_warp = 0.7;
-                m.layer_disorder = 0.95;
+                m.oxide = color(0xbd895c);
+                m.mineral = color(0xd8cbb4);
+                m.layers = 48;
+                m.stratification = 0.65;
+                m.layer_warp = 0.55;
+                m.layer_disorder = 0.8;
                 m.grain = 0.7;
-                m.oxidation = 0.65;
-                m.weathering = 0.65;
-                m.erosion = 0.8;
-                m.detail_height = 0.035;
-                0.095
+                m.oxidation = 0.35;
+                m.joint_depth = 0.12;
+                m.erosion = 0.35;
+                0.006
             }
         };
         Recipe {
@@ -193,7 +171,7 @@ impl Family {
 }
 impl Rock {
     pub fn validate(&self) -> Result<()> {
-        if self.version != VERSION
+        if !(1..=VERSION).contains(&self.version)
             || self
                 .dark
                 .iter()
@@ -233,7 +211,7 @@ impl Rock {
             .any(|v| !v.is_finite() || !(0. ..=1.).contains(v))
         {
             return Err(invalid(
-                "Invalid rock1 palette, block/layer/grain frequency, direction, joint or finish controls",
+                "Invalid rock palette, block/layer/grain frequency, direction, joint or finish controls",
             ));
         }
         Ok(())
@@ -281,7 +259,80 @@ impl Rock {
             ],
         ]
     }
+    fn surface(&self, uv: [f32; 2], footprint: f32, seed: u32) -> Sample {
+        let sd = |v| seed.wrapping_add(v);
+        let a = fbm(uv, 2, sd(31), 4, footprint);
+        let b = fbm(uv, 3, sd(71), 4, footprint);
+        let q = [
+            uv[0] + f32::from(self.direction[0]) * uv[1] + self.warp * (a - 0.5),
+            uv[1] + self.warp * (b - 0.5),
+        ];
+        let fp = footprint * (1. + self.warp * 3. + f32::from(self.direction[0]).abs());
+        let coarse = fbm(q, 4, sd(317), 4, fp);
+        let small = fbm(q, 37, sd(389), 4, fp);
+        let fine = fbm(q, 128, sd(467), 2, fp);
+        let grain = crystal_grain(uv, i32::from(self.grain_frequency), sd(431), footprint);
+        let frequency = i32::from(self.blocks[0]) * 7 + i32::from(self.blocks[1]) * 3;
+        let seam = (fbm(q, frequency, sd(151), 3, fp) - 0.5).abs();
+        let cross = (fbm(q, frequency * 2, sd(233), 2, fp) - 0.5).abs();
+        let aa = (fp * frequency as f32 * 0.12).min(0.08);
+        let width = self.joint_width * (0.35 + 1.3 * small);
+        let interrupted = smooth(0.53, 0.7, coarse) * smooth(0.42, 0.64, small);
+        let fissure = ((1. - smooth(width, width + 0.008 + aa, seam))
+            + self.secondary_joints * (1. - smooth(width * 0.4, width * 0.4 + 0.008 + aa, cross)))
+        .min(1.)
+            * interrupted
+            * (1. - smooth(0.3, 0.9, fp * frequency as f32));
+        let phase = (uv[0] * f32::from(self.direction[0]) + uv[1] * f32::from(self.direction[1]))
+            * f32::from(self.layers)
+            + self.layer_warp * f32::from(self.layers) * 0.15 * (a - 0.5)
+            + self.layer_disorder * 0.8 * (small - 0.5);
+        let direction_length =
+            (f32::from(self.direction[0]).powi(2) + f32::from(self.direction[1]).powi(2)).sqrt();
+        let band = (std::f32::consts::TAU * phase).sin()
+            * (1.
+                - smooth(
+                    0.2,
+                    0.75,
+                    footprint * f32::from(self.layers) * direction_length,
+                ));
+        let pits = smooth(0.62, 0.83, fine) * self.pitting;
+        let height = (0.5
+            + self.detail_height * ((small - 0.5) * 0.55 + (fine - 0.5) * 0.3)
+            + self.faceting * 0.04 * (coarse - 0.5)
+            + self.stratification * band * (0.015 + 0.025 * self.erosion)
+            - fissure * self.joint_depth * 0.2
+            - pits * 0.08)
+            .clamp(0.02, 0.98);
+        let value = (0.52
+            + 0.65 * (coarse - 0.5)
+            + 0.25 * (small - 0.5)
+            + self.grain * 0.32 * (grain - 0.5)
+            + self.stratification * 0.17 * band)
+            .clamp(0., 1.)
+            .powf(self.contrast);
+        let mut rgb = rgb_mix(self.dark, self.light, value);
+        let rust = self.oxidation * smooth(0.45, 0.75, b) * (0.35 + 0.65 * small);
+        rgb = rgb_mix(rgb, self.oxide, rust);
+        let crystals = smooth(0.54, 0.76, small) * smooth(0.56, 0.8, grain) * self.inclusions;
+        rgb = rgb_mix(rgb, self.mineral, crystals * 0.65);
+        rgb = rgb_mix(rgb, self.dark, fissure * self.joint_depth * 0.25);
+        let roughness = (self.roughness
+            + self.roughness_variation * (grain - 0.5)
+            + self.weathering * 0.06 * (small - 0.5)
+            + pits * 0.08)
+            .clamp(0.2, 1.);
+        let ao = (1. - 0.12 * fissure * self.joint_depth - 0.08 * pits).clamp(0.85, 1.);
+        Sample {
+            color_roughness: [rgb[0], rgb[1], rgb[2], roughness],
+            response: [0., height, 1., ao],
+            emission: [0.; 4],
+        }
+    }
     pub fn evaluate(&self, uv: [f32; 2], footprint: f32, seed: u32) -> Sample {
+        if self.version >= 2 {
+            return self.surface(uv, footprint, seed);
+        }
         let sd = |v| seed.wrapping_add(v);
         let a = fbm(uv, 2, sd(31), 4, footprint);
         let b = fbm(uv, 3, sd(71), 4, footprint);

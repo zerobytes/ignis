@@ -1,185 +1,164 @@
-# Mountain rock materials
+# Continuous stone surfaces
 
-## Visual contract before implementation — EAF-217
+## Corrected surface contract — user review
 
-The references test the tool's capabilities. Their pixels are never source data
-for a material. Retain the supplied images only in the local review directory.
+The first collection was rejected: closed cellular joints and per-cell inclined
+planes read as fitted masonry. Mountain/boulder volume, silhouette, broken faces
+and large crevices must come from the mesh. The material must coat a continuous
+stone surface, with mineral variation, fine grain, sparse interrupted hairline
+fissures, shallow pits and subtle foliation. Smooth means continuous stone, not
+polished/plastic. Replace the default presets with this surface contract and
+show the same material on flat and angular source geometry, including a neutral
+geometry comparison and opposing light. Do not derive the mesh from the material.
 
-| Reference | Required structure | Material versus geometry |
+Preflight: retain rock1 decoding/evaluation exactly, introduce rock2 as an explicit
+program semantic version. Reuse the nine-vector block/header and library2; use a
+new program-kind tag with no buffer/vertex/instance ABI change. Scene119,
+replay129 and Content15 guard the new semantics. Evaluate bounded periodic fields
+without cellular faces or height steps: no new allocation, pass, dependency,
+worker/lock, per-frame I/O or geometry generation. GPU work remains per visible
+fragment/explicit sample; no performance claim. Reuse fixed/runtime, cache and
+transaction paths; regenerate only current review outputs. Geometry examples are
+small authored meshes independent of the height channel. Verify legacy rock1,
+marble, CPU/GPU correspondence, fixed persistence and geometry identity before
+and after applying material; native artistic review remains a separate gate.
+
+## Current material families
+
+| Family | Surface characteristics | Source mesh supplies |
 | --- | --- | --- |
-| Alpine gray faces | Large angular planes, intersecting joints, smaller chipped planes and fine crystalline grain | A material supplies local surface relief; mountain peaks and overhangs require source geometry |
-| Dark fractured rock | Unequal interlocking blocks, deep narrow recesses, worn edges, pale inclusions and rusty deposits | Correlated height, mineral color, roughness and indirect cavity attenuation; shadows follow the light |
-| Ochre cliff | Oblique plates and fractures, broad warm mineral variation, granular abrasion | Orientation and block aspect are controls; a palette alone is insufficient |
-| Bedded sediment | Many thin wavy layers of unequal thickness/hardness, broken ledges and cross fractures | Layer structure affects height and color together; local relief remains a single-valued surface |
+| Alpine | Pale gray mineral matrix, fine crystalline grain, sparse hairline defects | Alpine planes, ridges and broken cliff faces |
+| Fractured | Dark continuous stone, pale inclusions, shallow pits and slight oxidation | Boulder volume and large fracture planes |
+| Ochre | Warm mineral matrix, fine abrasion and mild directional foliation | Oblique plates and deep crevices |
+| Sedimentary | Smooth mineral bands with irregular phase, subtle layer wear | Stepped ledges and broken strata geometry |
 
-Extend the existing native material recipe with an optional `rock1` program.
-Use seeded periodic fields, angular mineral domains, inclined face planes,
-variable-width joints, stepped/wavy strata, erosion, pits and fine mineral grain.
-Four authoring families share configurable operators rather than image-specific
-branches. Preserve the accepted marble program and its exact numerical path.
+A material is reusable independently of the source shape. Smooth here means
+continuous stone, not polished marble: roughness, fine surface normals, grain and
+small defects remain. The default height budgets are 8/10/8/6mm respectively;
+actual sampled variation is smaller. No cell ID colors, cellular face normals,
+per-cell planes or layer-height steps are evaluated by rock2. Sparse interrupted
+noise contours supply local fissures; continuous filtered mineral fields supply
+albedo, roughness, shallow height and slight indirect cavity attenuation. Large
+silhouettes and crevices remain geometry. Color stores no directional lighting.
 
-The CPU bake and WGSL runtime evaluate the same fields. Existing fixed mip maps,
-library2 files, per-instance seeds, editor/MCP transactions and explicit geometry
-displacement remain the execution and reuse paths. Color is mineral albedo;
-directional lighting is not stored in it. Indirect cavity attenuation is an
-authored approximation, not a visibility or GI solver.
+## Controls and reuse
 
-Relief budgets are in metres and stay within the existing 0.25m contract. Bump
-changes normals; optional parallax adds bounded view/light sampling. Explicit
-geometry baking is needed for a silhouette/world-shadow demonstration and uses
-the existing source-preserving transaction. No automatic tessellation, geological
-simulation, cave/overhang generation or terrain/planet adapter is implied.
-
-## Static performance review before code
-
-| Question | Decision |
-| --- | --- |
-| Frequency | Program parameters compile on authoring changes; runtime field work is per visible fragment or explicit relief sample; CPU baking is a cold command |
-| Allocation | Fixed stack intermediates in evaluators; immutable parameter/sample Arcs reuse existing caches and history; no field allocation in a fragment/evaluation |
-| Representation | Small typed parameter block; existing 48-byte surface samples, material ABI, vertex/instance layout and GPU binding remain unchanged |
-| Repeated work | Share hash/periodic-noise semantics and existing map/program packing; reuse field values across height, albedo, roughness and cavities |
-| Limits | Fixed bounded cell neighborhoods and noise octaves; integer frequencies and finite 0..1 controls; fixed 16..1024 and aggregate device binding limits unchanged |
-| GPU/I/O | One existing procedural buffer; no new pass, readback, file/network access or geometry generation in a frame |
-| Concurrency | No worker, lock, dependency or shared mutable random stream |
-| Invalidation | Source/material edits rebuild existing immutable program cache once; camera/light changes preserve material identity; fixed data remains authoritative |
-| Correctness | Test periods/seeds, source conflicts/version gates, channels, lossless library persistence, CPU/GPU oracles, fixed/runtime and legacy materials; inspect native images under two lights |
-| Retained costs | Synchronous high-resolution baking/encoding and explicit mesh displacement; expensive optional parallax; approximate footprint filtering and cavity attenuation; no FPS guarantee |
-
-Implementation, current native evidence, controls and remaining limits follow
-after the visual review. Preserve concurrent planet, character and renderer work.
-
-### Native-review correction: per-pixel relief normals
-
-The first native captures exposed 2x2 derivative-block artifacts on steep height
-changes that were absent in the CPU finite-difference preview. Add a reusable
-`NormalFilter::Pixel` option: two extra neighboring height evaluations supply
-per-pixel forward differences instead of sharing a quad's gradient. Keep the
-previous screen-derivative mode as the default for every old recipe/marble.
-Rock presets choose the new mode; authors can choose the quality/cost tradeoff.
-The existing relief header has a spare word, so no GPU ABI or buffer is added.
-The shifted parallax coordinate, when active, is also the normal lookup domain.
-Fixed maps reuse their filtered reads; runtime repeats bounded field evaluation.
-Both the rock program and this opt-in normal mode require Scene117. This is
-local normal sampling, not temporal antialiasing or geometry displacement.
-
-## Authoring and reuse
-
-Select a mesh and open **Aparência → Biblioteca de materiais**. Choose Rocha
-alpina, Rocha escura fraturada, Paredão ocre or Estratos sedimentares and press
-**Gerar rocha**. **Estrutura da rocha** exposes the mineral palettes, block
-frequencies/aspect, integer direction, joint width/depth and secondary fractures,
-faceting, layer density/warp/disorder, pits, erosion, grain and inclusions.
-The usual seed, per-instance variation, planar rest/material domain, metre-scale
-relief budget and ordered overlay layers remain available. **Normais rápidas**
-uses the previous quad derivative path; **Normais suaves** selects per-pixel
-height differences for a higher GPU cost. Both work with fixed and runtime data.
+Select **Aparência → Biblioteca de materiais → Gerar rocha**. The same `material`
+MCP command serves the editor. Modify seed, tile scale, mineral palettes, grain,
+inclusions, oxidation, fissure scale/width/depth, shallow wear and foliation.
+The stored names `blocks` and `faceting` are retained for source compatibility;
+in rock2 these control fissure frequency and slight mineral undulation, not
+fitted blocks. Version1 files retain their original meanings and equations.
 
 ```json
-{"command":{"op":"material","operation":{"kind":"rock","asset":"wall","family":"fractured","seed":4271,"unique_instances":true,"execution":"runtime"}}}
-{"command":{"op":"material","operation":{"kind":"set_execution","asset":"wall","execution":{"fixed":{"resolution":1024}}}}}
-{"command":{"op":"material","operation":{"kind":"save","asset":"wall","path":"materials/fractured.ignis-material"}}}
+{"command":{"op":"material","operation":{"kind":"rock","asset":"stone","family":"fractured","seed":4271,"unique_instances":true,"execution":"runtime"}}}
+{"command":{"op":"material","operation":{"kind":"set_execution","asset":"stone","execution":{"fixed":{"resolution":1024}}}}}
+{"command":{"op":"material","operation":{"kind":"save","asset":"stone","path":"materials/stone.ignis-material"}}}
 ```
 
-`generate` accepts a complete recipe for custom blends. Four compact source files
-live under `assets/materials/rock/`; no photograph is embedded. `load` applies
-one to another mesh. Fixed samples retain all linear channels and the editable
-recipe; they remain authoritative until explicit regeneration. Shared runtime
-instances can derive distinct stable seeds from their IDs.
+Four compact editable sources live under `assets/materials/rock`. Fixed execution
+retains the editable recipe and lossless maps, while runtime can derive stable
+variation per instance ID. Both use the same fields. Rock and marble are mutually
+exclusive base programs; both accept ordered overlays. The generic opt-in pixel
+normal mode takes two neighbor samples; older recipes default to screen normals.
+Mapping still uses the existing explicit planar rest/material coordinates; this
+change does not introduce triplanar procedural mapping or a new UV unwrapper.
 
-Rock and marble are mutually exclusive base programs. Either supports up to
-eight existing ordered overlays. The rock block is nine vec4 records (144 bytes),
-following the unchanged 96-byte recipe header; fixed samples keep their 48-byte
-layout and lossless library2 envelope. The opt-in normal flag uses the spare
-fourth word in the relief header. Scene117/replay127/Content13 protect the new
-source semantics; later shared versions must be preserved. Protocol5,
-checkpoint3, portable-save1, terrain/planet source formats and physics are
-separate contracts and are not modified by these materials.
+## Compatibility and cost
 
-## Native review workflow
+Rock1 evaluation is preserved. Rock2 uses the same nine-vector (144-byte) block
+and existing 96-byte header, with a distinct program-kind tag. Library2 and the
+48-byte fixed sample layout are unchanged. Rock1/pixel normals require Scene117;
+rock2 requires Scene119/replay129/Content15. Scene118 can still read the old rock
+program but must reject rock2. Tests retain a serialized rock1 fixture. Marble
+paths are unchanged; physics, terrain, planet, portable-save and checkpoint
+formats remain independent.
+
+The evaluator uses bounded stack arithmetic and periodic filtered fields.
+Runtime work is per visible fragment and explicit relief sample. Pixel normals
+add two neighbor reads; optional parallax adds its existing view/light steps.
+There is no new pass, buffer binding, worker, dependency, vertex/instance stride,
+per-frame I/O or geometry generation. Fixed1024 still costs 67,108,848 sample bytes
+plus its header: baking and encoding are explicit synchronous operations, not
+free memory/performance improvements. Cavity attenuation is an authored
+approximation. No temporal stability or FPS guarantee is inferred.
+
+## Native review
 
 ```sh
 cargo build --locked --release --bin ignis
 python3 scripts/demo_rock_materials.py
 ```
 
-Stable current outputs are in `artifacts/rock/`: `review.html`, native material
-plates under two lights and ambient illumination, fixed libraries, parameter
-variants, ID-derived instances, a geometry-displacement example and reusable
-scene files. Add up to four `--reference` paths for local side-by-side review.
-`--quick` only regenerates runtime views for iteration. The full run checks four
-fixed 1024 library round trips and unchanged warm uploads. The 512x512 grid demo
-explicitly invokes the existing displacement command, preserving the source and
-turning off duplicate shader displacement on the generated mesh. Its world
-shadows follow scene lighting; it is not a closed mountain/cave generator.
+The current `artifacts/rock/review.html` contains flat surfaces under two lights,
+fixed/runtime maps, seed and surface-control variants, and the new mesh
+comparison. Neutral flat/angular/rounded geometry is shown first, then the same
+vertices and instances with one continuous material, then opposing light.
+Geometry hashes and exact source comparisons verify that applying the material
+never changes mesh shape. No displacement-derived grid or generated material
+height supplies the large rock form. The four-family collection is also rendered
+on small independently authored angular hull meshes. These example hulls test
+material application, not a general mountain/geology generator.
 
-The dense authored grid is loaded through the existing buffered local-scene
-reader, keeping the 2MiB MCP request envelope unchanged. Mesh density limits
-the narrowest geometric joints; shadow bias is an explicit light parameter.
+The script reuses one current output directory. Former dense displacement grids
+are superseded by the small authored examples after successful replacement.
+Accepted marble gallery outputs are only read for regression comparisons.
+No human window or world is opened or altered. Native image inspection and
+human artistic acceptance remain distinct from automated numerical checks.
 
-The full harness also compares the accepted green marble captures when their
-prior local gallery is available. It never overwrites that gallery. No native
-window or user's world is opened or replaced.
+## Review history and validation
 
-## Validation and retained costs — EAF-217
+The first gallery (`f7fe37a`) passed numerical tests but was rejected by the user:
+cellular faces and closed joints looked like masonry. Those automated results
+were not artistic acceptance. This correction changes the default surface
+contract and the demonstration, preserving old saved sources through version1.
 
-- Nine CPU and eight native GPU tests passed across `rock_materials`,
-  `marble_materials`, `material_recipes` and `material_transparency` (17 distinct
-  tests). Coverage includes seeded periodic sources, finite physical channels,
-  conflicting programs/invalid controls rejected atomically, source-version
-  gates, exact library round trips, overlays after both mineral program blocks,
-  CPU/GPU color/cavity oracles, fixed 512 filtering, warm uploads, the independent
-  normal-mode switch, light response and prior transparency/parallax routes.
-- For four rock families at 512, native CPU/GPU mean RGB8 difference was
-  0.01459–0.02416. Runtime/fixed 512 mean RGB8 difference was 0.91628–1.59546;
-  different field/map filtering remains intentional and is not pixel equivalence.
-- The full native gallery passed six checks. Four fixed 1024 files reloaded to
-  byte-identical captured PNGs; subsequent warm captures kept uploads unchanged.
-  Parameter variants share palette/seed while changing structure. Four ID-derived
-  pieces share one source geometry. The explicit 512x512 mesh bake preserves the
-  source and produces 263,169 vertices/524,288 triangles on the generated surface.
-  Its shader height is zero afterward, avoiding duplicate displacement. Native
-  flat, opposing-light, parameter, seeded, fixed and geometric views were reviewed.
-- All three accepted green marble reference PNGs remained byte identical. The
-  accepted marble gallery and sources were preserved.
-- Current run: build `b11b867816ecade1`, binary SHA256
-  `d02f8279189ccf6caa87cc91b901cbc3f2f40eacd97891ca6b676bf5cea418c3`.
-  The shared native tree was Scene118 because concurrent particle work advances
-  the global source; this feature's minimum stays 117. Source hashes and exact
-  measurements are in `artifacts/rock/verification.json`.
-- Explicit 1024 bake command round trips took 1.1384–1.1916 seconds in this run,
-  excluding subsequent encoding. Each map/mip chain has 67,108,848 sample bytes
-  and used 67,108,944 GPU program/map bytes. Fixed file sizes were 28,820,291 /
-  29,059,427 /30,436,728 /31,036,698 bytes. Runtime uses 240 bytes per distinct
-  program, before material-table slots. These are not total memory or FPS.
-- The shared release build succeeded at `target/release/ignis`. MCP render-cache
-  regression passed 5 checks, the general laboratory 11 and replay inspection 4.
-  The broader selection scenario failed its hidden-trigger outline assertion:
-  both views had 9 boxes/10 entities and one selected guide, but selecting the hidden
-  trigger did not change the image. Its diagnostic scene has zero procedural
-  materials. The failure and native metadata are retained under
-  `artifacts/rock/regressions/interaction`; this unit does not alter selection.
-- Whole-tree tests/strict Clippy were attempted but stopped during concurrent
-  render/character/particle edits: an undefined `a` and missing internal
-  `position_coordinates` initializer in `render_instances`, missing `field_blends`
-  in a character test initializer, and an unused mutable particle variable.
-  Whole-tree formatting also found a concurrent meadow-example diff. The owned
-  material modules, UI and test formatting passed. These results do not claim a
-  passing whole-repository build/test/lint state or pristine isolated-commit run.
+- Nine CPU and eight native GPU material tests passed (17 distinct tests).
+  Both rock1 and rock2 are covered by the same CPU/GPU color/cavity oracle,
+  ordered-overlay offset, fixed-map comparison and warm-upload checks.
+  Rock2 mean RGB8 CPU/GPU error was 0.01390–0.01925; runtime/fixed512 mean
+  error was 0.75260–1.82855. The old rock1 means remained 0.02416/1.59546.
+  CPU checks also bound the new physical relief variation below 4mm over sampled
+  surfaces, preserve periodic/instance behavior, reject invalid input atomically,
+  accept the serialized rock1 fixture in Scene117 and reject rock2 in Scene118.
+- The current native gallery passed six checks: four families under two lights,
+  fixed1024 lossless library round trips, unchanged warm uploads, independent
+  surface controls, ID-derived variation, unchanged geometry after material
+  assignment and three accepted green marble PNGs exactly preserved.
+- Native flat/collection/neutral-versus-material images were inspected. The
+  corrected gallery replaces the rejected masonry demonstration. Simple angular
+  and rounded example hulls establish source shape; they are not artistic
+  replicas of the reference mountains. Geometry hashes and image metadata are
+  recorded in `artifacts/rock/verification.json`.
+- Render-cache regression passed 5 checks and the general laboratory passed 11,
+  both headless. Rust formatting for this unit passed, as did diff whitespace.
+  The broad all-target run compiled successfully, then stopped at
+  `directional_shadows::receiver_plane_bias_is_explicit_versioned_and_round_trips`:
+  its exact-version assertion expected 111 but normalization produced 119.
+  Normalization assigns the current scene version; this unit does not change
+  that policy. The full suite therefore is not reported passing.
+  Strict all-target Clippy stopped at `needless_range_loop` in the concurrent
+  `src/render/object_impostor/gpu.rs:418`; global formatting found parallel render
+  edits. No whole-repository lint/format pass is claimed.
+- The release build initially encountered a move/borrow error in ongoing
+  vegetation code. Capturing the scalar `spacing` instead of moving its parent
+  `Arc<Pack>` through a radius-iterator closure allowed the shared build to finish.
+  That minimal fix remains within the parallel `surface_field` changes and is
+  excluded from this material commit.
+- One current executable location is retained at `target/release/ignis`.
+  Superseded dense grid scenes/images from the rejected demonstration were
+  removed after replacement succeeded; current example scene data is about 60KiB
+  instead of 75MiB. No app-binary snapshots or human windows were created.
 
-Final static review keeps the ten preflight decisions: evaluators allocate no
-heap or mutable RNG state; nine parameter vectors and the existing header/sample
-layout reuse one procedural buffer and caches. Pixel normals add two bounded
-neighbor evaluations only when selected and depth is nonzero. Baking, file
-encoding/loading and geometry generation remain explicit synchronous command
-costs. No extra render pass, worker, dependency, per-instance stride, frame I/O,
-collision adapter or readback was added. The first oversized inline grid request
-was corrected to use local scene loading; the 2MiB MCP envelope was preserved.
-Only the current release location and current review outputs are retained;
-superseded numerical prototypes are removed after native inspection.
+Final static review: rock2 does not call the cellular rock1 evaluator. Fields are
+bounded and stack-only; the same nine-vector block/cache/read path is used.
+Continuous microrelief and slight cavity attenuation cannot manufacture masonry
+shadows or source planes. Fixed file work stays explicit and synchronous; pixel
+normals retain their two extra reads. Applying a material preserves all source
+positions/topology and instance transforms. The small closed example hulls are
+authored once by the review script and never generated by a runtime material.
+No new allocation/pass/lock/worker/dependency/ABI or collision behavior was added.
+No FPS, GUI-input, cross-platform or human artistic acceptance is inferred.
 
-These are authored rock families. Runtime octave/lamination filtering and cavity
-attenuation are approximations, with no temporal stability/FPS guarantee. Dense
-heightfield geometry still samples finite vertices and cannot express overhangs;
-shadow-map resolution and bias remain light settings. Fixed maps retain their
-real memory/read cost. GUI input, cross-platform/hardware coverage, geologic
-calibration and human artistic acceptance are separate from these headless tests.
+
+Native run: build `1863847ea6ee3b26`, SHA256 `1ffe5bf645bd99f842010b767a710a45a206ebabdcdf485535050b5b78b05401`, Scene119. Shared working tree includes concurrent vegetation work.

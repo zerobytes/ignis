@@ -944,7 +944,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 128;
+pub const REPLAY_VERSION: u32 = 129;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1264,10 +1264,17 @@ impl Engine {
                     {
                         scene.version = scene.version.max(112);
                     }
-                    if matches!(&edit,crate::meshes::Edit::SetMaterial {material,..} if material.procedural.as_ref().is_some_and(|p|p.recipe.requires_extended_surface()))
-                        || matches!(&edit,crate::meshes::Edit::PutAsset {asset} if asset.material.procedural.as_ref().is_some_and(|p|p.recipe.requires_extended_surface()))
-                    {
-                        scene.version = scene.version.max(crate::materials::rock::SCENE_VERSION);
+                    let surface = match &edit {
+                        crate::meshes::Edit::SetMaterial { material, .. } => {
+                            material.procedural.as_ref()
+                        }
+                        crate::meshes::Edit::PutAsset { asset } => {
+                            asset.material.procedural.as_ref()
+                        }
+                        _ => None,
+                    };
+                    if let Some(p) = surface {
+                        scene.version = scene.version.max(p.recipe.required_scene_version());
                     }
                     if matches!(&edit,crate::meshes::Edit::SetMaterial {material,..} if material.procedural.as_ref().is_some_and(|p|p.recipe.marble.is_some()))
                         || matches!(&edit,crate::meshes::Edit::PutAsset {asset} if asset.material.procedural.as_ref().is_some_and(|p|p.recipe.marble.is_some()))

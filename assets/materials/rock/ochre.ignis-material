@@ -5,21 +5,21 @@
       "version": 1,
       "recipe": {
         "rock": {
-          "version": 1,
+          "version": 2,
           "dark": [
-            0.082282715,
-            0.06124607,
-            0.039546236
+            0.23455065,
+            0.16513222,
+            0.10224175
           ],
           "light": [
             0.5271152,
-            0.3813261,
-            0.20863685
+            0.41788515,
+            0.26225072
           ],
           "oxide": [
             0.48514998,
-            0.2050787,
-            0.06662595
+            0.25015837,
+            0.09989874
           ],
           "mineral": [
             0.6514057,
@@ -29,27 +29,27 @@
           "roughness": 0.84,
           "contrast": 1.25,
           "blocks": [
-            3,
-            6
+            4,
+            5
           ],
-          "joint_width": 0.035,
-          "joint_depth": 0.85,
-          "warp": 0.12,
-          "faceting": 0.8,
+          "joint_width": 0.008,
+          "joint_depth": 0.2,
+          "warp": 0.2,
+          "faceting": 0.0,
           "layers": 14,
           "stratification": 0.08,
-          "layer_warp": 0.12,
+          "layer_warp": 0.28,
           "layer_disorder": 0.7,
-          "grain": 0.7,
+          "grain": 0.8,
           "grain_frequency": 768,
-          "oxidation": 0.55,
-          "inclusions": 0.25,
-          "pitting": 0.25,
+          "oxidation": 0.4,
+          "inclusions": 0.35,
+          "pitting": 0.2,
           "weathering": 0.7,
           "roughness_variation": 0.18,
-          "detail_height": 0.065,
-          "secondary_joints": 0.6,
-          "erosion": 0.6,
+          "detail_height": 0.65,
+          "secondary_joints": 0.35,
+          "erosion": 0.4,
           "direction": [
             1,
             2
@@ -84,7 +84,7 @@
           ]
         },
         "layers": [],
-        "height_m": 0.16,
+        "height_m": 0.008,
         "relief": "bump",
         "view_steps": 16,
         "shadow_steps": 8
