@@ -33,26 +33,43 @@ class Builder:
 
 def radial(angle,h):return (math.cos(angle),h,math.sin(angle))
 def palm(seed=42):
-    x=Builder('Palmeirinha · touceira pinada',seed)
-    for stem in range(12):
-        a=stem*2.4;h=.55+1.45*b.uniform(x.seed,str(stem),'cane_height')**.85
-        root=x.axis(f'caule{stem}',None,0.,radial(a,4.5),h,.036,position=((.22+.025*math.sqrt(stem))*math.cos(a),0.,(.22+.025*math.sqrt(stem))*math.sin(a)),bend=-.18,normal=b.UP,young=3e8)
-        for j in range(7):
-            az=j*2.4+stem+.25*b.uniform(x.seed,f'{root}/{j}','frond_azimuth');u=.95-.045*j
-            length=2.0*(.84+.30*b.uniform(x.seed,f'{root}/{j}','frond_length'))
-            # Inner fronds rise; outer fronds open and recurve at the tip.
-            elevation=math.radians(83.-2.*j)
-            turn=math.radians(100.+6.*j+6.*b.uniform(x.seed,f'{root}/{j}','frond_arch'))
-            curvature=b.Field(-turn/length,drivers=(('u',b.Curve(((0.,1.45),(1.,.55)))),))
-            frond=x.axis(f'{root}/raquis{j}',root,u,radial(az,math.tan(elevation)),length,.0045,bend=curvature,normal=b.UP,young=8e7)
+    """Cluster of leaf bases: each petiole and rachis is one unbranched axis."""
+    x=Builder('Palmeirinha · bases foliares e frondes contínuas',seed)
+    x.axis_samples=32
+    # Increasing curvature, normalized to unit integral: theta(u)=.08u+.92u³.
+    # This bends gently through the bare petiole, increasingly near the tip.
+    progression=b.Curve(tuple((i/16,.08+2.76*(i/16)**2) for i in range(17)))
+    for stem in range(6):
+        a=stem*2.4
+        stature=.55+1.45*b.uniform(x.seed,str(stem),'cane_height')**.85
+        root=x.axis(f'caule{stem}',None,0.,radial(a,18.),.20+.10*stature,.036,
+                    position=((.22+.025*math.sqrt(stem))*math.cos(a),0.,(.22+.025*math.sqrt(stem))*math.sin(a)),
+                    normal=b.UP,young=3e8)
+        for j in range(5):
+            key=f'{root}/{j}'
+            az=j*2.4+stem+.25*b.uniform(x.seed,key,'frond_azimuth')
+            u=.95-.11*j
+            length=(2.1+1.1*stature)*(.90+.16*b.uniform(x.seed,key,'frond_length'))
+            elevation=math.radians(86.-3.*j)
+            turn=math.radians(85.+13.*j+8.*b.uniform(x.seed,key,'frond_arch'))
+            curvature=b.Field(-turn/length,drivers=(('u',progression),))
+            frond=x.axis(f'{root}/raquis{j}',root,u,radial(az,math.tan(elevation)),
+                         length,.014,tip=.065,bend=curvature,normal=b.UP,young=8e7)
             x.organs[-1]['connection']='sheath'
+            x.organs[-1]['taper_power']=1.2
+            # The bare base and leafy distal region belong to this same axis.
             for k in range(24):
-                v=.28+.69*k/23;frame=x.sample(frond,v)
-                long=.50*b.LEAFLET_LENGTH_PROFILE.at(v);width=.045*b.LEAFLET_WIDTH_PROFILE.at(v)
+                q=.03+.94*k/23;v=.46+.52*q;frame=x.sample(frond,v)
+                long=.60*b.LEAFLET_LENGTH_PROFILE.at(q);width=.045*b.LEAFLET_WIDTH_PROFILE.at(q)
                 for side in [-1,1]:
-                    lateral=b.mul(frame.b,side);direction=b.add(b.add(b.mul(lateral,.92),b.mul(frame.t,.26)),(0.,.17,0.))
-                    x.leaf(f'{frond}/foliolo{k}_{side}',frond,v,direction,long,width,bend=-.15,normal=frame.t,attraction=1.5,target=(0,-1,0),birth=1.+v)
-    return chronological(x.recipe('palmeirinha',bark_color=[.33,.36,.10],leaf_color=[.075,.22,.015]),'palmeirinha')
+                    lateral=b.mul(frame.b,side)
+                    direction=b.add(b.add(b.mul(lateral,.92),b.mul(frame.t,.26)),(0.,.17,0.))
+                    x.leaf(f'{frond}/foliolo{k}_{side}',frond,v,direction,long,width,
+                           bend=-.15,normal=frame.t,attraction=1.5,target=(0,-1,0),birth=1.+v)
+    recipe=chronological(x.recipe('palmeirinha',bark_color=[.33,.36,.10],leaf_color=[.075,.22,.015]),'palmeirinha')
+    # Whole leaf axes have the same isotropic age scaling as their leaflets.
+    # The basal support no longer masquerades as a long trunk with branches.
+    return recipe
 
 def spline(points,u):
     x=u*(len(points)-1);i=min(int(x),len(points)-2);t=x-i;a,c=points[i:i+2]
