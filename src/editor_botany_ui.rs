@@ -14,7 +14,8 @@ pub(super) struct State {
     roots: crate::botany::roots::Settings,
     roots_enabled: bool,
     living_definition: crate::botany::growth::Definition,
-    living_time: u64,
+    living_age_years: f64,
+    living_horizon_years: f64,
 }
 impl Default for State {
     fn default() -> Self {
@@ -31,7 +32,8 @@ impl Default for State {
             roots: Default::default(),
             roots_enabled: false,
             living_definition: Default::default(),
-            living_time: 0,
+            living_age_years: 0.,
+            living_horizon_years: 2.,
         }
     }
 }
@@ -77,9 +79,9 @@ pub(super) fn properties(
         if state.prefix.as_deref()!=Some(recipe.prefix.as_str()) {
             state.path=format!("artifacts/botany-native/{}.ignis-botany",recipe.prefix);
             state.prefix=Some(recipe.prefix.clone());state.organ=None;
-            state.living_time=recipe.living.as_ref().map(|p|p.production.plant.time).unwrap_or(0);
         }
         if state.key!=key{state.draft=Some(recipe.clone());state.key=key;
+            if let Some(p)=&recipe.living {state.living_age_years=p.production.plant.time.saturating_sub(p.production.plant.born) as f64/365.;}
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
             let system=recipe.source.root_systems.iter().find(|r|r.stem==state.root_stem);state.roots_enabled=system.is_some();state.roots=system.map(|s|s.settings.clone()).unwrap_or_default();
         }
@@ -87,9 +89,18 @@ pub(super) fn properties(
             ui.separator();ui.heading("Desenvolvimento vivo · experimental");
             ui.label(format!("Dia {} · {} ramos produzidos",plant.production.plant.time,plant.production.sites.len()));
             ui.label("Avanço explícito; não acompanha automaticamente o relógio de gameplay.");
-            state.living_time=state.living_time.max(plant.production.plant.time);
-            ui.add(egui::DragValue::new(&mut state.living_time).range(plant.production.plant.time..=crate::botany::growth::MAX_TIME).prefix("Avançar até dia "));
-            if ui.button("Avançar desenvolvimento").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time:state.living_time}});}
+            let born=plant.production.plant.born;
+            let current_age=plant.production.plant.time.saturating_sub(born) as f64/365.;
+            let maximum_age=(crate::botany::growth::MAX_TIME-born) as f64/365.;
+            ui.label(format!("Idade: {current_age:.3} anos · 1 ano = 365 dias de jogo"));
+            ui.label("Arraste para avançar; aplica ao soltar. Para voltar, use Desfazer (⌘Z).");
+            state.living_horizon_years=state.living_horizon_years.max(current_age).min(maximum_age);
+            ui.add(egui::DragValue::new(&mut state.living_horizon_years).speed(0.1).range(current_age..=maximum_age).prefix("Alcance do slider (anos) "));
+            let response=ui.add(egui::Slider::new(&mut state.living_age_years,current_age..=state.living_horizon_years).step_by(1./365.).fixed_decimals(3).text("Idade alvo (anos)"));
+            if response.drag_stopped() || (response.changed()&&!response.dragged()) {
+                let time=born.saturating_add((state.living_age_years*365.).round() as u64).clamp(plant.production.plant.time,crate::botany::growth::MAX_TIME);
+                if time>plant.production.plant.time {send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
+            }
             if ui.button("+10 dias").clicked() && let Some(time)=plant.production.plant.time.checked_add(10){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
             if let Ok(fruits)=plant.production.attached(&plant.definition.schedule,crate::botany::growth::MAX_ATTACHED) {
                 ui.label(format!("{} unidades reprodutivas ativas",fruits.len()));

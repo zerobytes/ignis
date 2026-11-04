@@ -11,6 +11,8 @@ fruit/branches. Existing authoring physics rejects living reproductive geometry.
 ```sh
 python3 scripts/demo_living_plant.py
 python3 scripts/open_living_plant.py
+# Fresh specimen for testing the age slider:
+python3 scripts/open_living_plant.py --from-birth
 ```
 
 The script owns a headless native MCP process. It does not implement a Python
@@ -26,8 +28,15 @@ prefix/seed, node interval/count/spacing and reproductive schedule, then create.
 The selected living specimen exposes its day, explicit advance, active
 reproductive units, individual harvest buttons and persistent site pruning.
 These controls dispatch the same operations as MCP; they do not maintain a
-second private plant state. The prototype uses authored game days, not a
-calibrated botanical growth rate.
+second private plant state. The prototype uses authored integer game days, not a
+calibrated botanical growth rate. The age slider displays elapsed time since
+birth in years of exactly 365 game days, quantized to one day. Its adjustable
+horizon defaults to two years. Releasing the slider (or editing its number)
+commits a forward advance; dragging does not regenerate every frame. Undo
+(⌘Z) restores earlier authoring snapshots, including interventions. It is not
+biological reverse time. The current demonstration grows a node every 10 days
+and repeats reproduction every 100 days; these accelerated values are test
+parameters, not a realistic species calendar.
 
 ## Commands
 
