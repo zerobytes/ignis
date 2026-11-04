@@ -1,0 +1,202 @@
+IGNIS ENGINE COMMERCIAL SOURCE LICENSE
+Version 1.0 — 3 November 2026
+Copyright 2026 Guilherme Oliveira
+SPDX-License-Identifier: LicenseRef-Ignis-Commercial-1.0
+
+1. PARTIES, SCOPE AND ACCEPTANCE
+
+Guilherme Oliveira is the Licensor and the recipient of royalties under this
+License. "You" means the individual or legal entity exercising the permissions
+below. "Ignis" means the original engine code, documentation and original
+project assets expressly distributed under this License, including modifications
+of that work. Third-party materials remain under their own licenses, identified
+in THIRD_PARTY_NOTICES.md and their accompanying notices; this License neither
+relicenses those materials nor claims ownership of them.
+
+This is a commercial source-available license, not an OSI-approved open source
+license. You may inspect the source without charge. Exercising the permissions
+below is subject to these terms, including attribution, reporting and royalties
+when applicable. If You do not agree, do not exercise those permissions.
+
+2. PERMISSIONS AND ATTRIBUTION
+
+Subject to compliance, You may use, copy, study, modify and build Ignis for
+personal, educational, internal and commercial purposes. You may distribute
+source copies and modified source under this License, retaining this License,
+NOTICE, applicable third-party notices and clear notices of Your modifications.
+You may distribute object-code copies within Your games, applications and tools,
+including proprietary products, provided the applicable Ignis notices and this
+License accompany them in legal notices, documentation or another readable
+location. No compulsory splash screen or advertising endorsement is required.
+
+The attribution is: "Ignis Engine — created by Guilherme Oliveira (zerobytes)."
+Include the project address, https://github.com/zerobytes/ignis, in those notices.
+You may not misrepresent authorship, offer recipients the original Ignis work
+under terms that remove these obligations, or claim Licensor's endorsement.
+
+You own Your independent game content and Your modifications, subject to the
+rights of others. This License does not require disclosure of Your game's
+source. End users may install, run and keep lawfully distributed object-code
+copies as part of a product without owing developer royalties merely for
+playing or using that product. Developing or commercially exploiting a Game
+is governed by the following sections.
+
+3. GAME, REVENUE AND THE USD 1,000,000 THRESHOLD
+
+A "Game" is a video game or interactive entertainment product whose runtime
+incorporates Ignis or a modification of it. Ports, storefront versions, editions,
+downloadable content and expansions of substantially the same Game are one
+Game. Genuinely independent sequels are separate Games. Do not split a Game
+between entities, stores or platforms to avoid the threshold. Sales of unrelated
+games and general company revenue do not count against a Game's threshold.
+
+"Game Revenue" is worldwide revenue attributable to that Game, including game
+sales, paid access, attributable subscriptions, in-game purchases, DLC and
+advertising. Include amounts received by a store, publisher or related party
+on Your behalf before their commissions. Allocate bundle/subscription proceeds
+reasonably and consistently to the Game. Product advances and minimum guarantees
+count once, without counting the same recouped proceeds twice. Exclude genuine
+loans, equity investment, grants without product entitlements, voluntary gifts
+without product entitlements, and sales taxes/VAT collected for a government.
+Refunds and chargebacks reduce revenue once, not again as expenses.
+
+The first USD 1,000,000 of cumulative Game Revenue is exempt. No royalty is
+payable for a Game that has not exceeded that amount. The threshold does not
+reset annually or per platform. Crossing it does not create a retroactive
+royalty on exempt revenue or on the profit earned from that exempt revenue.
+Standalone art, video or other independent output that does not incorporate
+Ignis at runtime does not become royalty-bearing solely because Ignis helped
+create it. No royalty under this License applies to non-Game uses.
+
+4. PROFIT, ELIGIBLE COSTS AND LOSSES
+
+The royalty is 1% (one percent) of Eligible Profit, NOT a percentage of revenue,
+not a percentage of Your company's profit and not a fee per installation.
+
+Eligible Costs are actual, documented, reasonable costs attributable to the Game:
+development and contractor costs, salaries and employer charges for work on the
+Game, production, licensing of game content, publishing/distribution commissions,
+store and payment fees, marketing, hosting, operation, maintenance, customer
+support, and taxes actually borne and attributable to the Game. Allocate shared
+costs and capital assets reasonably, consistently and without duplicate expense
+or depreciation deductions. Related-party charges and owner remuneration must
+reflect actual services at reasonable market rates.
+
+Do not deduct unrelated business costs, dividends, distributions to owners,
+loan principal, notional unpaid labor, speculative future costs, fines, this
+royalty itself, or an amount already deducted elsewhere. Do not count a refund,
+tax exclusion, publisher recoupment or other cost twice. Keep consistent records
+of receipts and costs. Foreign currency amounts must use a reasonable,
+consistently applied published exchange-rate source; record the source and dates.
+
+Calculate the remaining unrecovered Game loss at the threshold ("Opening Loss")
+after applying exempt revenue to the eligible costs allocated to that revenue.
+Pre-threshold profit is exempt; pre-threshold unrecovered costs remain recoverable.
+Keep a cumulative balance of post-threshold revenue (R), eligible costs allocated
+to that post-threshold revenue (C), and Opening Loss (L):
+
+    Eligible Profit = max(0, R - C - L)
+    Cumulative Royalty = 0.01 * Eligible Profit
+    Current Payment = max(0, Cumulative Royalty - royalties already paid)
+
+If You cross the threshold during a calendar quarter, split that quarter's
+revenue at the remaining exemption. Use reliable contemporaneous records to
+allocate that quarter's costs between the exempt and post-threshold portions;
+otherwise allocate them in the same proportion as that quarter's revenue. Apply
+the same method consistently. Costs from earlier quarters and the exempt part
+of the crossing quarter determine Opening Loss. Later quarters are entirely
+post-threshold. Record the calculation and avoid double recovery of costs.
+
+Losses carry forward for that Game. If later losses reduce the cumulative
+royalty below amounts already paid, the excess is a credit against future
+royalties for the same Game; no cash refund is required except to correct an
+accounting error or where mandatory law requires it. There is no minimum royalty.
+
+5. REPORTING, PAYMENT AND VERIFICATION
+
+Within 60 days after the first calendar quarter in which the Game exceeds the
+threshold, privately notify Licensor and provide a royalty report. Thereafter,
+provide a report and pay the amount due within 60 days after each calendar
+quarter while the Game earns revenue or has a payment due. Reports may show
+zero profit and zero payment. Before the threshold, no routine report or product
+registration is required, but keep records supporting the exemption.
+
+A report identifies the Game and responsible business, reporting period,
+cumulative revenue, remaining exemption, post-threshold revenue, categories of
+eligible costs, Opening Loss, carried losses/credits, Eligible Profit, prior
+payments, exchange rates and amount due. Use aggregate figures; do not disclose
+players' personal data. Submit reports through a private channel agreed with
+Licensor, never in a public issue, repository or discussion.
+
+Request secure private reporting/payment instructions through the maintainer
+contact route on the project profile. Payment is in USD by an agreed lawful
+method. If You timely request instructions and Licensor does not provide them,
+payment is deferred without penalty until 15 days after they are supplied;
+retain the report and funds due. The obligation is not forgiven. No bank account
+or payment recipient change in a public issue alone is a valid instruction.
+
+Retain supporting records for five years after the relevant report. At most
+once per calendar year, Licensor may request a proportionate review by an
+independent accountant under confidentiality, with at least 30 days' notice,
+limited to the records needed for this Game and calculation. Licensor pays the
+review cost, unless it establishes an underpayment exceeding both 5% of the
+amount due for the reviewed period and USD 1,000; in that case You reimburse
+reasonable documented review costs and the underpayment. Correct errors promptly.
+Confidential reports may be used only for administration, verification and legal
+enforcement of this License, or disclosure required by law.
+
+6. MODIFICATIONS, CONTRIBUTIONS AND SEPARATE AGREEMENTS
+
+Recipients of redistributed Ignis source receive the permissions and obligations
+of this License. Keep original and contributor copyright notices. A submission
+for inclusion must be work You have authority to submit and must expressly be
+offered under this License. Submission does not assign copyright. A different
+license for someone else's contribution requires that person's permission or
+other sufficient rights. Do not import code with incompatible obligations.
+
+A separate agreement signed by You and Licensor may replace commercial terms
+for the covered use. Merely adding a different license to Your copy does not
+remove the original Ignis obligations. Licensor may offer future versions under
+different terms, but cannot retroactively change the terms of copies already
+provided under this License without Your agreement.
+
+7. PRIOR LICENSES AND THIRD-PARTY RIGHTS
+
+This License governs the copies expressly offered under it. It does not revoke,
+supersede or narrow rights already granted under an earlier license, including
+Apache License 2.0 for previously published copies. Replacing a repository,
+removing a release or changing its name does not revoke those earlier rights.
+Third-party code, assets and fonts retain their original licenses and notices.
+No ownership, trademark, endorsement or patent right beyond the applicable
+owner's express grant is implied.
+
+8. BREACH AND TERMINATION
+
+The permissions are conditional on compliance. For a remediable breach, Licensor
+must provide written notice describing it and allow 30 days to cure before
+terminating the permissions for that breach. Termination does not cancel amounts
+already due, reporting for royalty-bearing exploitation, confidentiality or
+rights and remedies available under applicable law. Lawfully distributed
+object-code copies already held by ordinary end users may continue to run.
+No telemetry, remote shutdown mechanism or account requirement is imposed by
+this License. A disputed calculation should first be discussed in good faith.
+
+9. WARRANTY AND LIABILITY
+
+To the extent permitted by applicable law, Ignis is provided "AS IS", without
+warranties of merchantability, fitness for a particular purpose, title,
+non-infringement, support, availability or performance. You are responsible for
+Your products and compliance with applicable laws. Except for liability that
+cannot legally be excluded, neither Licensor nor contributors are liable for
+indirect, incidental, special or consequential damages or lost profits arising
+from Ignis. Their aggregate liability arising from this License is limited to
+royalties You paid Licensor for the affected Game during the preceding twelve
+months. Nothing excludes liability that mandatory law prohibits excluding.
+
+10. INTERPRETATION
+
+The English text is authoritative. Summaries, badges and translations do not
+amend this License. If a provision is unenforceable, the remaining provisions
+continue to the extent permitted by law. This License does not displace
+mandatory applicable law or choose a private arbitration process. No unilateral
+announcement may retroactively increase the rate or remove the exemption.
