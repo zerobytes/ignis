@@ -97,6 +97,7 @@ pub(super) fn properties(
             let observed=(recipe.prefix.clone(),born,plant.production.plant.time);
             if state.living_observed.as_ref()!=Some(&observed) {
                 state.living_age_years=current_age;
+                if plant.definition.version==2 {state.living_horizon_years=state.living_horizon_years.max(30.);}
                 state.living_observed=Some(observed);
             }
             let maximum_age=(crate::botany::growth::MAX_TIME-born) as f64/365.;

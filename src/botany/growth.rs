@@ -1,6 +1,7 @@
 //! Small native growth grammar. Evaluates new organs from persistent individual time.
 //! Scene ownership and automatic gameplay ticking remain separate integration work.
 use super::{lifecycle::Schedule, production::Production, *};
+mod tree;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -74,7 +75,7 @@ impl Definition {
         {
             return Err(invalid("Living time/profile budget exceeded"));
         }
-        if self.version != 1
+        if !(1..=2).contains(&self.version)
             || !identifier(&self.prefix)
             || self.prefix.len() > 20
             || self.interval == 0
@@ -189,6 +190,9 @@ impl Plant {
     }
     pub fn recipe(&self) -> Result<Recipe> {
         self.validate()?;
+        if self.definition.version == 2 {
+            return tree::recipe(self);
+        }
         let d = &self.definition;
         let p = &self.production.plant;
         let age = p
