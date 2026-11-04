@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "prefix": "living",
+  "seed": 42,
+  "interval": 10,
+  "maximum_nodes": 8,
+  "internode_length": 0.45,
+  "schedule": {
+    "period": 100,
+    "phase": 80,
+    "maturity": 30,
+    "flower_duration": 5,
+    "fruit_duration": 5,
+    "ripe_duration": 10
+  }
+}

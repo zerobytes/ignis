@@ -2,9 +2,11 @@
 //! Scene ownership and automatic gameplay ticking remain separate integration work.
 use super::{lifecycle::Schedule, production::Production, *};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Definition {
+    #[serde(default = "grammar_version")]
+    pub version: u16,
     pub prefix: String,
     pub seed: u64,
     pub interval: u64,
@@ -12,16 +14,68 @@ pub struct Definition {
     pub internode_length: f64,
     pub schedule: Schedule,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Plant {
     pub definition: Definition,
     pub production: Production,
 }
+fn grammar_version() -> u16 {
+    1
+}
+pub const MAX_TIME: u64 = 1_000_000_000;
+pub const MAX_HARVESTED: usize = 4096;
+pub const MAX_ATTACHED: usize = 128;
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Action {
+    Inspect,
+    Advance { time: u64 },
+    Harvest { fruit: production::FruitId },
+    Prune { site: String },
+}
+impl Default for Definition {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            prefix: "living".into(),
+            seed: 42,
+            interval: 10,
+            maximum_nodes: 8,
+            internode_length: 0.45,
+            schedule: Schedule {
+                period: 100,
+                phase: 80,
+                maturity: 30,
+                flower_duration: 5,
+                fruit_duration: 5,
+                ripe_duration: 10,
+            },
+        }
+    }
+}
 impl Definition {
     pub fn validate(&self) -> Result<()> {
         self.schedule.validate().map_err(invalid)?;
-        if !identifier(&self.prefix)
+        if self
+            .interval
+            .checked_mul(self.maximum_nodes as u64)
+            .is_none_or(|t| t > MAX_TIME)
+            || [
+                self.schedule.period,
+                self.schedule.phase,
+                self.schedule.maturity,
+                self.schedule.flower_duration,
+                self.schedule.fruit_duration,
+                self.schedule.ripe_duration,
+            ]
+            .iter()
+            .any(|t| *t > MAX_TIME)
+        {
+            return Err(invalid("Living time/profile budget exceeded"));
+        }
+        if self.version != 1
+            || !identifier(&self.prefix)
             || self.prefix.len() > 20
             || self.interval == 0
             || !(1..=32).contains(&self.maximum_nodes)
@@ -63,9 +117,79 @@ fn axis(
     }
 }
 impl Plant {
-    pub fn recipe(&self) -> Result<Recipe> {
+    pub fn new(definition: Definition, born: u64) -> Result<Self> {
+        let p = Self {
+            definition,
+            production: Production {
+                plant: lifecycle::Individual {
+                    born,
+                    time: born,
+                    dead: false,
+                    harvested: BTreeSet::new(),
+                },
+                sites: BTreeMap::new(),
+                site_births: BTreeMap::new(),
+                removed_sites: BTreeSet::new(),
+                harvested: BTreeSet::new(),
+            },
+        };
+        p.validate()?;
+        Ok(p)
+    }
+    pub fn validate(&self) -> Result<()> {
         let d = &self.definition;
         d.validate()?;
+        let p = &self.production;
+        let i = &p.plant;
+        if i.time < i.born
+            || i.time > MAX_TIME
+            || i.dead
+            || !i.harvested.is_empty()
+            || p.harvested.len() > MAX_HARVESTED
+        {
+            return Err(invalid("Invalid/unsupported living individual state"));
+        }
+        let nodes = ((i.time - i.born) / d.interval).min(d.maximum_nodes as u64);
+        let expected: BTreeMap<String, u16> = (0..nodes).map(|n| (format!("node{n}"), 1)).collect();
+        let births: BTreeMap<String, u64> = (0..nodes)
+            .map(|n| (format!("node{n}"), i.born + (n + 1) * d.interval))
+            .collect();
+        if p.sites != expected
+            || p.site_births != births
+            || !p.removed_sites.iter().all(|id| expected.contains_key(id))
+        {
+            return Err(invalid("Living sites do not match their growth history"));
+        }
+        for id in &p.harvested {
+            let start = d
+                .schedule
+                .start(id.cohort)
+                .ok_or_else(|| invalid("Cohort overflow"))?;
+            let ripe = start
+                .checked_add(d.schedule.flower_duration)
+                .and_then(|t| t.checked_add(d.schedule.fruit_duration))
+                .ok_or_else(|| invalid("Ripening overflow"))?;
+            if id.slot != 0
+                || !births.contains_key(&id.site)
+                || start < births[&id.site]
+                || start < i.born.saturating_add(d.schedule.maturity)
+                || ripe > i.time
+            {
+                return Err(invalid("Invalid fruit harvest identity/time"));
+            }
+        }
+        p.attached(&d.schedule, MAX_ATTACHED).map_err(invalid)?;
+        Ok(())
+    }
+    pub fn bound_recipe(&self) -> Result<Recipe> {
+        let mut r = self.recipe()?;
+        r.living = Some(self.clone());
+        r.validate()?;
+        Ok(r)
+    }
+    pub fn recipe(&self) -> Result<Recipe> {
+        self.validate()?;
+        let d = &self.definition;
         let p = &self.production.plant;
         let age = p
             .time
@@ -132,10 +256,10 @@ impl Plant {
             }
         }
         let r = Recipe {
-            version: VERSION,
+            version: 8,
             prefix: d.prefix.clone(),
             source: Arc::new(Source {
-                version: VERSION,
+                version: 8,
                 name: "Native growing specimen".into(),
                 seed: d.seed,
                 organs,
@@ -150,42 +274,32 @@ impl Plant {
             edits: BTreeMap::new(),
             pruned: BTreeSet::new(),
             manual: BTreeMap::new(),
+            living: None,
         };
         r.validate()?;
         Ok(r)
     }
     /// Build and validate a complete candidate before committing time or new sites.
     pub fn advance(&mut self, time: u64) -> Result<Recipe> {
+        self.validate()?;
         if self.production.plant.dead {
             return Err(invalid("Dead plants do not develop"));
         }
         let mut candidate = self.clone();
         candidate.production.plant.advance(time).map_err(invalid)?;
-        let recipe = candidate.recipe()?;
-        for organ in &recipe.source.organs {
-            if organ.parent.as_deref() == Some("stem") {
-                candidate
-                    .production
-                    .sites
-                    .entry(organ.id.clone())
-                    .or_insert(1);
-            }
-        }
-        for i in 0..candidate.definition.maximum_nodes {
+        let d = &candidate.definition;
+        let nodes =
+            ((time - candidate.production.plant.born) / d.interval).min(d.maximum_nodes as u64);
+        for i in 0..nodes {
             let id = format!("node{i}");
-            if candidate.production.sites.contains_key(&id) {
-                let offset = (i as u64 + 1)
-                    .checked_mul(candidate.definition.interval)
-                    .ok_or_else(|| invalid("Site birth overflow"))?;
-                let birth = candidate
-                    .production
-                    .plant
-                    .born
-                    .checked_add(offset)
-                    .ok_or_else(|| invalid("Site birth overflow"))?;
-                candidate.production.site_births.entry(id).or_insert(birth);
-            }
+            candidate.production.sites.entry(id.clone()).or_insert(1);
+            candidate
+                .production
+                .site_births
+                .entry(id)
+                .or_insert(candidate.production.plant.born + (i + 1) * d.interval);
         }
+        let recipe = candidate.recipe()?;
         bake::compile(&recipe)?;
         *self = candidate;
         Ok(recipe)
@@ -197,6 +311,7 @@ mod tests {
     fn specimen() -> Plant {
         Plant {
             definition: Definition {
+                version: 1,
                 prefix: "living".into(),
                 seed: 42,
                 interval: 10,

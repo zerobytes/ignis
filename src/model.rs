@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub const SCENE_VERSION: u32 = 120;
+pub const SCENE_VERSION: u32 = 121;
 pub const DIRECT_COLOR_SCENE_VERSION: u32 = 120;
 pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_ENTITIES: usize = 4096;

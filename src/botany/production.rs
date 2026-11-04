@@ -1,15 +1,18 @@
 //! Stable site/cohort production identities. No scene or renderer ownership yet.
 use super::lifecycle::{Individual, Schedule, Stage};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct FruitId {
     pub site: String,
     pub cohort: u64,
     pub slot: u16,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Production {
     pub plant: Individual,
     pub sites: BTreeMap<String, u16>,
@@ -106,10 +109,8 @@ impl Production {
                         cohort,
                         slot,
                     };
-                    if let Some(stage) = self.stage(schedule, &id) {
-                        if stage != Stage::Dropped {
-                            result.push((id, stage));
-                        }
+                    if let Some(stage) = self.stage(schedule, &id) && stage != Stage::Dropped {
+                        result.push((id, stage));
                     }
                 }
             }

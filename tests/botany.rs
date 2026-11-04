@@ -72,6 +72,7 @@ fn fixture() -> b::Recipe {
         edits: BTreeMap::new(),
         pruned: BTreeSet::new(),
         manual: BTreeMap::new(),
+            living: None,
     }
 }
 fn op(s: &mut Service, operation: b::Operation) -> ignis::model::Result<ignis::service::Reply> {

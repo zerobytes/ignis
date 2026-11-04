@@ -15,13 +15,15 @@ pub mod bake;
 pub mod deformation;
 pub mod development;
 pub mod dynamics;
-pub mod lifecycle;
 pub mod growth;
+pub mod lifecycle;
 pub mod production;
+mod reproduction;
 pub mod root_crown;
 pub mod root_sections;
 pub mod roots;
 pub const VERSION: u16 = 9;
+pub const LIVING_SCENE_VERSION: u32 = 121;
 fn one() -> f64 {
     1.
 }
@@ -197,6 +199,8 @@ impl Default for OrganEdit {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Recipe {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub living: Option<growth::Plant>,
     pub version: u16,
     pub prefix: String,
     pub source: Arc<Source>,
@@ -222,6 +226,14 @@ pub enum ManualPolicy {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    CreateLiving {
+        definition: growth::Definition,
+        born: u64,
+    },
+    Living {
+        prefix: String,
+        action: growth::Action,
+    },
     Inspect,
     Open {
         open: bool,
@@ -532,6 +544,21 @@ impl Outline {
 }
 impl Recipe {
     pub fn validate(&self) -> Result<()> {
+        if let Some(plant) = &self.living {
+            if self.version < 8
+                || self.source.version < 8
+                || plant.definition.prefix != self.prefix
+                || !self.pruned.is_empty()
+            {
+                return Err(invalid(
+                    "Living plants require matching recipe/source8 and semantic pruning",
+                ));
+            }
+            plant.validate()?;
+            if plant.recipe()?.source != self.source {
+                return Err(invalid("Living source does not match its canonical state"));
+            }
+        }
         self.source.validate()?;
         if self.version < 4
             && self
@@ -650,6 +677,15 @@ impl Recipe {
         }
         Ok(())
     }
+    pub fn all_parts(&self) -> Vec<String> {
+        let mut ids = self.parts().to_vec();
+        if self.living.is_some() {
+            ids.extend(
+                ["flowers", "green_fruit", "ripe_fruit"].map(|p| format!("{}_{}", self.prefix, p)),
+            );
+        }
+        ids
+    }
     pub fn parts(&self) -> [String; 2] {
         [
             format!("{}_wood", self.prefix),
@@ -670,7 +706,10 @@ pub fn validate_scene(scene: &crate::model::Scene) -> Result<()> {
     let mut owned = BTreeSet::new();
     for recipe in &scene.botany {
         recipe.validate()?;
-        for id in recipe.parts() {
+        if recipe.living.is_some() && scene.version < LIVING_SCENE_VERSION {
+            return Err(invalid("Living plants require scene121"));
+        }
+        for id in recipe.all_parts() {
             if !owned.insert(id.clone())
                 || !scene.meshes.assets.iter().any(|a| a.id == id)
                 || !scene

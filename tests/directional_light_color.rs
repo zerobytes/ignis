@@ -66,7 +66,7 @@ fn set_light_upgrades_atomically_and_undo_redo_replay_preserve_color() {
     scene.version = DIRECT_COLOR_SCENE_VERSION - 1;
     let mut e = Engine::new(scene).unwrap();
     // Admission upgrades legacy documents before preview/history begin.
-    assert_eq!(e.scene.version, DIRECT_COLOR_SCENE_VERSION);
+    assert_eq!(e.scene.version, ignis::model::SCENE_VERSION);
     let scene = e.scene.clone();
     let mut light = scene.light.clone();
     light.direct_color = [1., 0.8, 0.5];
@@ -82,7 +82,7 @@ fn set_light_upgrades_atomically_and_undo_redo_replay_preserve_color() {
         )
         .unwrap();
     assert_eq!(e.scene, scene);
-    assert_eq!(preview["scene"]["version"], DIRECT_COLOR_SCENE_VERSION);
+    assert_eq!(preview["scene"]["version"], ignis::model::SCENE_VERSION);
     e.execute(Command::SetLight { light }.into()).unwrap();
     let published = e.scene.clone();
     assert_eq!(preview["scene"], serde_json::to_value(&published).unwrap());

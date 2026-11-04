@@ -13,6 +13,8 @@ pub(super) struct State {
     root_stem: String,
     roots: crate::botany::roots::Settings,
     roots_enabled: bool,
+    living_definition: crate::botany::growth::Definition,
+    living_time: u64,
 }
 impl Default for State {
     fn default() -> Self {
@@ -28,6 +30,8 @@ impl Default for State {
             root_stem: String::new(),
             roots: Default::default(),
             roots_enabled: false,
+            living_definition: Default::default(),
+            living_time: 0,
         }
     }
 }
@@ -56,15 +60,50 @@ pub(super) fn properties(
             ui.text_edit_singleline(&mut state.path);
             if ui.button("Carregar fonte").clicked(){send(commands,Op::Load{path:state.path.clone(),publish:true});}
         });
+        ui.collapsing("Nova planta viva · experimental",|ui|{
+            let d=&mut state.living_definition;
+            ui.text_edit_singleline(&mut d.prefix);
+            ui.add(egui::DragValue::new(&mut d.seed).prefix("Semente "));
+            ui.add(egui::DragValue::new(&mut d.interval).range(1..=100000).prefix("Dias por novo ramo "));
+            ui.add(egui::Slider::new(&mut d.maximum_nodes,1..=32).text("Máximo de ramos"));
+            ui.add(egui::Slider::new(&mut d.internode_length,0.3..=1.).text("Distância entre ramos (m)"));
+            for (label,value,minimum) in [("Período (dias) ",&mut d.schedule.period,1),("Fase (dia) ",&mut d.schedule.phase,0),("Maturidade (dias) ",&mut d.schedule.maturity,0),("Flor aberta (dias) ",&mut d.schedule.flower_duration,0),("Fruto em crescimento (dias) ",&mut d.schedule.fruit_duration,0),("Fruto maduro preso (dias) ",&mut d.schedule.ripe_duration,0)] {
+                ui.add(egui::DragValue::new(value).range(minimum..=100000).prefix(label));
+            }
+            if ui.button("Criar planta viva").clicked(){send(commands,Op::CreateLiving{definition:d.clone(),born:0});}
+        });
         let Some(recipe)=service.engine.scene.botany.iter().find(|r|Some(r.prefix.as_str())==selected)else{return;};
         let key=Some((recipe.prefix.clone(),service.engine.revision));
         if state.prefix.as_deref()!=Some(recipe.prefix.as_str()) {
             state.path=format!("artifacts/botany-native/{}.ignis-botany",recipe.prefix);
             state.prefix=Some(recipe.prefix.clone());state.organ=None;
+            state.living_time=recipe.living.as_ref().map(|p|p.production.plant.time).unwrap_or(0);
         }
         if state.key!=key{state.draft=Some(recipe.clone());state.key=key;
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
             let system=recipe.source.root_systems.iter().find(|r|r.stem==state.root_stem);state.roots_enabled=system.is_some();state.roots=system.map(|s|s.settings.clone()).unwrap_or_default();
+        }
+        if let Some(plant)=&recipe.living {
+            ui.separator();ui.heading("Desenvolvimento vivo · experimental");
+            ui.label(format!("Dia {} · {} ramos produzidos",plant.production.plant.time,plant.production.sites.len()));
+            ui.label("Avanço explícito; não acompanha automaticamente o relógio de gameplay.");
+            state.living_time=state.living_time.max(plant.production.plant.time);
+            ui.add(egui::DragValue::new(&mut state.living_time).range(plant.production.plant.time..=crate::botany::growth::MAX_TIME).prefix("Avançar até dia "));
+            if ui.button("Avançar desenvolvimento").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time:state.living_time}});}
+            if ui.button("+10 dias").clicked() && let Some(time)=plant.production.plant.time.checked_add(10){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
+            if let Ok(fruits)=plant.production.attached(&plant.definition.schedule,crate::botany::growth::MAX_ATTACHED) {
+                ui.label(format!("{} unidades reprodutivas ativas",fruits.len()));
+                for (fruit,stage) in fruits {ui.horizontal(|ui|{
+                    ui.label(format!("{} · safra {} · {:?}",fruit.site,fruit.cohort,stage));
+                    if stage==crate::botany::lifecycle::Stage::RipeFruit && ui.button("Colher").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Harvest{fruit}});}
+                });}
+            }
+            ui.collapsing("Poda persistente",|ui|{for site in plant.production.sites.keys().filter(|s|!plant.production.removed_sites.contains(*s)){
+                if ui.button(format!("Podar {site}")).clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Prune{site:site.clone()}});}
+            }});
+            ui.text_edit_singleline(&mut state.path);
+            if ui.button("Salvar fonte viva").clicked(){send(commands,Op::Save{prefix:recipe.prefix.clone(),path:state.path.clone()});}
+            return;
         }
         let draft=state.draft.as_mut().unwrap();let mut changed=false;
         ui.separator();

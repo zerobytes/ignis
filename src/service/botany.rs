@@ -30,7 +30,7 @@ impl Service {
             .iter()
             .find(|r| r.prefix == next.prefix)
         else {
-            if next.parts().iter().any(|id| {
+            if next.all_parts().iter().any(|id| {
                 self.engine.scene.meshes.assets.iter().any(|a| &a.id == id)
                     || self
                         .engine
@@ -105,6 +105,27 @@ impl Service {
                     let prior = recovered.entry(binding.key.clone()).or_insert([0.; 3]);
                     *prior = (DVec3::from_array(*prior) + d).to_array();
                 }
+            }
+        }
+        for part in 2..baseline.document.assets.len() {
+            let reference = &baseline.document.assets[part];
+            let current = self.engine.scene.meshes.asset(&reference.id)?;
+            let mut comparison = current.clone();
+            if policy == Policy::Preserve && current.material.procedural.is_some() {
+                comparison.material = reference.material.clone();
+            }
+            if comparison != *reference
+                || !self
+                    .engine
+                    .scene
+                    .meshes
+                    .instances
+                    .iter()
+                    .any(|i| i == &baseline.document.instances[part])
+            {
+                return Err(invalid(
+                    "Manual reproductive geometry edits cannot be transported",
+                ));
             }
         }
         if policy == Policy::Reject && !recovered.is_empty() {
@@ -223,7 +244,11 @@ impl Service {
             .find(|r| r.prefix == prefix)
             .cloned();
         let mut document = meshes::Document::default();
-        for id in [format!("{prefix}_wood"), format!("{prefix}_leaves")] {
+        for id in recipe
+            .as_ref()
+            .map(|r| r.all_parts())
+            .unwrap_or_else(|| vec![format!("{prefix}_wood"), format!("{prefix}_leaves")])
+        {
             document.assets.extend(
                 self.engine
                     .scene
@@ -314,6 +339,54 @@ impl Service {
     }
     pub(super) fn botany_command(&mut self, operation: &Op) -> Result<Value> {
         match operation {
+            Op::CreateLiving { definition, born } => {
+                if self
+                    .engine
+                    .scene
+                    .botany
+                    .iter()
+                    .any(|r| r.prefix == definition.prefix)
+                {
+                    return Err(invalid("Living prefix already exists"));
+                }
+                let plant = b::growth::Plant::new(definition.clone(), *born)?;
+                self.botanical_publish(plant.bound_recipe()?, Policy::Preserve)
+            }
+            Op::Living { prefix, action } => {
+                let old = self.botanical_recipe(prefix)?;
+                let mut plant = old
+                    .living
+                    .clone()
+                    .ok_or_else(|| invalid("Recipe is not a living plant"))?;
+                plant.validate()?;
+                match action {
+                    b::growth::Action::Inspect => {
+                        return Ok(
+                            json!({"plant":plant,"attached":plant.production.attached(&plant.definition.schedule,b::growth::MAX_ATTACHED).map_err(invalid)?}),
+                        );
+                    }
+                    b::growth::Action::Advance { time } => {
+                        plant.advance(*time)?;
+                    }
+                    b::growth::Action::Harvest { fruit } => {
+                        if plant.production.harvested.len() >= b::growth::MAX_HARVESTED {
+                            return Err(invalid("Harvest history budget exceeded"));
+                        }
+                        plant
+                            .production
+                            .harvest(&plant.definition.schedule, fruit.clone())
+                            .map_err(invalid)?;
+                    }
+                    b::growth::Action::Prune { site } => {
+                        plant.production.remove_site(site).map_err(invalid)?;
+                    }
+                }
+                let mut next = plant.bound_recipe()?;
+                next.settings = old.settings;
+                next.edits = old.edits;
+                next.manual = old.manual;
+                self.botanical_publish(next, Policy::Preserve)
+            }
             Op::Inspect => Ok(
                 json!({"open":self.botany.open,"selected":self.botany.selected,"organ":self.botany.organ,"preview":self.botany.preview.is_some()&&self.botany.revision==Some(self.engine.revision),"recipes":self.engine.scene.botany,"physics":self.botany.physics.as_ref().filter(|_|self.botany.revision==Some(self.engine.revision)).map(|p|p.inspect())}),
             ),
@@ -454,6 +527,7 @@ impl Service {
                 }
             }
             Op::Physics { prefix, action } => {
+                if self.botanical_recipe(prefix)?.living.is_some() { return Err(invalid("Living reproductive geometry is not supported by the authoring physics session")); }
                 use b::dynamics::Action as A;
                 if self.remote_client() || self.network_host.is_some() {
                     return Err(invalid("Botanical simulation is a local authoring session"));

@@ -1,8 +1,10 @@
 //! Persistent calendar cohorts; independent of rendering and mechanical stepping.
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Schedule {
     pub period: u64,
     pub phase: u64,
@@ -11,14 +13,15 @@ pub struct Schedule {
     pub fruit_duration: u64,
     pub ripe_duration: u64,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub enum Stage {
     Flower,
     GrowingFruit,
     RipeFruit,
     Dropped,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Individual {
     pub born: u64,
     pub time: u64,

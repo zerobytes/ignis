@@ -1,8 +1,9 @@
 # Living procedural plants: time, growth and reproductive cycles
 
-Design contract, 4 November 2026. This document specifies the next botanical
-system; it does **not** introduce executable commands, a save format, a solver
-or runtime behavior. The user paused the Cuihua collection to establish this
+Design contract, 4 November 2026. This document specifies the botanical
+system. The first [native editor integration](living-plants-integration.md)
+now implements a limited growth/reproductive specimen; the complete gameplay
+contract below is not yet delivered. The user paused the Cuihua collection to establish this
 foundation before producing further species. Lighting remains a separate
 workstream in the `lumens` chat.
 

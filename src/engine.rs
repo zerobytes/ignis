@@ -944,7 +944,7 @@ impl From<Command> for Request {
     }
 }
 
-pub const REPLAY_VERSION: u32 = 130;
+pub const REPLAY_VERSION: u32 = 131;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

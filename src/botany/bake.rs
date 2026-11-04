@@ -1660,6 +1660,7 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         vertices[i] = b.vertices;
         owners[i] = b.owners;
     }
+    super::reproduction::append(recipe, &poses, &mut document)?;
     document.validate()?;
     Ok(Compiled {
         document,
