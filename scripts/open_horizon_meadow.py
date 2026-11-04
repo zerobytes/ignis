@@ -16,8 +16,11 @@ OUT = ROOT / 'artifacts/horizon-meadow'
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, default=ROOT / 'target/release/ignis')
-    parser.add_argument('--mode', choices=['proxy','coords','indexed','source'], default='proxy')
+    parser.add_argument('--mode', choices=['proxy','coords','indexed','objects','source'], default='proxy')
+    parser.add_argument('--capture',action='store_true',help='Capture the real player camera through MCP')
     parser.add_argument('--measure-only', action='store_true', help='Measure and close only this diagnostic window')
+    parser.add_argument('--object-pixels',type=float,default=128.)
+    parser.add_argument('--object-shadows',action='store_true',help='Experimental object-atlas shadows; compare before accepting')
     args = parser.parse_args()
     field = OUT / 'ground.ignis-field'
     scene = OUT / 'world.scene.json'
@@ -33,7 +36,10 @@ def main():
         if str(scene.relative_to(ROOT)) in command:
             parser.error('This laboratory window is already open; preserve it or close it before reopening')
     values = {'IGNIS_HORIZON_FIELD': str(field), 'IGNIS_HORIZON_PROXIES': str(proxy) if args.mode != 'source' else None,
-        'IGNIS_HORIZON_COORDS': args.mode if args.mode in ('coords','indexed') else None}
+        'IGNIS_HORIZON_COORDS': 'indexed' if args.mode=='objects' else args.mode if args.mode in ('coords','indexed') else None,
+        'IGNIS_HORIZON_OBJECTS':str(OUT/'objects.ignis-impostors') if args.mode=='objects' else None,
+        'IGNIS_HORIZON_OBJECT_PIXELS':str(args.object_pixels) if args.mode=='objects' else None,
+        'IGNIS_HORIZON_OBJECT_SHADOWS':'1' if args.mode=='objects' and args.object_shadows else None}
     previous = {key:os.environ.get(key) for key in values}
     for key,value in values.items():
         if value is None: os.environ.pop(key,None)
@@ -53,9 +59,8 @@ def main():
         client.call('set_player_view',view=view)
         client.call('set_viewport_performance', settings=dict(enabled=True, vsync=False))
         client.call('play')
-        # Activate only our own native process so macOS does not throttle an
-        # occluded/background diagnostic window. Other windows remain intact.
-        activation=subprocess.run(['osascript','-e',f'tell application "System Events" to set frontmost of first process whose unix id is {client.process.pid} to true'],capture_output=True,text=True)
+        # Record only real visible-window samples. Do not steal focus repeatedly
+        # from the user's other applications to manufacture a benchmark.
         samples=[]
         deadline=time.monotonic()+90
         valid=0
@@ -67,9 +72,11 @@ def main():
                 valid+=1
             if valid>=8: break
         result = dict(pid=client.process.pid, binary=str(args.binary.resolve()), scene=str(scene), field=str(field),
-            mode=args.mode,presentation_samples=samples,sample_complete=valid>=8,activation_error=activation.stderr,view=client.call('inspect_player_view'),
+            mode=args.mode,object_pixels=args.object_pixels,object_shadows=args.object_shadows,presentation_samples=samples,sample_complete=valid>=8,activation="native window; no scripted foreground forcing",view=client.call('inspect_player_view'),
             scene_sha256=hashlib.sha256(scene.read_bytes()).hexdigest(),binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),
             controls='Click to capture mouse; WASD; Shift run; Esc release/close; F3 FPS')
+        if args.capture:
+            client.call('capture',path='artifacts/horizon-meadow/current-player.png',width=1100,height=760)
         (OUT/'window.json').write_text(json.dumps(result, indent=2))
         print(json.dumps(dict(pid=client.process.pid,mode=args.mode,performance=samples[-1],details=str(window))))
     except BaseException:

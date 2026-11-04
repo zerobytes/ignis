@@ -3,6 +3,8 @@ use anyhow::{Context, Result};
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
 
+pub mod object_impostor;
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Pod, Zeroable, PartialEq)]
 pub struct Vertex {
@@ -38,10 +40,10 @@ struct Globals {
     planet_axis0: [f32; 4],
     planet_axis1: [f32; 4],
     planet_axis2: [f32; 4],
-}
-
     // xyz: linear color * direct intensity; w: exact legacy-white path for glass.
     direct_light: [f32; 4],
+}
+
 #[cfg(test)]
 #[test]
 fn globals_match_wgsl_camera_layout() {
@@ -371,6 +373,7 @@ pub struct Renderer {
     particles: crate::render_particles::Gpu,
     surface_field: Option<crate::surface_field::Gpu>,
     mesh_proxy: Option<crate::mesh_proxy::State>,
+    object_impostor: Option<object_impostor::State>,
     depth_layout: wgpu::BindGroupLayout,
     shadow_pipeline: wgpu::RenderPipeline,
     shadow_bind_group: wgpu::BindGroup,
@@ -433,6 +436,7 @@ impl Renderer {
                 label: Some("Ignis device"),
                 required_limits: wgpu::Limits {
                     max_buffer_size: adapter.limits().max_buffer_size,
+                    max_texture_array_layers: adapter.limits().max_texture_array_layers,
                     max_storage_buffer_binding_size: adapter
                         .limits()
                         .max_storage_buffer_binding_size,
@@ -593,7 +597,7 @@ impl Renderer {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -945,6 +949,7 @@ impl Renderer {
             particles,
             surface_field: None,
             mesh_proxy: None,
+            object_impostor: None,
             depth_layout,
             shadow_pipeline,
             shadow_bind_group,
@@ -997,6 +1002,22 @@ impl Renderer {
         if let Ok(mode) = std::env::var("IGNIS_HORIZON_COORDS") {
             renderer.set_reconstructed_coordinates(true, mode == "indexed");
         }
+        if let Some(path) = std::env::var_os("IGNIS_HORIZON_OBJECTS") {
+            anyhow::ensure!(
+                std::fs::metadata(&path)?.len() <= 1025 * 1024 * 1024,
+                "Object atlas packet too large"
+            );
+            let packet = object_impostor::Pack::decode(&std::fs::read(path)?)?;
+            let pixels = std::env::var("IGNIS_HORIZON_OBJECT_PIXELS")
+                .ok()
+                .map(|v| v.parse::<f32>())
+                .transpose()?
+                .unwrap_or(256.);
+            renderer.set_object_impostors(Some(std::sync::Arc::new(packet)), pixels)?;
+            renderer.set_object_impostor_shadows(
+                std::env::var_os("IGNIS_HORIZON_OBJECT_SHADOWS").is_some(),
+            );
+        }
         if let Some(path) = std::env::var_os("IGNIS_HORIZON_PROXIES") {
             anyhow::ensure!(
                 std::fs::metadata(&path)?.len() <= 256 * 1024 * 1024,
@@ -1045,6 +1066,36 @@ impl Renderer {
     }
     pub fn mesh_proxy_info(&self) -> serde_json::Value {
         serde_json::to_value(self.mesh_proxy.as_ref().map(|p| &p.stats)).unwrap()
+    }
+    /// Diagnostic source-linked coverage/depth atlas. Not an image-error certificate.
+    pub fn set_object_impostors(
+        &mut self,
+        packet: Option<std::sync::Arc<object_impostor::Pack>>,
+        maximum_pixels: f32,
+    ) -> Result<()> {
+        anyhow::ensure!(
+            maximum_pixels.is_finite() && (16. ..=1024.).contains(&maximum_pixels),
+            "Invalid object atlas pixel threshold"
+        );
+        if let (Some(current), Some(pack)) = (&mut self.object_impostor, &packet)
+            && current.same_pack(pack)
+        {
+            current.maximum_pixels = maximum_pixels;
+            return Ok(());
+        }
+        let next = packet
+            .map(|p| object_impostor::State::new(self, p, maximum_pixels))
+            .transpose()?;
+        self.object_impostor = next;
+        Ok(())
+    }
+    pub fn set_object_impostor_shadows(&mut self, enabled: bool) {
+        if let Some(s) = &mut self.object_impostor {
+            s.shadows_enabled = enabled;
+        }
+    }
+    pub fn object_impostor_info(&self) -> serde_json::Value {
+        serde_json::to_value(self.object_impostor.as_ref().map(|p| &p.stats)).unwrap()
     }
     /// Experimental sampled-coverage packet. Installing it does not enable it.
     /// No Scene/physics/replay state changes; a failed installation preserves the old packet.
@@ -1165,7 +1216,7 @@ impl Renderer {
     }
     pub fn info(&self) -> serde_json::Value {
         let info = self.adapter.get_info();
-        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info(),"transparency":self.transparency.info(),"particles":self.particles.inspect(),"procedural_materials":{"storage_bytes":self.procedural_buffer.size(),"uploads":self.procedural_uploads,"materials":self.material_source.iter().filter(|m|m.procedural.is_some()).count()}})
+        serde_json::json!({"name":info.name,"backend":format!("{:?}",info.backend),"device_type":format!("{:?}",info.device_type),"environment_preparation":self.environment.stats(),"distant_selection":self.distant.stats,"mesh_lods":self.distant.lods.stats,"instancing":self.instanced.stats,"collective_lod":self.collective.as_ref().map(|g|&g.stats),"object_impostor":self.object_impostor_info(),"visibility":self.visibility.stats,"occlusion":self.instanced.occlusion.stats,"device_limits":{"max_buffer_bytes":self.device.limits().max_buffer_size,"max_material_binding_bytes":self.device.limits().max_storage_buffer_binding_size},"selection_outline":self.outline.info(),"atmospheric_edges":self.atmosphere_edges.info(),"transparency":self.transparency.info(),"particles":self.particles.inspect(),"procedural_materials":{"storage_bytes":self.procedural_buffer.size(),"uploads":self.procedural_uploads,"materials":self.material_source.iter().filter(|m|m.procedural.is_some()).count()}})
     }
     pub fn draw(
         &mut self,
@@ -1175,9 +1226,26 @@ impl Renderer {
         height: u32,
     ) -> Result<()> {
         anyhow::ensure!(width > 0 && height > 0, "Viewport cannot be empty");
+        if let Some(objects) = &mut self.object_impostor {
+            objects.prepare(&self.device, &self.queue, scene, width, height)?;
+        }
+        let result = self.draw_prepared(scene, view, width, height);
+        if let Some(objects) = &mut self.object_impostor {
+            objects.restore(&mut self.visibility);
+        }
+        result
+    }
+    fn draw_prepared(
+        &mut self,
+        scene: &RenderFrame,
+        view: &wgpu::TextureView,
+        width: u32,
+        height: u32,
+    ) -> Result<()> {
+        anyhow::ensure!(width > 0 && height > 0, "Viewport cannot be empty");
         if let Some(mut proxy) = self.mesh_proxy.take() {
             let result = proxy.prepare(scene, width, height).and_then(|selected| {
-                self.draw(
+                self.draw_prepared(
                     if selected {
                         proxy.frame.as_ref().unwrap()
                     } else {
@@ -1297,6 +1365,9 @@ impl Renderer {
                 width,
                 height,
             );
+        }
+        if let Some(objects) = &mut self.object_impostor {
+            objects.mask(&mut self.visibility, scene);
         }
         self.distant.update(scene, height, &self.visibility);
         self.instanced.prepare(
@@ -1538,6 +1609,12 @@ impl Renderer {
                 planet_axis2: scene
                     .planet_air
                     .map_or([0.; 4], |p| [p.axes[2][0], p.axes[2][1], p.axes[2][2], 0.]),
+                direct_light: [
+                    scene.light.direct_color[0] * scene.light.direct_intensity,
+                    scene.light.direct_color[1] * scene.light.direct_intensity,
+                    scene.light.direct_color[2] * scene.light.direct_intensity,
+                    f32::from(scene.light.direct_color == [1.; 3]),
+                ],
                 environment: [
                     scene.light.environment.map_or(0., |e| e.intensity),
                     6.,
@@ -1564,12 +1641,6 @@ impl Renderer {
                 (span.start * std::mem::size_of::<Vertex>()) as u64,
                 bytemuck::cast_slice(&self.geometry.vertices[span]),
             );
-                direct_light: [
-                    scene.light.direct_color[0] * scene.light.direct_intensity,
-                    scene.light.direct_color[1] * scene.light.direct_intensity,
-                    scene.light.direct_color[2] * scene.light.direct_intensity,
-                    f32::from(scene.light.direct_color == [1.; 3]),
-                ],
         }
         let selected_vertices = if self.distant.active {
             &self.distant.full
@@ -1790,6 +1861,9 @@ impl Renderer {
             if let Some(field) = &self.surface_field {
                 field.draw(&mut pass, &self.shadow_bind_group, true);
             }
+            if let Some(objects) = &self.object_impostor {
+                objects.draw_shadow(&mut pass, &self.shadow_bind_group);
+            }
         }
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -1857,6 +1931,9 @@ impl Renderer {
                     &self.atmosphere_pipeline
                 });
                 pass.draw(0..3, 0..1);
+            }
+            if let Some(objects) = &self.object_impostor {
+                objects.draw(&mut pass, &self.bind_group);
             }
             if guide_count > 0 && !soft && transparent_draw_units == 0 {
                 pass.set_pipeline(&self.guide_pipeline);

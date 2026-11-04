@@ -5,6 +5,7 @@ struct BladeVertex {root:vec4<f32>,center:vec4<f32>};
 @group(1) @binding(1) var<storage,read> field_vertices:array<FieldVertex>;
 @group(1) @binding(2) var<uniform> field:FieldParams;
 @group(1) @binding(3) var<storage,read> blade_vertices:array<BladeVertex>;
+@group(1) @binding(4) var<storage,read> planting_mask:array<u32>;
 fn field_hash(value:u32)->u32{var x=value;x^=x>>16u;x*=0x7feb352du;x^=x>>15u;x*=0x846ca68bu;return x^(x>>16u);}
 fn terrain_at(p:vec2<u32>)->f32{
     let side=field.grid.z;
@@ -35,6 +36,7 @@ fn field_surface(block:vec4<u32>,vertex:u32,shadow:bool)->VertexOut{
     var normal=normalize(vec3<f32>(c*v.n.x-s*v.n.z,v.n.y,s*v.n.x+c*v.n.z));
     var color=field.color.xyz*(0.82+f32(h&255u)/255.0*0.30);
     var hidden=root.y < -900000.0;
+    var excluded=false;
     if field.grid.w>0u {
         let aux=blade_vertices[level.x+vertex%level.y];
         let seed=field_hash(source^(u32(aux.root.w)*0x9e3779b9u));
@@ -42,6 +44,11 @@ fn field_surface(block:vec4<u32>,vertex:u32,shadow:bool)->VertexOut{
         let uv=vec2<f32>(f32(seed&65535u),f32(seed>>16u))/65536.0;
         let xz=field.metric.xy+(vec2<f32>(vec2<u32>(block.y*side+lx,block.z*side+lz))+uv*f32(level.z))*field.metric.z;
         let base=vec3<f32>(xz.x,terrain_height(xz)-0.002,xz.y);
+        if (field.grid.w&2u)!=0u {
+            let cell=vec2<u32>(clamp(floor((xz-field.metric.xy)/field.metric.z),vec2<f32>(0.0),vec2<f32>(field.grid.xy*side-vec2<u32>(1u))));
+            let k=((cell.y/side)*field.grid.x+cell.x/side)*side*side+(cell.y%side)*side+cell.x%side;
+            excluded=(planting_mask[k/32u]&(1u<<(k%32u)))==0u;
+        }
         let metric=distance(base,globals.view_position.xyz)/max(field.metric.w,1.0);
         let choice=f32(h2&65535u)/65536.0;
         var selected=0u;
@@ -59,6 +66,7 @@ fn field_surface(block:vec4<u32>,vertex:u32,shadow:bool)->VertexOut{
         let height=clamp((v.p.y-aux.root.y)/field.profile[1].w,0.0,1.0);
         color=field.color.xyz*aux.center.w*(0.94+f32(seed&255u)/255.0*0.12)*mix(0.68,1.06,sqrt(height));
     }
+    if excluded {position.y=-1000000.0;hidden=true;}
     var out:VertexOut;out.clip=globals.view_projection*vec4<f32>(position,1.0);out.world=position;
     out.normal=normal;
     out.color=color;out.rest=position;out.material=0u;out.material_projection_weights=abs(out.normal);if hidden {out.clip=vec4<f32>(2.0,2.0,2.0,1.0);}return out;

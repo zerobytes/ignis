@@ -100,3 +100,42 @@ python3 scripts/open_horizon_meadow.py --mode indexed
 Verificação adicional do stream indexado: oito pares de câmera deslocada e direção de luz variável(`verify-probe-1100x760.json`, população explicitamente filtrada para as108 árvores originais), comparando o mesmo proxy48B com24B indexado, deram diferença RGB8 zero nos oito pares. Isso exercita mudanças de escolha de nível e sombras, mas não prova estabilidade contínua universal ou a fidelidade dos proxies contra a fonte. O caminho segue experimental/OFF globalmente.
 
 Validação deste recorte: Clippy do lib+exemplo atual com `-D warnings` passou; três verificações isoladas passaram(roundtrip/corrupção/truncamento do pacote, preservação de dois componentes e reparo de face degenerada com restauração de componente). O reparo foi compilado diretamente do módulo atual, ligado à biblioteca identificada do ensaio; os quatro testes internos atuais de mesh_proxy também passaram diretamente no binário de testes release corrente(166testes existentes, filtro executou4): catálogo/cache em trocasLOD, fonte editada/fallback, pacote selado/índices inválidos, componentes e reparo degenerado. Os ensaios GPU completos e oito pares câmera/luz passaram sem erro de validação. A biblioteca temporária de link foi mantida somente durante o experimento e removida ao concluir a unidade. Nenhuma cena-fonte210 foi regravada; SHA256 permanece `da0805a03945de538bbcdf65bf1769a8dc66fcb21826e646e91454918d9c22c9`.
+
+## Terceiro recorte: cobertura do objeto, grama contínua e luz quente
+
+O experimento `IGOIM1` compila objetos compostos estáticos antes do gameplay em vistas de albedo/cobertura, normal/endereço de material e profundidade. A fonte botânica não é regenerada por quadro. O pacote corrente usa15 modelos genéricos escolhidos por custo fonte×população,12 azimutes×4 elevações,256² e mips:629.148.984 bytes em disco (~600MiB), compilação18,95s. A GPU recebe somente os modelos que cabem no limite de camadas do device; os demais mantêm geometria. Não há novo limite autoral de objetos. Fonte CPU, proxies e atlas coexistem: **o atlas aumenta memória**.
+
+`src/render/object_impostor/` mantém o protótipo separado de IGL1/ICB e OFF globalmente. Binário selado SHA256, metadados CBOR tipados fora do quadro, texels compactos RGBA8sRGB premultiplicado em espaço linear/RGBA8Unorm/R16Uint; sem JSON no render loop. O build usa16 amostras por texel. Runtime escolhe duas vistas, reprojeta profundidade e aplica iluminação/material/atmosfera atuais. Transformações, composição e paletas ficam cacheadas; preparação medida~0,4–0,9ms depois do aquecimento, não os10–15ms do primeiro protótipo que reconstruía objetos.
+
+Elegibilidade exige objeto estático com peças na mesma transformação e fonte/material idênticos ao pacote. Rigs, animações, anexos, normais substituídas, seleção, recorte, planeta e cobertura/transmissão incompatíveis conservam fonte. Escolha de câmera e sombra é independente; um objeto fora da câmera pode continuar projetando sombra. O passe de sombras opcional usa vistas orientadas pela luz e teste de cobertura determinístico. Os masks de visibilidade originais são restaurados depois do draw; desligar o atlas restaura o caminho anterior.
+
+A/B da mesma floresta5.491 árvores, mesmas câmeras/luz quente/campo contínuo,1100×760,3warm+8draw+completion, biblioteca identificada no relatório:
+
+| Vista | Proxies indexados | Atlas câmera128px | Atlas câmera512px+sombra512px |
+|---|---:|---:|---:|
+| Jogador |142,85ms|98,30ms|51,95ms|
+| Vale |136,34ms|99,84ms|55,68ms|
+| Panorama |177,49ms|50,80ms|24,42ms|
+
+Dados: `objects-probe-1100x760.json`. São tempos de desenho+espera, **não FPS da janela**, e as variantes não são visualmente exatas. As60 comparações isoladas de câmera/luz deram IoU de cobertura0,530–0,925 e RMS global RGB8 0,717–6,167 (fundo domina a média);9pares de sombra deram RMS4,934–7,760. Desligar o experimento restaurou PNG fonte exatamente em todos os pares. A inspeção das copas encontrou suavização/transparência e detalhes diferentes, especialmente no limite512px. **Esse atlas ainda não passou o gate visual e não virou o caminho padrão.** Redução de candidatos não é comprovação de fidelidade ou60FPS.
+
+O campo desta cena migrou para `IGFLD3`: reaproveita a transição contínua por folha da EAF-218, acrescentando máscara de plantio1bit/site independente das alturas regulares. Isso mantém estradas/água sem introduzir retângulos por blocos. Leitores1/2 e bytes antigos são conservados;3é opt-in por header.16M sites,15.667.937 ocupados e344.694.614 folhas lógicas, mesma população. Templates1408/264/66/10/4/2triângulos, vértices compartilhados e índices,66.336.888bytes em disco/~83,42MB de buffers GPU. As transições são distribuídas por folha; granulação e compensação aproximada da cobertura distante continuam pendentes, sem promessa de antialiasing/conservação exata.
+
+`warm-light` altera somente a cena do laboratório paraScene120: sol linearRGB[1,.84,.60], intensidade1,7, ambiente0,09, ambienteIBL0,17, densidade atmosférica0,00010 e bias de sombra0,00005 com correção por plano receptor. O alcance180m/resolução2048 das sombras permanece igual. A fonte canônica `botanical-valley/world.scene.json` é preservada. Cor direta usa o mesmo contrato MCP/UI de `docs/directional-light-color.md`; o pacote de atlas continua ferramenta diagnóstica de sessão.
+
+```sh
+cargo run --release --example horizon_meadow -- compile-field-continuous
+cargo run --release --example horizon_meadow -- warm-light
+cargo run --release --example horizon_meadow -- compile-objects 256
+cargo run --release --example horizon_meadow -- verify-objects
+cargo run --release --example horizon_meadow -- verify-object-shadows
+cargo run --release --example horizon_meadow -- probe 1100 760 objects
+# Escolha explícita para estudar custo; não qualidade aprovada:
+python3 scripts/open_horizon_meadow.py --mode objects --object-pixels 128 --object-shadows
+# Caminho padrão, sem o novo atlas:
+python3 scripts/open_horizon_meadow.py --mode indexed
+```
+
+Validação:6testes de campo (incluindo integridade da máscara/compatibilidade),3testes de atlas (selo/endereço/filtragem/shaders),Clippy de biblioteca+exemplo,buildrelease e capturas nativas. Não são certificados geométricos/perceptuais. EAF-215 permanece InProgress; os próximos gargalos são geometria próxima, cobertura/sombreamento agregado das copas e antialiasing/estabilidade da grama. Não aumentar o limite do atlas e chamar a perda de detalhe de ganho gratuito.
+
+Medição nativa após esta unidade: janela2200×1520/M4Pro/caminho indexado sem atlas,8amostras frescas, mediana5,156FPS (faixa4,861–13,074, incluindo aquecimento), relatório `presentation-indexed.json`. Uma tentativa com atlas128+sombra não publicou amostras válidas durante a janela de90s (`sample_complete=false`, `presentation-objects128shadow.json`); **FPS do atlas não foi estabelecido**. A cena atual permaneceu aberta sem o atlas, PID registrado em `window.json`, captura MCP da câmera do jogador em `current-player.png`. Não há ganho deFPS nativo demonstrado nesta unidade; a melhoria de desenho em1100×760 e as mudanças de aparência são evidências separadas.

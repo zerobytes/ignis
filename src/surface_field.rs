@@ -11,6 +11,7 @@ use std::{
 
 const MAGIC: &[u8; 8] = b"IGFLD1\0\0";
 const CONTINUOUS_MAGIC: &[u8; 8] = b"IGFLD2\0\0";
+const MASKED_MAGIC: &[u8; 8] = b"IGFLD3\0\0";
 pub const SIDE: u32 = 16;
 pub const LEVELS: usize = 6;
 pub const ABSENT: f32 = -1_000_000.;
@@ -28,6 +29,8 @@ pub struct BladeVertex {
     pub center: [f32; 4],
 }
 pub struct Continuous {
+    /// Optional tile-major occupancy; regular terrain heights remain complete.
+    pub plant_mask: Option<Vec<u32>>,
     /// Metres per camera pixel, five strictly separated transition centres.
     pub thresholds: [f32; 5],
     pub blend: f32,
@@ -185,6 +188,52 @@ mod tests {
         ));
     }
     #[test]
+    fn masked_field_roundtrip_rejects_missing_or_extra_occupancy() {
+        let mut p = fixture();
+        p.continuous = Some(Continuous {
+            plant_mask: Some(vec![0x55555555; p.heights.len().div_ceil(32)]),
+            thresholds: [0.004, 0.015, 0.05, 0.16, 0.5],
+            blend: 0.3,
+            blade_width: 0.0032,
+            blade_height: 0.055,
+            vertices: std::array::from_fn(|_| {
+                vec![
+                    BladeVertex {
+                        root: [0.; 4],
+                        center: [0., 0., 0., 1.]
+                    };
+                    3
+                ]
+            }),
+        });
+        let mut bytes = vec![];
+        p.write(&mut bytes).unwrap();
+        assert_eq!(&bytes[..8], MASKED_MAGIC);
+        let q = Pack::read(bytes.as_slice()).unwrap();
+        assert_eq!(
+            q.continuous.unwrap().plant_mask.unwrap(),
+            p.continuous
+                .as_ref()
+                .unwrap()
+                .plant_mask
+                .as_ref()
+                .unwrap()
+                .clone()
+        );
+        assert!(Pack::read(&bytes[..bytes.len() - 1]).is_err());
+        let mut extra = bytes.clone();
+        extra.push(0);
+        assert!(Pack::read(extra.as_slice()).is_err());
+        p.continuous
+            .as_mut()
+            .unwrap()
+            .plant_mask
+            .as_mut()
+            .unwrap()
+            .pop();
+        assert!(p.validate().is_err());
+    }
+    #[test]
     fn continuous_roundtrip_and_metadata_rejection_preserve_legacy_bytes() {
         let mut p = fixture();
         let mut legacy = vec![];
@@ -197,6 +246,7 @@ mod tests {
             .unwrap();
         assert_eq!(legacy, again);
         p.continuous = Some(Continuous {
+            plant_mask: None,
             thresholds: [0.004, 0.015, 0.05, 0.16, 0.5],
             blend: 0.3,
             blade_width: 0.0032,
@@ -301,6 +351,17 @@ impl Pack {
             );
         }
         if let Some(c) = &self.continuous {
+            if let Some(mask) = &c.plant_mask {
+                ensure!(
+                    mask.len() == self.heights.len().div_ceil(32),
+                    "Invalid planting mask length"
+                );
+                let tail = self.heights.len() % 32;
+                ensure!(
+                    tail == 0 || mask.last().is_some_and(|v| *v >> tail == 0),
+                    "Invalid planting mask padding"
+                );
+            }
             ensure!(
                 c.blend.is_finite()
                     && (0.01..=0.4).contains(&c.blend)
@@ -340,11 +401,19 @@ impl Pack {
     }
     pub fn write(&self, mut w: impl Write) -> Result<()> {
         self.validate()?;
-        w.write_all(if self.continuous.is_some() {
-            CONTINUOUS_MAGIC
-        } else {
-            MAGIC
-        })?;
+        w.write_all(
+            if self
+                .continuous
+                .as_ref()
+                .is_some_and(|c| c.plant_mask.is_some())
+            {
+                MASKED_MAGIC
+            } else if self.continuous.is_some() {
+                CONTINUOUS_MAGIC
+            } else {
+                MAGIC
+            },
+        )?;
         for v in [
             self.origin[0],
             self.origin[1],
@@ -386,6 +455,11 @@ impl Pack {
         for h in &self.heights {
             w.write_all(&h.to_le_bytes())?;
         }
+        if let Some(mask) = self.continuous.as_ref().and_then(|c| c.plant_mask.as_ref()) {
+            for word in mask {
+                w.write_all(&word.to_le_bytes())?;
+            }
+        }
         Ok(())
     }
     pub fn read(mut r: impl Read) -> Result<Self> {
@@ -397,7 +471,7 @@ impl Pack {
         let mut magic = [0; 8];
         r.read_exact(&mut magic)?;
         ensure!(
-            &magic == MAGIC || &magic == CONTINUOUS_MAGIC,
+            &magic == MAGIC || &magic == CONTINUOUS_MAGIC || &magic == MASKED_MAGIC,
             "Invalid field header"
         );
         let mut values = [0.; 6];
@@ -416,7 +490,7 @@ impl Pack {
         let mut levels = Vec::new();
         let mut profile = [0.; 8];
         let mut metadata = Vec::new();
-        if &magic == CONTINUOUS_MAGIC {
+        if &magic != MAGIC {
             for v in &mut profile {
                 *v = f32::from_bits(word(&mut r)?);
             }
@@ -440,7 +514,7 @@ impl Pack {
                 });
             }
             levels.push(Level { vertices, stride });
-            if &magic == CONTINUOUS_MAGIC {
+            if &magic != MAGIC {
                 let mut vertices = Vec::with_capacity(n as usize);
                 for _ in 0..n {
                     let mut a = [0.; 8];
@@ -459,6 +533,15 @@ impl Pack {
         for _ in 0..count {
             heights.push(f32::from_bits(word(&mut r)?));
         }
+        let plant_mask = if &magic == MASKED_MAGIC {
+            Some(
+                (0..(count as usize).div_ceil(32))
+                    .map(|_| word(&mut r))
+                    .collect::<Result<Vec<_>>>()?,
+            )
+        } else {
+            None
+        };
         let mut tail = [0];
         ensure!(r.read(&mut tail)? == 0, "Trailing field bytes");
         let out = Self {
@@ -468,7 +551,8 @@ impl Pack {
             heights,
             levels: levels.try_into().ok().unwrap(),
             color: values[3..].try_into().unwrap(),
-            continuous: (&magic == CONTINUOUS_MAGIC).then(|| Continuous {
+            continuous: (&magic != MAGIC).then(|| Continuous {
+                plant_mask,
                 thresholds: profile[..5].try_into().unwrap(),
                 blend: profile[5],
                 blade_width: profile[6],
@@ -574,7 +658,7 @@ impl Gpu {
             profile: [[0.; 4]; 2],
         };
         if let Some(c) = &pack.continuous {
-            params.grid[3] = 1;
+            params.grid[3] = 1 | if c.plant_mask.is_some() { 2 } else { 0 };
             params.profile = [
                 c.thresholds[..4].try_into().unwrap(),
                 [c.thresholds[4], c.blend, c.blade_width, c.blade_height],
@@ -624,6 +708,16 @@ impl Gpu {
         let heights = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("IGFLD1 resident planting heights"),
             contents: bytemuck::cast_slice(&pack.heights),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        let occupancy = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("IGFLD3 planting occupancy"),
+            contents: bytemuck::cast_slice(
+                pack.continuous
+                    .as_ref()
+                    .and_then(|c| c.plant_mask.as_deref())
+                    .unwrap_or(&[u32::MAX]),
+            ),
             usage: wgpu::BufferUsages::STORAGE,
         });
         let template = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -698,6 +792,16 @@ impl Gpu {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
         });
         let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -719,6 +823,10 @@ impl Gpu {
                 wgpu::BindGroupEntry {
                     binding: 3,
                     resource: blade_metadata.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: occupancy.as_entire_binding(),
                 },
             ],
         });
@@ -892,6 +1000,15 @@ impl Gpu {
             .chunks_exact((SIDE * SIDE) as usize)
             .enumerate()
             .map(|(i, h)| {
+                if let Some(mask) = pack.continuous.as_ref().and_then(|c| c.plant_mask.as_ref()) {
+                    let start = i * (SIDE * SIDE) as usize / 32;
+                    if mask[start..start + (SIDE * SIDE) as usize / 32]
+                        .iter()
+                        .all(|v| *v == 0)
+                    {
+                        return None;
+                    }
+                }
                 let mut lo = h
                     .iter()
                     .copied()
@@ -931,11 +1048,19 @@ impl Gpu {
                 ))
             })
             .collect();
-        let population = pack.heights.iter().filter(|v| **v != ABSENT).count();
+        let population = pack
+            .continuous
+            .as_ref()
+            .and_then(|c| c.plant_mask.as_ref())
+            .map_or_else(
+                || pack.heights.iter().filter(|v| **v != ABSENT).count(),
+                |mask| mask.iter().map(|v| v.count_ones() as usize).sum(),
+            );
         let stats = Stats {
             population,
             source_sites: pack.heights.len(),
             gpu_bytes: heights.size()
+                + occupancy.size()
                 + template.size()
                 + blade_metadata.size()
                 + index_buffer.as_ref().map_or(0, |b| b.size())

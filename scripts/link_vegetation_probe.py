@@ -28,7 +28,7 @@ def main():
                '-C', 'opt-level=3', str(source), '-L', f'dependency={ROOT}/target/release/deps',
                '--extern', f'ignis={frozen}']
     dependencies = {}
-    for name in ('anyhow', 'serde_json', 'wgpu', 'pollster', 'glam', 'ring'):
+    for name in ('anyhow', 'serde_json', 'wgpu', 'pollster', 'glam', 'ring', 'png'):
         path = max((ROOT / 'target/release/deps').glob(f'lib{name}-*.rlib'), key=lambda p: p.stat().st_mtime_ns)
         command.extend(['--extern', f'{name}={path}'])
         dependencies[name] = dict(path=str(path.relative_to(ROOT)), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
