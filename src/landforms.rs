@@ -1,4 +1,4 @@
-//! Local 3D landform tools: editable concave profiles, homothetic sections and voids.
+//! Local 3D landform tools: editable profiles, variable radial sections and voids.
 //! Geological presets produce ordinary data. No physics, erosion or CSG is implied.
 use crate::{
     meshes::{self, Geometry},
@@ -12,11 +12,13 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+mod domain;
 mod presets;
 mod triangulate;
+pub use domain::Domain;
 pub use presets::Preset;
 
-pub const VERSION: u16 = 1;
+pub const VERSION: u16 = 2;
 pub const MAX_PIECES: usize = 32;
 pub const MAX_WORK: usize = 4_000_000;
 pub const MAX_RAY_HITS: usize = 512;
@@ -31,6 +33,11 @@ fn profile<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<[f
 fn sections<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<Section>, D::Error> {
     crate::terrain::limited::<D, Section, 128>(d)
 }
+fn radial_scales<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> std::result::Result<Vec<f64>, D::Error> {
+    crate::terrain::limited::<D, f64, 96>(d)
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -38,6 +45,18 @@ pub struct Section {
     pub at: f64,
     pub offset: [f64; 2],
     pub scale: f64,
+    /// One positive multiplier per profile ray; empty preserves the source1 contour.
+    #[serde(
+        default,
+        deserialize_with = "radial_scales",
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub radial_scales: Vec<f64>,
+}
+impl Section {
+    fn factor(&self, vertex: usize) -> f64 {
+        self.scale * self.radial_scales.get(vertex).copied().unwrap_or(1.)
+    }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -63,16 +82,19 @@ pub struct Document {
     #[serde(with = "crate::terrain::position_codec")]
     #[schemars(with = "Position")]
     pub origin: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub domain: Option<Domain>,
     #[serde(deserialize_with = "pieces")]
     pub pieces: Vec<Piece>,
 }
 struct Prepared {
-    profile: triangulate::Profile,
     axis: DVec3,
     x: DVec3,
     y: DVec3,
     vertices: usize,
     triangles: usize,
+    bottom_caps: Vec<[usize; 3]>,
+    top_caps: Vec<[usize; 3]>,
 }
 fn finite(v: &[f64], bound: f64) -> bool {
     v.iter().all(|n| n.is_finite() && n.abs() <= bound)
@@ -99,6 +121,7 @@ impl Piece {
         let y = axis.cross(x);
         let profile = triangulate::prepare(&self.profile)?;
         let mut apex = false;
+        let mut minimum_kernel = f64::INFINITY;
         for (i, s) in self.sections.iter().enumerate() {
             if !s.at.is_finite()
                 || s.at.abs() > 10000.
@@ -107,6 +130,29 @@ impl Piece {
                 || !(0. ..=1000.).contains(&s.scale)
             {
                 return Err(invalid("Invalid landform section coordinates or scale"));
+            }
+            if !s.radial_scales.is_empty()
+                && (s.radial_scales.len() != self.profile.len()
+                    || !s
+                        .radial_scales
+                        .iter()
+                        .all(|x| x.is_finite() && (0.05..=20.).contains(x))
+                    || !profile.star_shaped
+                    || s.scale == 0.)
+            {
+                return Err(invalid(
+                    "Variable landform sections need one radial factor0.05..20 per vertex of a strict star-shaped profile, without an apex",
+                ));
+            }
+            if s.radial_scales.is_empty() {
+                minimum_kernel = minimum_kernel.min(profile.kernel_radius * s.scale);
+            } else {
+                for j in 0..self.profile.len() {
+                    let next = (j + 1) % self.profile.len();
+                    let a = DVec2::from_array(self.profile[j]) * s.factor(j);
+                    let b = DVec2::from_array(self.profile[next]) * s.factor(next);
+                    minimum_kernel = minimum_kernel.min((b - a).perp_dot(-a) / (b - a).length());
+                }
             }
             if s.scale == 0. {
                 if i + 1 != self.sections.len() || i == 0 || self.inner_scale.is_some() {
@@ -127,7 +173,7 @@ impl Piece {
                 if delta == 0.
                     && (!profile.star_shaped
                         || s.offset != previous.offset
-                        || s.scale == previous.scale
+                        || !nested(s, previous, self.profile.len())
                         || s.scale == 0.
                         || i == 1
                         || i + 1 == self.sections.len()
@@ -142,21 +188,15 @@ impl Piece {
         if self.sections.last().unwrap().at - self.sections[0].at < 0.0001 {
             return Err(invalid("Landform needs nonzero longitudinal extent"));
         }
-        if let Some(inner) = self.inner_scale {
-            let min_scale = self
-                .sections
-                .iter()
-                .map(|s| s.scale)
-                .fold(f64::INFINITY, f64::min);
-            if !inner.is_finite()
+        if let Some(inner) = self.inner_scale
+            && (!inner.is_finite()
                 || !(0.001..=0.999).contains(&inner)
                 || !profile.star_shaped
-                || profile.kernel_radius * min_scale * (1. - inner) < 0.0001
-            {
-                return Err(invalid(
-                    "Landform cavity needs a star-shaped profile and nonzero wall thickness",
-                ));
-            }
+                || minimum_kernel * (1. - inner) < 0.0001)
+        {
+            return Err(invalid(
+                "Landform cavity needs a star-shaped profile and nonzero wall thickness",
+            ));
         }
         let n = self.profile.len();
         let rows = self.sections.len();
@@ -169,7 +209,12 @@ impl Piece {
             )
         };
         Ok(Prepared {
-            profile,
+            bottom_caps: section_caps(&self.profile, &self.sections[0], &profile)?,
+            top_caps: if apex {
+                Vec::new()
+            } else {
+                section_caps(&self.profile, self.sections.last().unwrap(), &profile)?
+            },
             axis,
             x,
             y,
@@ -180,7 +225,7 @@ impl Piece {
 }
 impl Document {
     fn prepare(&self) -> Result<Vec<Prepared>> {
-        if self.version != VERSION
+        if !(1..=VERSION).contains(&self.version)
             || self.space_version != crate::world_space::VERSION
             || !crate::terrain::id_valid(&self.id)
             || self.revision == 0
@@ -188,6 +233,18 @@ impl Document {
         {
             return Err(invalid(
                 "Invalid landform version, space, ID, revision or piece count1..32",
+            ));
+        }
+        domain::Frame::new(self.origin, self.domain.as_ref())?;
+        if self.version == 1
+            && (self.domain.is_some()
+                || self
+                    .pieces
+                    .iter()
+                    .any(|p| p.sections.iter().any(|s| !s.radial_scales.is_empty())))
+        {
+            return Err(invalid(
+                "Domain and variable sections require landform version2",
             ));
         }
         let mut ids = BTreeSet::new();
@@ -201,8 +258,12 @@ impl Document {
                     "Landform contour/section budget or duplicate piece ID",
                 ));
             }
-            work = work
-                .saturating_add(p.profile.len().pow(3) + p.profile.len() * p.sections.len() * 8);
+            let extra_caps = usize::from(!p.sections[0].radial_scales.is_empty())
+                + usize::from(!p.sections.last().unwrap().radial_scales.is_empty());
+            work = work.saturating_add(
+                p.profile.len().pow(3) * (1 + extra_caps)
+                    + p.profile.len() * p.sections.len() * if self.version == 1 { 8 } else { 16 },
+            );
         }
         if work > MAX_WORK {
             return Err(invalid(
@@ -229,6 +290,33 @@ impl Document {
         self.prepare().map(|_| ())
     }
 }
+fn nested(a: &Section, b: &Section, n: usize) -> bool {
+    if a.radial_scales.is_empty() && b.radial_scales.is_empty() {
+        return a.scale != b.scale;
+    }
+    let direction = (a.factor(0) - b.factor(0)).signum();
+    direction != 0. && (0..n).all(|j| (a.factor(j) - b.factor(j)) * direction > 1e-10)
+}
+fn section_caps(
+    points: &[[f64; 2]],
+    section: &Section,
+    base: &triangulate::Profile,
+) -> Result<Vec<[usize; 3]>> {
+    if section.radial_scales.is_empty() {
+        return Ok(base.caps.clone());
+    }
+    let mut contour: Vec<_> = points
+        .iter()
+        .zip(&section.radial_scales)
+        .map(|(p, r)| [p[0] * r, p[1] * r])
+        .collect();
+    let extent = contour.iter().flatten().map(|v| v.abs()).fold(1., f64::max);
+    for p in &mut contour {
+        p[0] /= extent;
+        p[1] /= extent;
+    }
+    Ok(triangulate::prepare(&contour)?.caps)
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct Part {
     pub id: String,
@@ -241,6 +329,8 @@ pub struct Part {
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct Compiled {
+    #[serde(skip)]
+    frame: domain::Frame,
     pub version: u16,
     pub source_id: String,
     pub source_revision: u32,
@@ -249,6 +339,9 @@ pub struct Compiled {
     pub geometry: Arc<Geometry>,
     pub parts: Vec<Part>,
     pub maximum_vertex_rounding_meters: f64,
+    /// Mid-edge/centroid probes only, not a global error certificate.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maximum_sampled_domain_error_meters: Option<f64>,
     pub boolean_union: bool,
     pub visual_only: bool,
 }
@@ -280,13 +373,17 @@ fn closed_volume(geometry: &Geometry, range: [usize; 2], pivot: DVec3) -> Result
 }
 pub fn compile(document: &Document) -> Result<Compiled> {
     let prepared = document.prepare()?;
+    let frame = domain::Frame::new(document.origin, document.domain.as_ref())?;
+    let vertex_count = prepared.iter().map(|p| p.vertices).sum();
+    let mut local_vertices = frame.spherical().then(|| Vec::with_capacity(vertex_count));
     let mut geometry = Geometry {
-        positions: Vec::with_capacity(prepared.iter().map(|p| p.vertices).sum()),
+        positions: Vec::with_capacity(vertex_count),
         triangles: Vec::with_capacity(prepared.iter().map(|p| p.triangles).sum()),
         material_coordinates: None,
     };
     let mut parts = Vec::with_capacity(prepared.len());
     let mut rounding = 0f64;
+    let mut sampled_error = frame.spherical().then_some(0f64);
     for (piece, p) in document.pieces.iter().zip(prepared) {
         let first_vertex = geometry.positions.len();
         let first_triangle = geometry.triangles.len();
@@ -301,13 +398,17 @@ pub fn compile(document: &Document) -> Result<Compiled> {
                 piece.inner_scale.unwrap()
             };
             for s in piece.sections.iter().take(rows) {
-                for point in &piece.profile {
-                    let local = DVec2::from_array(*point) * (s.scale * factor)
+                for (j, point) in piece.profile.iter().enumerate() {
+                    let local = DVec2::from_array(*point) * (s.factor(j) * factor)
                         + DVec2::from_array(s.offset);
                     let v = DVec3::from_array(piece.anchor)
                         + p.axis * s.at
                         + p.x * local.x
                         + p.y * local.y;
+                    if let Some(local) = &mut local_vertices {
+                        local.push(v);
+                    }
+                    let v = frame.project(v)?;
                     let rounded = v.as_vec3();
                     rounding = rounding.max(v.distance(rounded.as_dvec3()));
                     geometry.positions.push(rounded.to_array());
@@ -340,6 +441,10 @@ pub fn compile(document: &Document) -> Result<Compiled> {
                 + p.axis * s.at
                 + p.x * s.offset[0]
                 + p.y * s.offset[1];
+            if let Some(local) = &mut local_vertices {
+                local.push(v);
+            }
+            let v = frame.project(v)?;
             let rounded = v.as_vec3();
             rounding = rounding.max(v.distance(rounded.as_dvec3()));
             let tip = geometry.positions.len() as u32;
@@ -371,14 +476,14 @@ pub fn compile(document: &Document) -> Result<Compiled> {
                 }
             }
         } else {
-            for &[a, b, c] in &p.profile.caps {
+            for &[a, b, c] in &p.bottom_caps {
                 geometry
                     .triangles
                     .push([base + a as u32, base + c as u32, base + b as u32]);
             }
             if !apex {
                 let end = base + ((rows - 1) * n) as u32;
-                for &[a, b, c] in &p.profile.caps {
+                for &[a, b, c] in &p.top_caps {
                     geometry
                         .triangles
                         .push([end + a as u32, end + b as u32, end + c as u32]);
@@ -386,6 +491,29 @@ pub fn compile(document: &Document) -> Result<Compiled> {
             }
         }
         let triangles = [first_triangle, geometry.triangles.len()];
+        if let Some(local) = &local_vertices {
+            for &t in &geometry.triangles[triangles[0]..triangles[1]] {
+                let [a, b, c] = t.map(|i| local[i as usize]);
+                let normal = frame.normal((a + b + c) / 3., (b - a).cross(c - a));
+                let [wa, wb, wc] =
+                    t.map(|i| DVec3::from_array(geometry.positions[i as usize].map(f64::from)));
+                if (wb - wa).cross(wc - wa).dot(normal) <= 0. {
+                    return Err(invalid(
+                        "Radial landform triangulation folds; refine its authored sections/profile",
+                    ));
+                }
+                for (p, mesh) in [
+                    ((a + b) / 2., (wa + wb) / 2.),
+                    ((b + c) / 2., (wb + wc) / 2.),
+                    ((c + a) / 2., (wc + wa) / 2.),
+                    ((a + b + c) / 3., (wa + wb + wc) / 3.),
+                ] {
+                    let e = frame.project(p)?.distance(mesh);
+                    let maximum = sampled_error.as_mut().unwrap();
+                    *maximum = maximum.max(e);
+                }
+            }
+        }
         let pivot = DVec3::from_array(geometry.positions[first_vertex].map(f64::from));
         let volume = closed_volume(&geometry, triangles, pivot)?;
         parts.push(Part {
@@ -400,7 +528,8 @@ pub fn compile(document: &Document) -> Result<Compiled> {
     }
     geometry.validate()?;
     Ok(Compiled {
-        version: VERSION,
+        frame,
+        version: document.version,
         source_id: document.id.clone(),
         source_revision: document.revision,
         source_sha256: crate::terrain::source_digest(document)?,
@@ -408,6 +537,7 @@ pub fn compile(document: &Document) -> Result<Compiled> {
         geometry: Arc::new(geometry),
         parts,
         maximum_vertex_rounding_meters: rounding,
+        maximum_sampled_domain_error_meters: sampled_error,
         boolean_union: false,
         visual_only: true,
     })
@@ -416,6 +546,9 @@ pub fn compile(document: &Document) -> Result<Compiled> {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Edit {
+    SetDomain {
+        domain: Option<Domain>,
+    },
     Append {
         piece: Piece,
     },
@@ -454,6 +587,11 @@ pub fn edit(mut document: Document, expected_revision: u32, edits: Vec<Edit>) ->
         .checked_add(1)
         .ok_or_else(|| invalid("Landform revision exhausted"))?;
     for edit in edits {
+        if let Edit::SetDomain { domain } = edit {
+            document.domain = domain;
+            document.version = VERSION;
+            continue;
+        }
         if let Edit::Append { piece } = edit {
             if document.pieces.len() == MAX_PIECES {
                 return Err(invalid("Landform piece budget exhausted"));
@@ -467,7 +605,7 @@ pub fn edit(mut document: Document, expected_revision: u32, edits: Vec<Edit>) ->
             | Edit::SetProfile { id, .. }
             | Edit::SetSections { id, .. }
             | Edit::SetInnerScale { id, .. } => id,
-            Edit::Append { .. } => unreachable!(),
+            Edit::Append { .. } | Edit::SetDomain { .. } => unreachable!(),
         };
         let index = document
             .pieces
@@ -484,8 +622,15 @@ pub fn edit(mut document: Document, expected_revision: u32, edits: Vec<Edit>) ->
             Edit::SetInnerScale { inner_scale, .. } => {
                 document.pieces[index].inner_scale = inner_scale
             }
-            Edit::Append { .. } => unreachable!(),
+            Edit::Append { .. } | Edit::SetDomain { .. } => unreachable!(),
         }
+    }
+    if document
+        .pieces
+        .iter()
+        .any(|p| p.sections.iter().any(|s| !s.radial_scales.is_empty()))
+    {
+        document.version = VERSION;
     }
     document.validate()?;
     document.revision = revision;
@@ -505,6 +650,9 @@ pub struct Hit {
     pub normal: [f64; 3],
     pub piece: String,
     pub triangle: u32,
+    pub altitude_meters: f64,
+    /// Oriented normal relative to local up: tops0°, walls90°, undersides180°.
+    pub slope_degrees: f64,
 }
 impl Compiled {
     pub fn intersections(&self, ray: &Ray) -> Result<Vec<Hit>> {
@@ -591,12 +739,17 @@ impl Compiled {
             .map(|h| {
                 let [a, b, c] = self.geometry.triangles[h.triangle]
                     .map(|i| DVec3::from_array(self.geometry.positions[i as usize].map(f64::from)));
+                let point = o + d * h.distance;
+                let normal = (b - a).cross(c - a).normalize();
+                let (altitude_meters, slope_degrees) = self.frame.surface_data(point, normal);
                 Hit {
                     distance_meters: h.distance,
-                    point: (o + d * h.distance).to_array(),
-                    normal: (b - a).cross(c - a).normalize().to_array(),
+                    point: point.to_array(),
+                    normal: normal.to_array(),
                     piece: self.parts[h.part].id.clone(),
                     triangle: h.triangle as u32,
+                    altitude_meters,
+                    slope_degrees,
                 }
             })
             .collect())
@@ -678,10 +831,20 @@ pub fn query(query: Query) -> Result<serde_json::Value> {
 }
 pub fn encode(document: &Document) -> Result<Vec<u8>> {
     document.validate()?;
-    crate::terrain::encode_asset(b"IGNISLFM", VERSION, document)
+    crate::terrain::encode_asset(b"IGNISLFM", document.version, document)
 }
 pub fn decode(bytes: &[u8]) -> Result<Document> {
-    let d: Document = crate::terrain::decode_asset(bytes, b"IGNISLFM", VERSION)?;
+    let version = bytes
+        .get(8..10)
+        .map(|v| u16::from_le_bytes(v.try_into().unwrap()))
+        .ok_or_else(|| invalid("Invalid landform header"))?;
+    if !(1..=VERSION).contains(&version) {
+        return Err(invalid("Unsupported landform format"));
+    }
+    let d: Document = crate::terrain::decode_asset(bytes, b"IGNISLFM", version)?;
+    if d.version != version {
+        return Err(invalid("Landform envelope/document version mismatch"));
+    }
     d.validate()?;
     Ok(d)
 }

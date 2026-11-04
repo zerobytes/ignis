@@ -1,0 +1,8 @@
+{
+  "seed": 221,
+  "sphere_radius_meters": 6371000,
+  "families": ["terraces", "towers", "massif"],
+  "terraces": {"count": 9, "radius_meters": 30, "height_meters": 20},
+  "towers": {"count": 12, "radius_meters": 10, "height_meters": 100},
+  "massif": {"height_meters": 170, "radius_meters": 100, "shoulders": 7, "blocks": 14}
+}

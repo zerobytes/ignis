@@ -539,7 +539,7 @@ impl Service {
                 if !path.ends_with(".ignis-landform") {return Err(invalid("Landform path requires .ignis-landform suffix"));}
                 let bytes=crate::landforms::encode(document)?;
                 let destination=self.write(path,&bytes)?;
-                json!({"path":destination,"bytes":bytes.len(),"format":crate::landforms::VERSION,"id":document.id,"revision":document.revision,"world_changed":false})
+                json!({"path":destination,"bytes":bytes.len(),"format":document.version,"id":document.id,"revision":document.revision,"world_changed":false})
             }
             Command::LoadLandform {path} => {
                 if !path.ends_with(".ignis-landform") {return Err(invalid("Landform path requires .ignis-landform suffix"));}

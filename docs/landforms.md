@@ -1,5 +1,11 @@
 # Formas de relevo 3D: estudo e ferramentas
 
+Landform2 (EAF-221) adds independently scaled contour rays per section, common
+plane/spherical placement, and altitude/slope queries. Source1 remains readable
+and byte compatible. The version1 restrictions below describe the original
+increment; [current requirements and API](relief-requirements.md) document the
+new controls, validation evidence, performance review and open integration gates.
+
 Atualização179: publicação166 e renderer otimizado atual já convivem na main;
 vãos e superfícies foram verificados também com os atalhos gráficos ligados.
 [Integração, referência de montanhas e limites](terrain-render-integration.md).

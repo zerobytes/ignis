@@ -84,6 +84,7 @@ fn radial(sides: u8, seed: u32, roughness: f64) -> Result<Vec<[f64; 2]>> {
 }
 fn section(at: f64, scale: f64) -> Section {
     Section {
+        radial_scales: Vec::new(),
         at,
         offset: [0.; 2],
         scale,
@@ -179,6 +180,7 @@ pub(super) fn create(id: String, origin: Position, preset: Preset) -> Result<Doc
                 .map(|i| {
                     let t = f64::from(i) / f64::from(levels);
                     Section {
+                        radial_scales: Vec::new(),
                         at: h * t,
                         offset: lean.map(|v| v * t * t),
                         scale: r * (1. - t),
@@ -272,11 +274,12 @@ pub(super) fn create(id: String, origin: Position, preset: Preset) -> Result<Doc
     // Keep all sources explicit; a preset does not add a private evaluator.
     p.id = id.clone();
     let document = Document {
-        version: VERSION,
+        version: 1,
         space_version: crate::world_space::VERSION,
         id,
         revision: 1,
         origin,
+        domain: None,
         pieces: vec![p],
     };
     document.validate()?;

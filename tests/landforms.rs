@@ -109,6 +109,7 @@ fn actual_overhangs_vertical_cliffs_caps_and_cavities_survive_native_triangulati
 #[test]
 fn manual_authorship_codec_and_late_errors_preserve_source_and_format_boundaries() {
     let mut d = Document {
+        domain: None,
         version: 1,
         space_version: 1,
         id: "authored".into(),
@@ -131,11 +132,13 @@ fn manual_authorship_codec_and_late_errors_preserve_source_and_format_boundaries
             ],
             sections: vec![
                 Section {
+                    radial_scales: Vec::new(),
                     at: 0.,
                     offset: [0.; 2],
                     scale: 1.,
                 },
                 Section {
+                    radial_scales: Vec::new(),
                     at: 5.,
                     offset: [0.; 2],
                     scale: 1.,
@@ -173,11 +176,13 @@ fn manual_authorship_codec_and_late_errors_preserve_source_and_format_boundaries
                     id: "manual".into(),
                     sections: vec![
                         Section {
+                            radial_scales: Vec::new(),
                             at: 0.,
                             offset: [0.; 2],
                             scale: 1.
                         },
                         Section {
+                            radial_scales: Vec::new(),
                             at: 8.,
                             offset: [1., 0.],
                             scale: 1.
@@ -199,11 +204,13 @@ fn manual_authorship_codec_and_late_errors_preserve_source_and_format_boundaries
             id: "manual".into(),
             sections: vec![
                 Section {
+                    radial_scales: Vec::new(),
                     at: 0.,
                     offset: [0.; 2],
                     scale: 1.,
                 },
                 Section {
+                    radial_scales: Vec::new(),
                     at: 8.,
                     offset: [1., 0.],
                     scale: 1.,
@@ -238,6 +245,7 @@ fn manual_authorship_codec_and_late_errors_preserve_source_and_format_boundaries
     invalid.pieces[0].sections.insert(
         1,
         Section {
+            radial_scales: Vec::new(),
             at: 0.,
             offset: [0.; 2],
             scale: 0.5,
@@ -257,6 +265,7 @@ fn manual_authorship_codec_and_late_errors_preserve_source_and_format_boundaries
     piece.profile = vec![[-1., -1.], [1., -1.], [0., 1.]];
     piece.sections = (0..128)
         .map(|i| Section {
+            radial_scales: Vec::new(),
             at: f64::from(i),
             offset: [if i % 2 == 0 { -5. } else { 5. }, 0.],
             scale: 1.,
