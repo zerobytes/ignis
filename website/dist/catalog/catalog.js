@@ -1,0 +1,85 @@
+const $=id=>document.getElementById(id);
+const copy={
+ en:{skip:'Skip to collection',engine:'The engine ↗',contribute:'Contribute ↗',eyebrow:'THE IGNIS ASSET COLLECTION',title:'A material\nbeginning.',free:'FREE TO CREATE WITH.',intro:'The surface is just the start. Explore materials, make them your own, and give your next idea a place to begin.',browse:'Explore the collection',nativeImage:'NATIVE ENGINE CAPTURE',live:'IGNIS · LIVE WEBGPU',activate:'Explore in 3D',localGPU:'Rendered on your device. Powered by Ignis.',hintStart:'Activate the preview to turn this material in your hands.',hintLive:'Drag to rotate. Scroll to zoom. Arrow keys and + / − work too.',loading:'Preparing your material…',unsupported:'Your browser does not offer WebGPU here. You can still explore the native captures and download every source.',previewError:'The interactive preview could not start. The native capture and source download remain available.',retry:'Try the 3D preview again',license:'License',author:'Created by',sourceSize:'Editable source',version:'Version',shape:'A DIFFERENT PERSPECTIVE',sphere:'Sphere',cube:'Cube',plane:'Plane',light:'TURN THE LIGHT',reset:'↺ Reset view',download:'Download material',copyCredit:'Copy attribution',copied:'Attribution copied.',copyError:'Copy is unavailable. Attribution is in the source record linked below.',recipeNote:'An editable procedural recipe. Generate fixed maps or keep it live in a compatible Ignis editor.',aboutPreview:'About this preview',previewNote:'The 3D preview runs the same WGSL material shaders and GPU data packed by Ignis. This first browser host previews opaque materials with a directional light. It does not run the complete editor, simulation, or all engine effects.',viewSource:'View source and compatibility ↗',collectionEyebrow:'A GROWING COLLECTION',collectionTitle:'Find your starting point.',searchLabel:'Search materials',all:'All materials',marble:'Marble',rock:'Stone',basic:'Essentials',empty:'No materials found. Try another word or family.',commons:'BUILT TO BE SHARED.',contributionTitle:'A small collection.\nAn open possibility.',contributionBody:'Keep the source. Give credit. Make something new. Every material here is free to use, including commercially, under its stated license.',contributionLink:'Bring something to the collection',footer:'THE SPARK IS YOURS. THE POSSIBILITIES ARE AHEAD.',count:n=>`${n} MATERIAL${n===1?'':'S'}`,catalogError:'The collection could not load. Visit the catalog repository to browse and download the sources.',canvasLabel:'Interactive material preview. Arrow keys rotate, plus and minus zoom, R resets.',marbleDescription:'Mineral veins, fine grain and an editable palette. A small recipe with room for your own variations.',rockDescription:'Continuous stone, subtle fissures and mineral variation. The larger form belongs to your mesh.',basicDescription:'A layered procedural surface. Keep the source and explore a different finish.'},
+ pt:{skip:'Pular para a coleção',engine:'A engine ↗',contribute:'Contribuir ↗',eyebrow:'A COLEÇÃO DE ASSETS DA IGNIS',title:'Um começo\ncom matéria.',free:'LIBERDADE PARA CRIAR.',intro:'A superfície é só o começo. Explore materiais, dê a eles a sua forma e encontre um ponto de partida para a próxima ideia.',browse:'Explorar a coleção',nativeImage:'CAPTURA NATIVA DA ENGINE',live:'IGNIS · WEBGPU AO VIVO',activate:'Explorar em 3D',localGPU:'Renderizado no seu dispositivo. Pela Ignis.',hintStart:'Ative a prévia para observar este material de todos os lados.',hintLive:'Arraste para girar. Use a roda para aproximar. Setas e + / − também funcionam.',loading:'Preparando seu material…',unsupported:'Seu navegador não oferece WebGPU aqui. Você pode explorar as capturas nativas e baixar todas as fontes.',previewError:'Não foi possível iniciar a prévia interativa. A captura nativa e o download continuam disponíveis.',retry:'Tentar a prévia 3D novamente',license:'Licença',author:'Criado por',sourceSize:'Fonte editável',version:'Versão',shape:'UMA NOVA PERSPECTIVA',sphere:'Esfera',cube:'Cubo',plane:'Plano',light:'MOVA A LUZ',reset:'↺ Restaurar vista',download:'Baixar material',copyCredit:'Copiar créditos',copied:'Créditos copiados.',copyError:'A cópia não está disponível. Os créditos estão no registro da fonte abaixo.',recipeNote:'Uma receita procedural editável. Gere mapas fixos ou mantenha a avaliação em runtime no editor Ignis compatível.',aboutPreview:'Sobre esta prévia',previewNote:'A prévia 3D executa os mesmos shaders WGSL de materiais e dados GPU empacotados pela Ignis. Este primeiro backend web apresenta materiais opacos com luz direcional. Ele não executa o editor completo, a simulação ou todos os efeitos da engine.',viewSource:'Ver fonte e compatibilidade ↗',collectionEyebrow:'UMA COLEÇÃO EM CRESCIMENTO',collectionTitle:'Encontre seu ponto de partida.',searchLabel:'Buscar materiais',all:'Todos',marble:'Mármore',rock:'Pedra',basic:'Essenciais',empty:'Nenhum material encontrado. Tente outra palavra ou família.',commons:'FEITO PARA COMPARTILHAR.',contributionTitle:'Uma pequena coleção.\nUma possibilidade aberta.',contributionBody:'Preserve a fonte. Dê os créditos. Crie algo novo. Todos os materiais aqui podem ser usados gratuitamente, inclusive comercialmente, conforme a licença indicada.',contributionLink:'Traga algo para a coleção',footer:'A CENTELHA É SUA. AS POSSIBILIDADES ESTÃO À FRENTE.',count:n=>`${n} ${n===1?'MATERIAL':'MATERIAIS'}`,catalogError:'Não foi possível carregar a coleção. Acesse o repositório do catálogo para consultar e baixar as fontes.',canvasLabel:'Prévia interativa do material. Setas giram, mais e menos aproximam, R restaura.',marbleDescription:'Veios minerais, grão fino e uma paleta editável. Uma pequena receita com espaço para suas próprias variações.',rockDescription:'Pedra contínua, fissuras sutis e variação mineral. A forma maior pertence à sua malha.',basicDescription:'Uma superfície procedural em camadas. Preserve a fonte e explore um novo acabamento.'}
+};
+const initial=new URL(location.href);
+let language=initial.searchParams.get('lang');
+if(!Object.hasOwn(copy,language)){try{language=localStorage.getItem('ignis-language');}catch{}}
+if(!Object.hasOwn(copy,language))language=navigator.language.startsWith('pt')?'pt':'en';
+let catalog,assets=[],selected,query='',family='all',active=false,renderer=null,initializing=null,request=null,serial=0,phase='static',lastError=null;
+const d=()=>copy[language];
+const familyOf=asset=>asset.tags.find(t=>['marble','rock','basic'].includes(t))||'basic';
+const names={pt:{'Emerald Gold':'Esmeralda · ouro','Emerald White Gold':'Esmeralda · branco e ouro','Verde Breccia':'Verde brechado','Alpine':'Alpina','Fractured':'Fraturada','Ochre':'Ocre','Sedimentary':'Sedimentar','Ceramic':'Cerâmica','Painted Metal':'Metal pintado','Stone':'Pedra','Wood':'Madeira'}};
+const name=asset=>names[language]?.[asset.name]||asset.name;
+function feedback(){const key=phase==='live'?'hintLive':phase==='loading'?'loading':lastError?.message==='WEBGPU_UNAVAILABLE'?'unsupported':lastError?'previewError':'hintStart';$('viewer-status').textContent=d()[key];$('renderer-mode').textContent=d()[phase==='live'?'live':'nativeImage'];$('start-preview').querySelector('[data-text]').textContent=d()[lastError?'retry':'activate'];}
+function setLanguage(next,persist=true){
+ language=Object.hasOwn(copy,next)?next:'en';document.documentElement.lang=language==='pt'?'pt-BR':'en';document.title=language==='pt'?'Catálogo Ignis — Um começo com matéria':'Ignis Catalog — A material beginning';
+ document.querySelectorAll('[data-text]').forEach(el=>{el.textContent=d()[el.dataset.text];});document.querySelectorAll('[data-language]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.language===language)));
+ $('search').placeholder=d().searchLabel;$('preview').setAttribute('aria-label',d().canvasLabel);$('families').setAttribute('aria-label',d().all);
+ for(const id of ['home-link','footer-home'])$(id).href=`../index.html?lang=${language}`;
+ if(selected){selectionUI();renderGrid();}feedback();
+ const url=new URL(location.href);url.searchParams.set('lang',language);history.replaceState(null,'',url);
+ if(persist)try{localStorage.setItem('ignis-language',language);}catch{}
+}
+function selectionUI(){
+ const type=familyOf(selected);$('selected-name').textContent=name(selected);$('selected-family').textContent=`${d()[type].toUpperCase()} / ${String(assets.indexOf(selected)+1).padStart(3,'0')}`;
+ $('selected-description').textContent=d()[`${type}Description`];$('selected-version').textContent=selected.version;$('selected-size').textContent=`${(selected.files[0].bytes/1024).toFixed(1)} KiB · .ignis-material`;
+ $('fallback').src=`data/thumbs/${selected.id}.jpg`;$('fallback').alt=`${name(selected)} — ${d().nativeImage.toLowerCase()}`;
+ $('download').href=`data/sources/${selected.id}.ignis-material`;$('download').download=`${selected.id}.ignis-material`;
+ $('asset-source').href=`https://github.com/zerobytes/ignis-catalog/blob/${catalog.source_revision}/${selected.manifest}`;
+ document.querySelector('.viewer-bottom>.micro').textContent=`${String(assets.indexOf(selected)+1).padStart(2,'0')} / ${assets.length}`;
+}
+function renderGrid(){
+ const match=query.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+ const filtered=assets.filter(a=>(family==='all'||familyOf(a)===family)&&`${a.name} ${names.pt[a.name]||''} ${a.tags.join(' ')} ${copy.en[familyOf(a)]} ${copy.pt[familyOf(a)]}`.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().includes(match));
+ const fragment=document.createDocumentFragment();
+ for(const asset of filtered){
+  const article=document.createElement('article');article.className='card';const button=document.createElement('button');button.type='button';button.setAttribute('aria-pressed',String(asset===selected));button.dataset.asset=asset.id;
+  button.innerHTML='<div class="card-image"><img loading="lazy" decoding="async" width="256" height="256" alt=""><span class="family-tag"></span><span class="card-arrow" aria-hidden="true">↗</span></div><span class="card-body"><span class="card-title"></span><span class="card-meta"><span>CC BY 4.0</span><span>IGNIS · EDITABLE</span></span></span>';
+  button.querySelector('img').src=`data/thumbs/${asset.id}.jpg`;button.querySelector('.family-tag').textContent=d()[familyOf(asset)];button.querySelector('.card-title').textContent=name(asset);button.addEventListener('click',()=>choose(asset));article.append(button);fragment.append(article);
+ }
+ $('grid').replaceChildren(fragment);$('grid').setAttribute('aria-busy','false');$('count').textContent=d().count(filtered.length);$('empty').hidden=!!filtered.length;
+}
+function fallback(error){
+ lastError=error;phase='static';$('preview').hidden=true;$('fallback').hidden=false;$('start-panel').hidden=false;$('start-preview').disabled=false;
+ feedback();if(error)console.warn('Ignis preview:',error.message);
+}
+async function showPreview(){
+ const id=++serial;request?.abort();request=new AbortController();const signal=request.signal;phase='loading';lastError=null;
+ $('start-preview').disabled=true;$('preview').hidden=true;$('fallback').hidden=false;$('start-panel').hidden=false;feedback();
+ try{
+  if(!renderer){
+   if(!initializing)initializing=import('./renderer.js').then(({IgnisPreview})=>IgnisPreview.create($('preview'),catalog,error=>{renderer=null;initializing=null;fallback(error);}));
+   renderer=await initializing;
+  }
+  if(id!==serial)return;
+  await renderer.select(selected,signal);if(id!==serial)return;
+  renderer.setShape(document.querySelector('[data-shape][aria-pressed=true]').dataset.shape);renderer.setLight(Number($('light').value));
+  phase='live';$('preview').hidden=false;$('fallback').hidden=true;$('start-panel').hidden=true;$('start-preview').disabled=false;renderer.invalidate();feedback();
+ }catch(error){if(error.name!=='AbortError'&&id===serial){if(renderer?.disposed){renderer=null;initializing=null;}if(!renderer)initializing=null;fallback(error);}}
+}
+function choose(asset){
+ selected=asset;lastError=null;selectionUI();document.querySelectorAll('[data-asset]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.asset===asset.id)));
+ document.querySelector('.workspace').scrollIntoView({block:'start',behavior:'instant'});
+ const url=new URL(location.href);url.searchParams.set('asset',asset.id);history.replaceState(null,'',url);
+ if(active)showPreview();else feedback();
+}
+document.querySelectorAll('[data-language]').forEach(b=>b.addEventListener('click',()=>setLanguage(b.dataset.language)));
+document.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>{family=b.dataset.family;document.querySelectorAll('[data-family]').forEach(el=>el.setAttribute('aria-pressed',String(el===b)));renderGrid();}));
+document.querySelectorAll('[data-shape]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-shape]').forEach(el=>el.setAttribute('aria-pressed',String(el===b)));if(!active){active=true;showPreview();}else renderer?.setShape(b.dataset.shape);}));
+$('search').addEventListener('input',e=>{query=e.target.value;renderGrid();});$('light').addEventListener('input',e=>{if(!active){active=true;showPreview();}else renderer?.setLight(Number(e.target.value));});$('reset-view').addEventListener('click',()=>renderer?.reset());
+$('start-preview').addEventListener('click',()=>{active=true;showPreview();});
+$('copy-credit').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(selected.attribution);$('viewer-status').textContent=d().copied;}catch{$('viewer-status').textContent=d().copyError;}});
+window.addEventListener('pagehide',()=>{request?.abort();renderer?.destroy();renderer=null;initializing=null;phase='static';});
+window.addEventListener('pageshow',event=>{if(event.persisted)fallback(null);});
+Object.defineProperty(window,'ignisCatalog',{get:()=>Object.freeze({phase,selected:selected?.id,sourceRevision:catalog?.source_revision,visibleCards:$('grid').children.length,family,language,renderer:renderer?.diagnostics()||null})});
+setLanguage(language,false);
+try{
+ const response=await fetch('data/catalog.json');if(!response.ok)throw new Error(`HTTP ${response.status}`);catalog=await response.json();
+ if(catalog.format_version!==1||!Array.isArray(catalog.assets)||catalog.assets.length>500||!/^[a-f0-9]{40}$/.test(catalog.source_revision))throw new Error('Invalid catalog');
+ assets=catalog.assets;
+ for(const a of assets)if(!/^[a-z0-9.-]+$/.test(a.id)||!a.preview||a.license!=='CC-BY-4.0')throw new Error('Unsupported catalog record');
+ selected=assets.find(a=>a.id===initial.searchParams.get('asset'))||assets.find(a=>a.id==='ignis.material.marble.emerald-gold')||assets[0];
+ selectionUI();renderGrid();
+}catch(error){$('catalog-error').hidden=false;$('catalog-error').textContent=d().catalogError;$('grid').setAttribute('aria-busy','false');$('start-preview').disabled=true;console.warn('Ignis catalog:',error.message);}

@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Build the website's pinned catalog snapshot using the native Ignis exporter."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import shutil
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--catalog', type=Path, required=True)
+    parser.add_argument('--exporter', type=Path, default=ROOT / 'target/release/examples/export_web_materials')
+    args = parser.parse_args()
+    catalog = args.catalog.resolve()
+    subprocess.run(['python3', str(catalog / 'tools/catalog.py'), 'build', '--check'], check=True)
+    if subprocess.check_output(['git', 'status', '--porcelain'], cwd=catalog).strip():
+        raise RuntimeError('Catalog checkout must be committed and clean')
+    revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=catalog, text=True).strip()
+    data = json.loads((catalog / 'catalog.json').read_text())
+    records = data['assets']
+    if not 1 <= len(records) <= 500:
+        raise RuntimeError('Unsupported catalog size')
+    stage = ROOT / 'website/.catalog-stage'
+    stage.mkdir()  # Stable staging path also refuses overlapping builders.
+    try:
+        output = stage / 'data'
+        (output / 'sources').mkdir(parents=True)
+        (output / 'thumbs').mkdir()
+        inputs = []
+        for asset in records:
+            if asset['kind'] != 'material' or asset['license'] != 'CC-BY-4.0':
+                raise RuntimeError('Preview1 requires a supported, explicitly licensed material')
+            source_record = next(f for f in asset['files'] if f['role'] == 'source')
+            source = (catalog / source_record['path']).resolve()
+            if not source.is_relative_to(catalog):
+                raise RuntimeError('Escaping catalog source')
+            payload = source.read_bytes()
+            if len(payload) != source_record['bytes'] or sha(payload) != source_record['sha256']:
+                raise RuntimeError('Catalog source integrity failure')
+            asset_id = asset['id']
+            source_copy = output / 'sources' / f'{asset_id}.ignis-material'
+            source_copy.write_bytes(payload)
+            inputs.append({'id': asset_id, 'path': str(source_copy)})
+            family = next(t for t in asset['tags'] if t in {'basic', 'marble', 'rock'})
+            stem = source.stem
+            if family == 'basic':
+                image = ROOT / f'artifacts/material-recipes/artifacts/detail-{stem.replace("-", "_")}.png'
+                gallery_source = ROOT / f'artifacts/material-recipes/library/{stem.replace("-", "_")}-0.ignis-material'
+            else:
+                image = ROOT / f'artifacts/{family}/artifacts/{stem}.png'
+                gallery_source = ROOT / f'artifacts/{family}/library/{source.name}'
+            if json.loads(gallery_source.read_bytes()) != json.loads(payload):
+                raise RuntimeError(f'Gallery source differs from catalog: {asset_id}')
+            target = output / 'thumbs' / f'{asset_id}.jpg'
+            subprocess.run(['sips', '-Z', '320', '-s', 'format', 'jpeg', '-s', 'formatOptions', '82', str(image), '--out', str(target)], check=True, stdout=subprocess.DEVNULL)
+            recipe = json.loads(payload)['material']['procedural']['recipe']
+            asset['preview'] = {'plane': recipe['plane'], 'thumbnail_source': str(image.relative_to(ROOT)), 'thumbnail_source_sha256': sha(image.read_bytes()), 'thumbnail_sha256': sha(target.read_bytes())}
+        input_file = stage / 'input.json'
+        input_file.write_text(json.dumps(inputs))
+        subprocess.run([str(args.exporter.resolve()), str(input_file), str(output)], check=True)
+        shader = (ROOT / 'src/scene.wgsl').read_text() + '\n' + (ROOT / 'src/particles.wgsl').read_text()
+        if (output / 'ignis.wgsl').read_text() != shader:
+            raise RuntimeError('Exporter was compiled with a different shader; rebuild it')
+        for asset in records:
+            packet = (output / f'{asset["id"]}.bin').read_bytes()
+            asset['preview'].update(packet_sha256=sha(packet), packet_bytes=len(packet))
+        (output / 'packets.json').unlink()
+        native_files = ['src/materials.rs', 'src/materials/preview.rs', 'src/materials/recipe.rs', 'src/materials/marble.rs', 'src/materials/rock.rs', 'src/scene.wgsl', 'src/particles.wgsl']
+        data.update(source_revision=revision, source_repository='https://github.com/zerobytes/ignis-catalog', shader_sha256=sha(shader.encode()), renderer_source={'repository': 'https://github.com/zerobytes/ignis', 'local_snapshot': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'source_state': 'working-tree', 'source_sha256': {p: sha((ROOT / p).read_bytes()) for p in native_files}, 'scope': 'native-material-shader-webgpu-host'})
+        (output / 'catalog.json').write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+        shutil.copyfile(catalog / 'LICENSES/CC-BY-4.0.txt', output / 'LICENSE.txt')
+        shutil.copyfile(ROOT / 'LICENSE', output / 'engine-license.txt')
+        destination = ROOT / 'website/dist/catalog/data'
+        if destination.exists():
+            shutil.rmtree(destination)
+        output.rename(destination)
+        total = sum(p.stat().st_size for p in destination.rglob('*') if p.is_file())
+        print(f'Built {len(records)} assets from catalog {revision}: {total:,} bytes')
+    finally:
+        shutil.rmtree(stage)
+
+
+if __name__ == '__main__':
+    main()
