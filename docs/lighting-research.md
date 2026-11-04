@@ -4,6 +4,11 @@ Initial source audit: 2026-11-04. This is an investigation and experimental
 contract, not a claim of improved runtime images or measured speedups.
 Continue the existing laboratory in `runtime-visual-quality.md`.
 
+The [correlated literature review](lighting-literature.md) extends this audit
+with 2025-2026 research, current Lumen comparison conditions, a residual-based
+research hypothesis and experiments that can falsify it. Its proposed estimator
+laboratory complements the native lighting ablations below.
+
 ## Mathematical target
 
 For opaque surfaces, outgoing radiance is
