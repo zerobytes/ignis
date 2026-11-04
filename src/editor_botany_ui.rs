@@ -9,6 +9,7 @@ pub(super) struct State {
     filter: String,
     edit: OrganEdit,
     organ: Option<String>,
+    organ_revision: Option<u64>,
     physics: dynamics::Settings,
     root_stem: String,
     roots: crate::botany::roots::Settings,
@@ -28,6 +29,7 @@ impl Default for State {
             filter: String::new(),
             edit: Default::default(),
             organ: None,
+            organ_revision: None,
             physics: Default::default(),
             root_stem: String::new(),
             roots: Default::default(),
@@ -196,7 +198,7 @@ pub(super) fn properties(
             }
         });
         if let Some(id)=&service.botany.organ {
-            if state.organ.as_ref()!=Some(id){state.organ=Some(id.clone());state.edit=recipe.edits.get(id).cloned().unwrap_or_default();}
+            if state.organ.as_ref()!=Some(id)||state.organ_revision!=Some(service.engine.revision){state.organ=Some(id.clone());state.organ_revision=Some(service.engine.revision);state.edit=recipe.edits.get(id).cloned().unwrap_or_default();}
             if let Some(stage)=draft.source.organs.iter().find(|o|o.id==*id).and_then(|o|o.life.as_ref()).filter(|life|life.role==crate::botany::development::Role::Frond).map(|life|life.growth_stage) {
                 let mut value=stage;
                 let response=ui.add(egui::Slider::new(&mut value,0.1..=1.).text("Estágio desta fronde: jovem → desenvolvida"));
@@ -212,6 +214,14 @@ pub(super) fn properties(
             ui.add(egui::Slider::new(&mut state.edit.length,0.1..=5.).text("Comprimento do órgão"));
             ui.add(egui::Slider::new(&mut state.edit.width,0.1..=5.).text("Largura do órgão"));
             ui.add(egui::Slider::new(&mut state.edit.radius,0.1..=5.).text(if recipe.source.organs.iter().any(|o|o.id==*id&&matches!(o.shape,crate::botany::Shape::Blade{..})){"Espessura da folha"}else{"Raio do órgão"}));
+            if let Some(crate::botany::Shape::Axis{radius,tip_ratio,..})=recipe.source.organs.iter().find(|o|o.id==*id).map(|o|&o.shape)
+                && let Some(action)=crate::botany::wood_surface::ui::editor(ui,&mut state.edit,*radius,*tip_ratio) {
+                use crate::botany::wood_surface::ui::Action;
+                if matches!(action,Action::Cancel){state.edit=recipe.edits.get(id).cloned().unwrap_or_default();send(commands,Op::CancelPreview);}else {
+                    let mut r=recipe.clone();r.version=r.version.max(10);r.edits.insert(id.clone(),state.edit.clone());
+                    send(commands,match action {Action::Preview=>Op::Preview{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Apply=>Op::Publish{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Cancel=>unreachable!()});
+                }
+            }
             ui.collapsing("Curva de crescimento do galho",|ui|{
                 ui.label("Curvatura na base / ponta (rad/m), nos dois eixos locais");
                 for (label,values) in [("Base",&mut state.edit.deformation.base),("Ponta",&mut state.edit.deformation.tip)] {

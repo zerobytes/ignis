@@ -32,6 +32,8 @@ pub struct Pose {
     pub flare: f64,
     pub stiffness: f64,
     pub section: Option<Arc<super::root_sections::Section>>,
+    pub wood_surface: Option<Arc<super::wood_surface::Surface>>,
+    pub surface_scale: f64,
     pub flutes: Option<Arc<super::root_sections::Flutes>>,
 }
 impl Pose {
@@ -368,6 +370,7 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
                 })
                 .collect();
         }
+        let steps = edit.wood_surface.as_ref().map_or(steps, |s| s.samples as usize);
         let samples = frames(
             &final_points,
             transform * (rotation * initial[0].n),
@@ -422,6 +425,11 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
             flare,
             stiffness,
             section,
+            wood_surface: edit.wood_surface.clone().map(Arc::new),
+            surface_scale: match o.shape {
+                Shape::Axis { radius: r, .. } => radius / r,
+                _ => 1.,
+            },
             flutes: None,
         });
     }
@@ -1139,7 +1147,7 @@ fn tube(
 ) -> Result<()> {
     let source = &recipe.source;
     let sides = super::root_sections::sides(pose, recipe);
-    let steps = recipe.settings.axis_samples as usize;
+    let steps = pose.wood_surface.as_ref().map_or(recipe.settings.axis_samples as usize, |s| s.samples as usize);
     let start = joints.iter().find_map(|j| j.incoming(index)).unwrap_or(0.);
     let end = joints
         .iter()
@@ -1534,7 +1542,8 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         .iter()
         .map(|p| {
             if p.width == 0. {
-                (recipe.settings.axis_samples as usize + 1) * super::root_sections::sides(p, recipe)
+                (p.wood_surface.as_ref().map_or(recipe.settings.axis_samples as usize, |s| s.samples as usize) + 1)
+                    * super::root_sections::sides(p, recipe)
                     + 2
             } else {
                 if matches!(

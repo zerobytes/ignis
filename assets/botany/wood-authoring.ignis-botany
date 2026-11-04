@@ -1,0 +1,407 @@
+{
+  "version": 10,
+  "prefix": "woodlab",
+  "source": {
+    "version": 9,
+    "name": "Neutral woody authoring specimen",
+    "seed": 147,
+    "organs": [
+      {
+        "id": "trunk",
+        "parent": null,
+        "insertion": 0,
+        "path": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0.1,
+            2,
+            0
+          ],
+          [
+            -0.15,
+            5,
+            0.1
+          ],
+          [
+            0.25,
+            8,
+            0
+          ]
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "twist": 0,
+        "shape": {
+          "kind": "axis",
+          "radius": 2.5,
+          "tip_ratio": 0.84,
+          "ellipticity": 1
+        },
+        "connection": "graft",
+        "birth": 0,
+        "duration": 1,
+        "density": 650,
+        "young": 100000000.0,
+        "shear": 20000000.0
+      },
+      {
+        "id": "ascending",
+        "parent": "trunk",
+        "insertion": 1,
+        "path": [
+          [
+            0.25,
+            8,
+            0
+          ],
+          [
+            1,
+            10,
+            0.3
+          ],
+          [
+            1.2,
+            14,
+            1
+          ],
+          [
+            2.6,
+            17,
+            0.2
+          ]
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "twist": 0,
+        "shape": {
+          "kind": "axis",
+          "radius": 1.5,
+          "tip_ratio": 0.3,
+          "ellipticity": 1
+        },
+        "connection": "fork",
+        "birth": 0,
+        "duration": 1,
+        "density": 650,
+        "young": 100000000.0,
+        "shear": 20000000.0
+      },
+      {
+        "id": "lateral",
+        "parent": "trunk",
+        "insertion": 1,
+        "path": [
+          [
+            0.25,
+            8,
+            0
+          ],
+          [
+            -2,
+            8.8,
+            -0.2
+          ],
+          [
+            -5,
+            9,
+            0
+          ],
+          [
+            -8,
+            10.5,
+            1
+          ]
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "twist": 0,
+        "shape": {
+          "kind": "axis",
+          "radius": 1.35,
+          "tip_ratio": 0.25,
+          "ellipticity": 1
+        },
+        "connection": "fork",
+        "birth": 0,
+        "duration": 1,
+        "density": 650,
+        "young": 100000000.0,
+        "shear": 20000000.0
+      }
+    ]
+  },
+  "settings": {
+    "axis_samples": 32,
+    "sides": 16,
+    "bark_color": [
+      0.48,
+      0.48,
+      0.48
+    ],
+    "leaf_color": [
+      0.48,
+      0.48,
+      0.48
+    ]
+  },
+  "edits": {
+    "trunk": {
+      "wood_surface": {
+        "sections": [
+          {
+            "id": "base",
+            "u": 0,
+            "angle": 0,
+            "offset": [
+              0,
+              0
+            ],
+            "radii": [
+              2.915,
+              2.491,
+              2.7825,
+              2.385,
+              2.8355,
+              2.544,
+              2.7295,
+              2.4645,
+              2.703,
+              2.5175,
+              2.862,
+              2.438,
+              2.756,
+              2.544,
+              2.703,
+              2.597
+            ]
+          },
+          {
+            "id": "lower",
+            "u": 0.18,
+            "angle": 0.04,
+            "offset": [
+              0,
+              0
+            ],
+            "radii": [
+              2.75,
+              2.35,
+              2.625,
+              2.25,
+              2.675,
+              2.4,
+              2.575,
+              2.325,
+              2.55,
+              2.375,
+              2.7,
+              2.3,
+              2.6,
+              2.4,
+              2.55,
+              2.45
+            ]
+          },
+          {
+            "id": "middle",
+            "u": 0.55,
+            "angle": 0.12,
+            "offset": [
+              0.08,
+              -0.1
+            ],
+            "radii": [
+              2.618,
+              2.2372,
+              2.499,
+              2.142,
+              2.5466,
+              2.2848,
+              2.4514,
+              2.2134,
+              2.4276,
+              2.261,
+              2.5704,
+              2.1896,
+              2.4752,
+              2.2848,
+              2.4276,
+              2.3324
+            ]
+          },
+          {
+            "id": "upper",
+            "u": 1,
+            "angle": 0.25,
+            "offset": [
+              0,
+              0
+            ],
+            "radii": [
+              2.365,
+              2.021,
+              2.2575,
+              1.935,
+              2.3005,
+              2.064,
+              2.2145,
+              1.9995,
+              2.193,
+              2.0425,
+              2.322,
+              1.978,
+              2.236,
+              2.064,
+              2.193,
+              2.107
+            ]
+          }
+        ],
+        "relief": [
+          {
+            "id": "cord0",
+            "enabled": true,
+            "path": [
+              {
+                "u": 0,
+                "angle": 0.1
+              },
+              {
+                "u": 0.3,
+                "angle": 0.26
+              },
+              {
+                "u": 0.65,
+                "angle": -0.01999999999999999
+              },
+              {
+                "u": 1,
+                "angle": 0.44999999999999996
+              }
+            ],
+            "height": 0.26,
+            "width": 0.75,
+            "end_fade": 0.13
+          },
+          {
+            "id": "valley0",
+            "enabled": true,
+            "path": [
+              {
+                "u": 0,
+                "angle": 0.9
+              },
+              {
+                "u": 0.3,
+                "angle": 1.06
+              },
+              {
+                "u": 0.65,
+                "angle": 0.78
+              },
+              {
+                "u": 1,
+                "angle": 1.25
+              }
+            ],
+            "height": -0.32,
+            "width": 0.6,
+            "end_fade": 0.13
+          },
+          {
+            "id": "cord1",
+            "enabled": true,
+            "path": [
+              {
+                "u": 0,
+                "angle": 2.3
+              },
+              {
+                "u": 0.3,
+                "angle": 2.46
+              },
+              {
+                "u": 0.65,
+                "angle": 2.1799999999999997
+              },
+              {
+                "u": 1,
+                "angle": 2.65
+              }
+            ],
+            "height": 0.3,
+            "width": 0.65,
+            "end_fade": 0.13
+          },
+          {
+            "id": "valley1",
+            "enabled": true,
+            "path": [
+              {
+                "u": 0,
+                "angle": 3.5
+              },
+              {
+                "u": 0.3,
+                "angle": 3.66
+              },
+              {
+                "u": 0.65,
+                "angle": 3.38
+              },
+              {
+                "u": 1,
+                "angle": 3.85
+              }
+            ],
+            "height": -0.34,
+            "width": 0.6,
+            "end_fade": 0.13
+          },
+          {
+            "id": "cord2",
+            "enabled": true,
+            "path": [
+              {
+                "u": 0,
+                "angle": 4.8
+              },
+              {
+                "u": 0.3,
+                "angle": 4.96
+              },
+              {
+                "u": 0.65,
+                "angle": 4.68
+              },
+              {
+                "u": 1,
+                "angle": 5.1499999999999995
+              }
+            ],
+            "height": 0.24,
+            "width": 0.55,
+            "end_fade": 0.13
+          }
+        ],
+        "sides": 32,
+        "samples": 64
+      }
+    }
+  },
+  "pruned": [],
+  "manual": {}
+}

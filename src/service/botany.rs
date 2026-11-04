@@ -487,6 +487,9 @@ impl Service {
                 edit,
             } => {
                 let mut recipe = self.botanical_recipe(prefix)?;
+                if edit.wood_surface.is_some() {
+                    recipe.version = recipe.version.max(10);
+                }
                 recipe.edits.insert(organ.clone(), edit.clone());
                 self.botanical_publish(recipe, Policy::Preserve)
             }

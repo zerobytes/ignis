@@ -40,7 +40,7 @@ impl Flutes {
     }
 }
 pub fn shaped(p: &Pose) -> bool {
-    p.section.is_some()
+    p.section.is_some() || p.wood_surface.is_some()
 }
 pub fn material_section(p: &Pose, u: f64) -> bool {
     shaped(p)
@@ -72,7 +72,9 @@ impl Section {
     }
 }
 pub fn sides(p: &Pose, recipe: &Recipe) -> usize {
-    if shaped(p) {
+    if let Some(surface) = &p.wood_surface {
+        surface.sides as usize
+    } else if shaped(p) {
         (recipe.settings.sides as usize).max(12)
     } else {
         recipe.settings.sides as usize
@@ -81,7 +83,9 @@ pub fn sides(p: &Pose, recipe: &Recipe) -> usize {
 pub fn point(p: &Pose, source: &Source, u: f64, theta: f64) -> DVec3 {
     let f = p.at(u);
     let (a, b) = p.radius_at(source, u);
-    if let Some(section) = &p.section {
+    if let Some(surface) = &p.wood_surface {
+        surface.point(f, u, theta, p.surface_scale)
+    } else if let Some(section) = &p.section {
         section.point(f, a, theta)
     } else {
         f.p + f.n * (a * theta.cos()) + f.b() * (b * theta.sin())
@@ -91,10 +95,11 @@ pub fn area_bound(p: &Pose, source: &Source, u: f64) -> (f64, f64) {
     let f = p.at(u);
     let mut area = DVec3::ZERO;
     let mut bound: f64 = 0.;
-    let points: [DVec3; 24] = std::array::from_fn(|i| {
-        let q = point(p, source, u, std::f64::consts::TAU * i as f64 / 24.);
+    let count = p.wood_surface.as_ref().map_or(24, |s| 2 * s.sides as usize);
+    let points: Vec<DVec3> = (0..count).map(|i| {
+        let q = point(p, source, u, std::f64::consts::TAU * i as f64 / count as f64);
         p.flutes.as_ref().map_or(q, |f| f.warp(q)) - f.p
-    });
+    }).collect();
     for i in 0..points.len() {
         area += points[i].cross(points[(i + 1) % points.len()]);
         bound = bound.max(points[i].length());
@@ -102,6 +107,11 @@ pub fn area_bound(p: &Pose, source: &Source, u: f64) -> (f64, f64) {
     (area.dot(f.t).abs() * 0.5, bound)
 }
 pub fn center(p: &Pose, source: &Source, u: f64) -> DVec3 {
+    if let Some(surface) = &p.wood_surface {
+        let frame = p.at(u);
+        let offset = surface.offset(u);
+        return frame.p + (frame.n * offset[0] + frame.b() * offset[1]) * p.surface_scale;
+    }
     if !shaped(p) {
         return p.at(u).p;
     }
