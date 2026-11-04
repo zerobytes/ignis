@@ -131,3 +131,45 @@ dynamics used build `e9140564387683bd`; maximum reported attachment error was
 3.47e-18 m. The retained current executable is `target/release/ignis`; captures
 replace stable artifact paths, with no extra app bundle or binary copy created.
 GUI interaction and artistic acceptance of the new distribution remain separate.
+
+## Catalog publication — 2026-11-04
+
+The user approved publication of the revised palm and growth controls. Asset
+`ignis.mesh.tree.palmeirinha` version **1.1.0** is published at:
+
+- https://ignis.web.app/catalog/?lang=pt&asset=ignis.mesh.tree.palmeirinha
+- https://zerobytes.github.io/ignis/catalog/?lang=pt&asset=ignis.mesh.tree.palmeirinha
+- https://github.com/zerobytes/ignis-catalog/releases/tag/palmeirinha-v1.1.0
+
+Catalog metadata/thumbnail/index commit: `302b75243ff58957b9d0ac191c7f7036f4704607`.
+Public website commit: `e7c2c997725304b04a4fda317b56fae50b7c7537` (only the
+catalog index, runtime declaration, palm thumbnail and site fingerprint).
+Unrelated local native work was not pushed with this website release; the public
+website commit was based on public main and merged back into local development.
+The catalog records the local unpublished source snapshot and supplies the entire
+licensed botanical source in the ZIP. The engine retains its own separate license.
+
+Package: 9,391,155 bytes; SHA-256
+`2eed345b2b76617d85500df898c7af9237cd53c9f3fdcddca964bad497024233`.
+Preview: 1,440,564 bytes; SHA-256
+`037e0d03ff4ebc618ca6a5cb70bdd84bfd7542f3b396e75ce0d197656dde6ef1`.
+The full download has 178,488 vertices / 351,072 triangles; the labelled reduced
+preview has 50,976 vertices / 96,048 triangles. Native source9 / scene121 support
+is required for editing the packaged scene; browser preview and GLB are static.
+The original 1.0.0 remote release remains pinned and available.
+
+Validation: ZIP members/checksums, byte-identical canonical source, GLB header,
+packaged-scene native import, 11 catalog tests and 5 runtime-assembly tests passed.
+Both public release downloads matched their declared SHA-256 and byte counts.
+The paired deployment verified all 130 served file hashes on both hosts for
+static release `e7cf19a9c9f0c2e6370cfe5e0ff1820b9c3be53858a5e3afaf2d648175c1f25b`.
+Chrome showed palm version1.1.0 and successfully activated the native WebGPU mesh
+preview. This is not a claim of physical-device acceptance or a biological
+simulation in the portal.
+
+Current local outputs replace the existing palm ZIP/preview under
+`artifacts/catalog-meshes/`; the exporter remains at
+`target/release/examples/export_web_meshes`. Temporary raw export/import checks
+and exclusive web staging were removed. No extra app bundle was produced.
+Evidence: `palmeirinha-{verification,public-verification,publication}.json` and
+`palmeirinha-public-catalog.jpg` in that artifact directory.
