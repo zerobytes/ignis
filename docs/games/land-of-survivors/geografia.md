@@ -2,7 +2,7 @@
 
 Estudo inicial · 3 de novembro de 2026.
 
-O mundo será uma esfera finita do tamanho da Terra. Genshin Impact é a referência para a linguagem das paisagens e a relação entre relevo e exploração. A esfera-base já foi criada; esta etapa estuda formas e critérios antes de desenhar sua topografia.
+O mundo será uma esfera finita do tamanho da Terra. Genshin Impact é a referência para a linguagem das paisagens e a relação entre relevo e exploração, sem reproduzir suas localizações. O [primeiro protótipo original](prototipo-relevo.md) já permite comparar formas e diagnosticar ferramentas; este estudo continua orientando a composição geográfica mais ampla.
 
 ## Decisões do mundo
 
@@ -13,8 +13,8 @@ O mundo será uma esfera finita do tamanho da Terra. Genshin Impact é a referê
 | Diâmetro de referência | 12.742.000 m. |
 | Circunferência de referência | Aproximadamente 40.030 km, calculada por 2πR. |
 | Área de referência | Aproximadamente 510,064 milhões de km², calculada por 4πR². |
-| Fonte atual | Esfera uniforme, altura radial zero e nenhuma operação de relevo. |
-| Topografia | Próxima etapa, após o estudo e a composição geográfica. |
+| Fonte atual | Esfera com uma região original de estudo; o restante ainda sem composição continental. |
+| Topografia | Protótipo regional em avaliação; continentes e composição global pendentes. |
 
 O raio adotado corresponde à aproximação de 6.371 km apresentada pela [NASA](https://science.nasa.gov/resource/solar-system-sizes/). O jogo usa uma esfera, sem reproduzir o achatamento terrestre. Ter o tamanho da Terra não define porcentagem de oceanos, posição de continentes, clima, estações ou distribuição cultural.
 
@@ -97,6 +97,6 @@ Larguras, alturas, distâncias e densidade de marcos serão parâmetros de proje
 
 ## Limites desta etapa
 
-Apenas a esfera-base nativa foi construída. Não há relevo inspirado em Genshin aplicado, oceanos visuais, rios, biomas, vegetação, cidades, construções, fauna ou personagem artístico. Existe somente o observador técnico requerido pelo adapter planetário do Ignis.
+Foi construído um protótipo regional original para testar cristas, encostas, patamares, vale e passagem. A referência é a linguagem de relevo de Genshin, e não sua distribuição geográfica. Ainda não há oceanos visuais, água nos canais, biomas, vegetação, cidades, construções, fauna ou personagem artístico. Existe somente o observador técnico requerido pelo adapter planetário do Ignis.
 
 O material cinza da esfera é uma superfície de inspeção. Não representa água, rocha final ou direção de clima. A captura nativa comprova abertura e renderização da base, separadamente de desempenho, qualidade artística e aceitação do futuro terreno.

@@ -1,6 +1,6 @@
 # Land of Survivors GDD
 
-Versão 1.1 · 3 de novembro de 2026 · Desenvolvimento no Ignis.
+Versão 1.2 · 3 de novembro de 2026 · Desenvolvimento no Ignis.
 
 Land of Survivors é um RPG 3D de fantasia clássica, com exploração de um planeta esférico finito do tamanho da Terra, evolução do personagem, combate PvE/PvP e histórias com consequências permanentes. Preserva a lore, a história e as decisões não técnicas do projeto anterior. Toda a construção do jogo no Ignis será nova.
 
@@ -114,7 +114,7 @@ Terreno, biomas, árvores, rios, lagos, mar, ilhas e montanhas formarão uma geo
 
 A topografia terá Genshin Impact como referência de linguagem geográfica. Primeiro se estuda como suas regiões combinam planícies, cristas, vales, patamares, costas e bacias; depois se compõe uma geografia própria para Land of Survivors. Não se copia o mapa de Teyvat nem se amplia sua escala de maneira uniforme para preencher o planeta. O estudo e as decisões pendentes estão em [Geografia e relevo](geografia.md).
 
-O [projeto nativo](../../../games/land-of-survivors/README.md) já contém uma esfera-base própria. Continentes, oceanos, relevo e hidrografia ainda serão compostos após esse estudo. A etapa atual inclui somente o mundo, sem construir personagens, vilas, vegetação ou gameplay.
+O [projeto nativo](../../../games/land-of-survivors/README.md) contém uma região original de [protótipo de relevo](prototipo-relevo.md), comparando cristas suaves e patamares na mesma composição. Ela serve para avaliar a linguagem geográfica e as ferramentas, sem replicar localizações de Genshin. Continentes, oceanos e hidrografia global continuam pendentes; o restante da esfera ainda não tem composição geográfica. A etapa atual inclui somente o mundo, sem construir personagens, vilas, vegetação ou gameplay.
 
 Os biomas iniciais são floresta temperada, pradaria, floresta úmida, deserto, tundra, terras alpinas, costa e oceano. A cultura de um povo não é determinada automaticamente pelo bioma. A construção anterior desses ambientes não será reutilizada.
 

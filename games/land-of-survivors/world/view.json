@@ -1,8 +1,14 @@
 {
-  "distance_meters": 19113000,
-  "viewport": [1280, 800],
+  "distance_meters": 1400,
+  "yaw_degrees": -20,
+  "tilt_degrees": 42,
+  "viewport": [
+    1280,
+    800
+  ],
+  "max_tiles": 1536,
   "max_error_pixels": 2,
-  "max_tiles": 384,
-  "incremental_generation": false,
-  "atmosphere_optical_depth": 0.08
+  "incremental_generation": true,
+  "atmosphere_optical_depth": 0.18,
+  "atmosphere_height_meters": 8000
 }

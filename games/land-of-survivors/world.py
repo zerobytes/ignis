@@ -15,6 +15,7 @@ import verify_lab
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--open', action='store_true', help='Open the native globe window')
+    parser.add_argument('--view', choices=['region', 'ground', 'globe'], default='region')
     parser.add_argument('--binary', type=Path, default=ENGINE / 'target/release/ignis')
     args = parser.parse_args()
     binary = args.binary.resolve()
@@ -42,23 +43,28 @@ def main():
         client.call('set_execution_mode', mode='continuous')
         client.call('load_planet_runtime', path='world/runtime.json')
         view = json.loads((PROJECT / 'world/view.json').read_text())
+        if args.view == 'globe':
+            view.update(distance_meters=source['diameter_meters'] * 1.5)
+        elif args.view == 'ground':
+            view.update(distance_meters=0, yaw_degrees=-48, tilt_degrees=8)
         client.call('set_planet_view', view=view)
-        client.call('frame_planet_view')
+        if args.view == 'globe':
+            client.call('frame_planet_view')
         state = client.call('inspect_planet_view')
         if not state['all_six_faces_covered'] or not state['conforming_edges']:
             raise ValueError('The native globe does not have complete conforming coverage')
         if args.open:
-            print('World open. Mouse wheel: zoom; G: globe/surface; F: surface. Close the window to exit.', flush=True)
+            print('World open. Mouse wheel: zoom; G: globe/surface; F: surface; P: play/pause. Close the window to exit.', flush=True)
             client.process.wait()
         else:
-            # Query the unmodified sphere at poles and all cube-face directions.
+            # Confirm the native source remains readable at poles and cube-face directions.
             samples = client.call('query_planet', query={
                 'kind': 'sample', 'document': source,
                 'directions': [[1, 0, 0], [-1, 0, 0], [0, 1, 0],
                                [0, -1, 0], [0, 0, 1], [0, 0, -1]],
             })['samples']
             before = client.call('inspect_planet_runtime')
-            client.call('capture', path='artifacts/sphere-base.png', width=1280, height=800)
+            client.call('capture', path='artifacts/world.png', width=1280, height=800)
             after = client.call('inspect_planet_runtime')
             if after != before:
                 raise ValueError('Inspection changed the world simulation')

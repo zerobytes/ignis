@@ -1,14 +1,15 @@
 # Land of Survivors
 
-Projeto nativo Ignis, iniciado em 3 de novembro de 2026. Primeira etapa: mundo esférico finito do tamanho médio terrestre, antes da elaboração de relevo. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Estudo de geografia](../../docs/games/land-of-survivors/geografia.md).
+Projeto nativo Ignis, iniciado em 3 de novembro de 2026. Mundo esférico finito do tamanho médio terrestre, agora com uma região original de estudo de relevo. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Geografia](../../docs/games/land-of-survivors/geografia.md) · [Protótipo e ferramentas](../../docs/games/land-of-survivors/prototipo-relevo.md).
 
 ## Mundo atual
 
 - Raio de referência: 6.371 km; diâmetro: 12.742 km.
-- Fonte própria Planet2, com altura radial zero e nenhuma operação de relevo.
+- Fonte própria Planet2 com programa Surface1 de 26 nós: cristas, vales, picos e patamares em uma região de estudo.
 - Cena inicial sem piso plano, NPCs, construções ou assets anteriores.
 - Um observador técnico sem avatar, habilidades ou gameplay, exigido pelo runtime planetário atual.
-- Nenhuma geografia de Genshin aplicada; o estudo precede a topografia.
+- Geografia original. Genshin orienta a linguagem das formas; nenhuma localização ou mapa foi replicado.
+- O restante do planeta continua sem composição continental; não é um mundo geográfico concluído.
 
 `ignis.project.json` registra a cena inicial. `world/sphere.planet.json` é a fonte legível de autoria e `world/sphere.ignis-planet` sua persistência nativa. `runtime.json` configura a sessão planetária; `view.json` define a inspeção orbital. Divergências entre essas fontes são recusadas pelo verificador.
 
@@ -19,9 +20,11 @@ A partir da raiz do repositório Ignis:
 ```sh
 python3 games/land-of-survivors/world.py
 python3 games/land-of-survivors/world.py --open
+python3 games/land-of-survivors/world.py --open --view ground
+python3 games/land-of-survivors/world.py --open --view globe
 ```
 
-O primeiro comando abre o projeto pelo MCP sem janela, carrega a fonte e o runtime e grava a captura e o relatório correntes em `artifacts/` deste projeto. O segundo abre a janela nativa. Roda aproxima/afasta; G alterna globo/superfície e F volta à superfície. O mundo inicia pausado para inspeção.
+O primeiro comando abre o projeto pelo MCP sem janela, carrega a fonte e o runtime e grava `artifacts/world.png` e `artifacts/verification.json`. O segundo abre a janela nativa na vista regional. As opções seguintes começam no chão ou no globo. Roda aproxima/afasta; G alterna globo/superfície, F volta à superfície e P pausa/continua. O mundo inicia pausado para inspeção.
 
 Usa o executável corrente `target/release/ignis`, sem compilar ou copiar um aplicativo. `--binary` permite indicar outro executável explicitamente. Uma falha não substitui o projeto nem suas fontes. Não abre rede ou dispositivos de áudio.
 
@@ -31,10 +34,19 @@ O manifesto e a cena são reabertos nativamente. A fonte esférica também passa
 
 A cena-base e as fontes permanecem estáticas durante inspeção. A captura orbital mantém a simulação sem avanço. O adapter atual admite um observador e possui limites próprios de física, residência e atmosfera; não representa um planeta com todos os atores do RPG integrados.
 
-A verificação desta entrega foi headless, com o renderer nativo; não se abriu janela de jogo nem se declarou aceite interativo, FPS ou acabamento artístico. As capacidades genéricas da engine foram usadas sem reutilizar assets, cenas, modelos ou receitas de mundos anteriores.
+As fontes e o renderer foram verificados headless; o launcher também abriu uma sessão nativa para revisão. O teste local percorreu aproximadamente 60 m no vale e terminou grounded. Isso não estabelece aceite artístico, FPS ou validação de todas as encostas. As capacidades genéricas da engine foram usadas sem reutilizar assets, cenas, modelos ou receitas de mundos anteriores.
+
+## Reproduzir o estudo de relevo
+
+```sh
+python3 games/land-of-survivors/terrain.py
+python3 games/land-of-survivors/terrain.py --publish
+```
+
+O primeiro comando compara controle suave e patamares regionais, sem substituir as fontes publicadas. O segundo instala a versão com patamares depois de passar pelos checks nativos de fonte, câmera e percurso. A receita editável é `world/terrain.recipe.json`. A galeria atual fica em `artifacts/terrain/review.html`, com dez capturas nas mesmas câmeras e um relatório de probes/LOD. Nenhuma imagem de referência participa da geração.
 
 ## Custos e outputs locais
 
-Python apenas abre o projeto e envia comandos de sessão; não amostra vértices nem executa trabalho por frame. Leitura das fontes, conferência e captura são explícitas. Física, amostragem, residência e renderização permanecem no Ignis, com cobertura orbital limitada a 384 tiles nesta configuração. Esse limite e a esfera simples não estabelecem o custo do futuro relevo.
+Python compõe dados e envia comandos de sessão; não calcula alturas, malhas ou trabalho por frame. Leitura das fontes, queries e capturas são explícitas. Física, amostragem, residência e renderização permanecem no Ignis. A vista aceita até 1.536 tiles, sujeita também ao limite nativo de vértices. No chão, o bound solicitado ainda não é atingido; ver o diagnóstico antes de aumentar escala ou detalhe.
 
 Mantém-se um único executável corrente da engine, sem builds ou bundles adicionais para o jogo. A captura, o log e o relatório usam caminhos estáveis em `artifacts/` e são substituídos pela verificação seguinte. Esses outputs locais ficam fora do Git; manifesto, cena, fontes próprias e comandos de abertura são versionados.

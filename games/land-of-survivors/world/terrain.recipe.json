@@ -1,0 +1,206 @@
+{
+  "seed": 20261103,
+  "support_radius_meters": 6500,
+  "chains": [
+    {
+      "name": "western_ridge",
+      "points": [
+        [
+          -850,
+          350
+        ],
+        [
+          -1000,
+          -700
+        ],
+        [
+          -750,
+          -1550
+        ],
+        [
+          -1250,
+          -2550
+        ],
+        [
+          -1700,
+          -3600
+        ]
+      ],
+      "width": 800,
+      "height": 340,
+      "left_exponent": 1.25,
+      "right_exponent": 2.1,
+      "envelope_center": [
+        -1050,
+        -1400
+      ],
+      "envelope_radius": 4100,
+      "peaks": [
+        {
+          "center": [
+            -780,
+            -1500
+          ],
+          "radius": 470,
+          "height": 100
+        },
+        {
+          "center": [
+            -1250,
+            -2550
+          ],
+          "radius": 600,
+          "height": 140
+        }
+      ]
+    },
+    {
+      "name": "eastern_shelves",
+      "points": [
+        [
+          1100,
+          100
+        ],
+        [
+          850,
+          -950
+        ],
+        [
+          1400,
+          -1900
+        ],
+        [
+          1150,
+          -2800
+        ],
+        [
+          1900,
+          -3600
+        ]
+      ],
+      "width": 950,
+      "height": 285,
+      "left_exponent": 1.6,
+      "right_exponent": 1.1,
+      "envelope_center": [
+        1150,
+        -1550
+      ],
+      "envelope_radius": 4200
+    },
+    {
+      "name": "distant_saddle",
+      "points": [
+        [
+          -1700,
+          -3250
+        ],
+        [
+          -450,
+          -3800
+        ],
+        [
+          650,
+          -3900
+        ],
+        [
+          1700,
+          -3500
+        ]
+      ],
+      "width": 650,
+      "height": 220,
+      "left_exponent": 1.4,
+      "right_exponent": 1.7,
+      "envelope_center": [
+        0,
+        -3200
+      ],
+      "envelope_radius": 3000
+    }
+  ],
+  "terraces": [
+    [
+      0,
+      0
+    ],
+    [
+      50,
+      45
+    ],
+    [
+      105,
+      45
+    ],
+    [
+      150,
+      120
+    ],
+    [
+      210,
+      120
+    ],
+    [
+      285,
+      230
+    ]
+  ],
+  "shelf": {
+    "center": [
+      720,
+      -1100
+    ],
+    "radius": 410,
+    "height": 86
+  },
+  "valley": {
+    "points": [
+      [
+        300,
+        -4400
+      ],
+      [
+        100,
+        -3100
+      ],
+      [
+        260,
+        -2050
+      ],
+      [
+        -80,
+        -1100
+      ],
+      [
+        0,
+        500
+      ]
+    ],
+    "width": 340,
+    "bed_start": 32,
+    "bed_end": -2
+  },
+  "side_pass": {
+    "points": [
+      [
+        -1750,
+        -1900
+      ],
+      [
+        -1020,
+        -1550
+      ],
+      [
+        -80,
+        -1100
+      ]
+    ],
+    "width": 210,
+    "bed_start": 85,
+    "bed_end": 11
+  },
+  "observer_site_meters": [
+    0,
+    -1700
+  ]
+}
