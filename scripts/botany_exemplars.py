@@ -19,7 +19,7 @@ class Builder:
         start=self.sample(parent,u).p if parent else position
         direction=b.unit(direction);normal=b.normal_to(direction,normal or (0.,1.,0.))
         axis=shape['kind']=='axis';radius=shape.get('radius',.001)
-        growth=b.Growth(bend_n=b.Field(bend),attraction=b.Field(attraction),direction=target)
+        growth=b.Growth(bend_n=bend if isinstance(bend,b.Field) else b.Field(bend),attraction=b.Field(attraction),direction=target)
         rows=b.path(length,b.Sample(start,direction,normal),growth,dict(u=0.,height=start[1],radius=radius,level=0,parent_length=length),self.seed,id,b.Limits(segments=32),b.Budget(10000),None,radius)
         self.samples[id]=rows
         self.organs.append(dict(id=id,parent=parent,insertion=u,path=[r.p for r in rows[::2 if axis else 8]],normal=normal,shape=shape,birth=birth,duration=3. if axis else .8,density=650. if axis else 850.,young=young if axis else 2e7,shear=young*.2 if axis else 8e6))
@@ -39,7 +39,12 @@ def palm(seed=42):
         root=x.axis(f'caule{stem}',None,0.,radial(a,4.5),h,.036,position=((.22+.025*math.sqrt(stem))*math.cos(a),0.,(.22+.025*math.sqrt(stem))*math.sin(a)),young=3e8)
         for j in range(7):
             az=j*2.4+stem+.25*b.uniform(x.seed,f'{root}/{j}','frond_azimuth');u=.95-.045*j
-            frond=x.axis(f'{root}/raquis{j}',root,u,radial(az,5.5-.55*j),1.45*(.84+.30*b.uniform(x.seed,f'{root}/{j}','frond_length')),.0045,bend=-.90-.35*b.uniform(x.seed,f'{root}/{j}','frond_arch'),normal=b.UP,young=8e7)
+            length=1.45*(.84+.30*b.uniform(x.seed,f'{root}/{j}','frond_length'))
+            # Inner fronds rise; outer fronds open and recurve at the tip.
+            elevation=math.radians(78.-5.*j)
+            turn=math.radians(68.+6.5*j+6.*b.uniform(x.seed,f'{root}/{j}','frond_arch'))
+            curvature=b.Field(-turn/length,drivers=(('u',b.Curve(((0.,.22),(1.,1.78)))),))
+            frond=x.axis(f'{root}/raquis{j}',root,u,radial(az,math.tan(elevation)),length,.0045,bend=curvature,normal=b.UP,young=8e7)
             x.organs[-1]['connection']='sheath'
             for k in range(24):
                 v=.09+.88*k/23;frame=x.sample(frond,v)
