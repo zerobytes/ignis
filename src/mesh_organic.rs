@@ -151,11 +151,11 @@ fn samples_many(collars: &[Collar]) -> Result<(Geometry, Vec<Boundary>, Vec<DVec
                 .chain(&c.radial)
                 .any(|x| !x.is_finite())
             || !c.radius.is_finite()
-            || !(0.001..=100.).contains(&c.radius)
+            || c.radius < 0.001
             || !(3..=32).contains(&c.samples)
         {
             return Err(invalid(
-                "Organic collars require unique ASCII IDs, finite frames, radius0.001..100 and3..32 samples",
+                "Organic collars require unique ASCII IDs, finite frames, radius>=0.001 and3..32 samples",
             ));
         }
         let normal = v(c.normal);
@@ -175,6 +175,9 @@ fn samples_many(collars: &[Collar]) -> Result<(Geometry, Vec<Boundary>, Vec<DVec
             let theta = std::f64::consts::TAU * f64::from(j) / f64::from(c.samples);
             let p =
                 v(c.center) + f64::from(c.radius) * (radial * theta.cos() + other * theta.sin());
+            if !p.is_finite() || p.abs().max_element() > 10000. {
+                return Err(invalid("Organic collar exceeds mesh coordinate domain +/-10000m"));
+            }
             b.vertices.push(geometry.positions.len() as u32);
             points.push(p);
             geometry.positions.push(p.to_array().map(|x| x as f32));
@@ -568,7 +571,7 @@ pub fn fused_junction(collars: &[Collar; 3], options: Options, fusion: Fusion) -
             fusion.max_displacement,
         ]
         .iter()
-        .any(|v| !v.is_finite() || !(0.001..=100.).contains(v))
+        .any(|v| !v.is_finite() || *v < 0.001)
         || !fusion.tolerance.is_finite()
         || !(0.000001..=0.01).contains(&fusion.tolerance)
         || !fusion.max_volume_loss.is_finite()
@@ -589,7 +592,7 @@ pub fn fused_junction(collars: &[Collar; 3], options: Options, fusion: Fusion) -
             let length = fusion.transition_lengths[j];
             let normal = v(c.normal).normalize();
             if !length.is_finite()
-                || !(0.001..=100.).contains(&length)
+                || length < 0.001
                 || f64::from(fusion.guard_length + length)
                     >= normal.dot(v(c.center) - center) - epsilon
             {

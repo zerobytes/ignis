@@ -96,12 +96,10 @@ impl Surface {
                 || !(0. ..=1.).contains(&p.u)
                 || !p.angle.is_finite()
                 || p.angle.abs() > 100.
-                || p.offset.iter().any(|x| !x.is_finite() || x.abs() > 20.)
+                || p.offset.iter().any(|x| !x.is_finite())
                 || !(8..=32).contains(&p.radii.len())
                 || p.radii.len() > self.sides as usize
-                || p.radii
-                    .iter()
-                    .any(|r| !r.is_finite() || !(0.02..=50.).contains(r))
+                || p.radii.iter().any(|r| !r.is_finite() || *r < 0.02)
             {
                 return Err(invalid(format!(
                     "Wood section {}: invalid identity, contour or coordinates",
@@ -122,9 +120,8 @@ impl Surface {
                 || !ids.insert(&r.id)
                 || !(2..=32).contains(&r.path.len())
                 || !r.width.is_finite()
-                || !(0.02..=20.).contains(&r.width)
+                || r.width < 0.02
                 || !r.height.is_finite()
-                || r.height.abs() > 10.
                 || !r.end_fade.is_finite()
                 || !(0. ..=0.5).contains(&r.end_fade)
                 || r.path.iter().any(|p| {
@@ -147,9 +144,10 @@ impl Surface {
             for j in 0..self.sides as usize * 2 {
                 let u = i as f64 / (self.samples as f64 * 2.);
                 let a = TAU * j as f64 / (self.sides as f64 * 2.);
-                if self.radius(u, a) < 0.02 {
+                let radius = self.radius(u, a);
+                if !radius.is_finite() || radius < 0.02 {
                     return Err(invalid(
-                        "Wood relief collapses a section below0.02m; reduce valley depth",
+                        "Wood relief overflows or collapses below0.02m; revise contour/relief",
                     ));
                 }
             }

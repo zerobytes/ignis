@@ -2,6 +2,8 @@
 //! Scene ownership and automatic gameplay ticking remain separate integration work.
 use super::{lifecycle::Schedule, production::Production, *};
 mod tree;
+mod stature;
+pub use stature::Stature;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -14,6 +16,8 @@ pub struct Definition {
     pub maximum_nodes: u16,
     pub internode_length: f64,
     pub schedule: Schedule,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stature: Option<Stature>,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -31,6 +35,7 @@ pub const MAX_ATTACHED: usize = 128;
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
     Inspect,
+    SetStature { stature: Stature },
     Advance { time: u64 },
     Harvest { fruit: production::FruitId },
     Prune { site: String },
@@ -39,6 +44,7 @@ impl Default for Definition {
     fn default() -> Self {
         Self {
             version: 1,
+            stature: None,
             prefix: "living".into(),
             seed: 42,
             interval: 10,
@@ -58,6 +64,8 @@ impl Default for Definition {
 impl Definition {
     pub fn validate(&self) -> Result<()> {
         self.schedule.validate().map_err(invalid)?;
+        if (self.version==3)!=self.stature.is_some() {return Err(invalid("Stature requires explicit growth grammar3"));}
+        if let Some(stature)=&self.stature {stature.validate()?;}
         if self
             .interval
             .checked_mul(self.maximum_nodes as u64)
@@ -75,7 +83,7 @@ impl Definition {
         {
             return Err(invalid("Living time/profile budget exceeded"));
         }
-        if !(1..=2).contains(&self.version)
+        if !(1..=3).contains(&self.version)
             || !identifier(&self.prefix)
             || self.prefix.len() > 20
             || self.interval == 0
@@ -190,8 +198,12 @@ impl Plant {
     }
     pub fn recipe(&self) -> Result<Recipe> {
         self.validate()?;
-        if self.definition.version == 2 {
-            return tree::recipe(self);
+        if self.definition.version >= 2 {
+            let mut recipe=tree::recipe(self)?;
+            if let Some(stature)=&self.definition.stature {
+                stature.apply(&mut recipe,self.production.plant.time-self.production.plant.born)?;
+            }
+            return Ok(recipe);
         }
         let d = &self.definition;
         let p = &self.production.plant;
@@ -316,6 +328,7 @@ mod tests {
         Plant {
             definition: Definition {
                 version: 1,
+                stature: None,
                 prefix: "living".into(),
                 seed: 42,
                 interval: 10,

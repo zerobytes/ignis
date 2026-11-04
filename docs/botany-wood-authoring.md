@@ -90,8 +90,10 @@ Each organ allows2–32 sections and0–32 relief layers, with2–32 path contro
 layer. Section parameters must span0..1 in strict order, separated by at least
 0.005. Contours cannot contain more radial samples than the organ tessellation.
 Duplicate IDs, invalid lengths, nonfinite values and incompatible organ
-kinds are refused. Source radii are0.02..50m; relief width0.02..20m and signed
-height within±10m. A dense2× resolution diagnostic rejects sampled radial
+kinds are refused. Source contour radii are at least0.02m and relief width at least0.02m;
+there are no fixed artistic upper bounds on radii, offsets, width or signed
+relief height. Finite arithmetic and actual mesh-coordinate admission remain
+required. See [width and age-driven stature](botany-stature.md). A dense2× resolution diagnostic rejects sampled radial
 collapse below0.02m. It is **not** a continuous interval proof or a global
 self-intersection detector. Existing junction guards reject local inversions;
 sharp bends, offset sections and remote surfaces can still intersect. No new

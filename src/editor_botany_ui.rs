@@ -15,6 +15,7 @@ pub(super) struct State {
     roots: crate::botany::roots::Settings,
     roots_enabled: bool,
     living_definition: crate::botany::growth::Definition,
+    living_stature: crate::botany::growth::Stature,
     living_age_years: f64,
     living_observed: Option<(String, u64, u64, Option<u64>)>,
     living_horizon_years: f64,
@@ -47,6 +48,12 @@ fn send(commands: &mut Vec<Command>, op: Op) {
         operation: Box::new(op),
     });
 }
+fn stature_controls(ui:&mut egui::Ui,stature:&mut crate::botany::growth::Stature) {
+    ui.label("O diâmetro adulto define o porte proporcional desta gramática.");
+    for (label,value) in [("Diâmetro adulto (m) ",&mut stature.adult_diameter_m),("Diâmetro inicial da muda (m) ",&mut stature.seedling_diameter_m),("Idade de maturidade (anos) ",&mut stature.maturity_years)] {
+        ui.add(egui::DragValue::new(value).range(f64::MIN_POSITIVE..=f64::MAX).speed(0.01).prefix(label));
+    }
+}
 pub(super) fn properties(
     ui: &mut egui::Ui,
     service: &Service,
@@ -71,6 +78,11 @@ pub(super) fn properties(
             let d=&mut state.living_definition;
             ui.text_edit_singleline(&mut d.prefix);
             ui.add(egui::DragValue::new(&mut d.seed).prefix("Semente "));
+            egui::ComboBox::from_id_salt("growth_grammar").selected_text(match d.version {1=>"Planta de diagnóstico",2=>"Árvore viva",_=>"Árvore · porte configurável"}).show_ui(ui,|ui|{
+                ui.selectable_value(&mut d.version,1,"Planta de diagnóstico");ui.selectable_value(&mut d.version,2,"Árvore viva");ui.selectable_value(&mut d.version,3,"Árvore · porte configurável");
+            });
+            if d.version==3 {stature_controls(ui,d.stature.get_or_insert_with(Default::default));}else {d.stature=None;}
+
             ui.add(egui::DragValue::new(&mut d.interval).range(1..=100000).prefix("Dias por novo ramo "));
             ui.add(egui::Slider::new(&mut d.maximum_nodes,1..=32).text("Máximo de ramos"));
             ui.add(egui::Slider::new(&mut d.internode_length,0.3..=1.).text("Distância entre ramos (m)"));
@@ -86,6 +98,7 @@ pub(super) fn properties(
             state.prefix=Some(recipe.prefix.clone());state.organ=None;
         }
         if state.key!=key{state.draft=Some(recipe.clone());state.key=key;
+            state.living_stature=recipe.living.as_ref().and_then(|p|p.definition.stature.clone()).unwrap_or_default();
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
             let system=recipe.source.root_systems.iter().find(|r|r.stem==state.root_stem);state.roots_enabled=system.is_some();state.roots=system.map(|s|s.settings.clone()).unwrap_or_default();
         }
@@ -99,7 +112,7 @@ pub(super) fn properties(
             let observed=(recipe.prefix.clone(),born,plant.production.plant.time,preview_time);
             if state.living_observed.as_ref()!=Some(&observed) {
                 state.living_age_years=preview_time.unwrap_or(plant.production.plant.time).saturating_sub(born) as f64/365.;
-                if plant.definition.version==2 {state.living_horizon_years=state.living_horizon_years.max(30.);}
+                if plant.definition.version>=2 {state.living_horizon_years=state.living_horizon_years.max(30.);}
                 state.living_observed=Some(observed);
             }
             let maximum_age=(crate::botany::growth::MAX_TIME-born) as f64/365.;
@@ -134,6 +147,11 @@ pub(super) fn properties(
             ui.collapsing("Poda persistente",|ui|{for site in plant.production.sites.keys().filter(|s|!plant.production.removed_sites.contains(*s)){
                 if ui.button(format!("Podar {site}")).clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Prune{site:site.clone()}});}
             }});
+            if plant.definition.version>=2 {ui.collapsing("Porte e crescimento do tronco",|ui|{
+                stature_controls(ui,&mut state.living_stature);
+                if let Some(stature)=&plant.definition.stature {ui.label(format!("Diâmetro salvo de base: {:.3} m antes de escala manual",stature.diameter(plant.production.plant.time-born)));}
+                if ui.button("Aplicar perfil de porte").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::SetStature{stature:state.living_stature.clone()}});}
+            });}
             ui.text_edit_singleline(&mut state.path);
             if ui.button("Salvar fonte viva").clicked(){send(commands,Op::Save{prefix:recipe.prefix.clone(),path:state.path.clone()});}
             return;
@@ -149,7 +167,7 @@ pub(super) fn properties(
         } else {ui.label("Fonte sem perfil de desenvolvimento cronológico.");}
         changed|=ui.add(egui::Slider::new(&mut draft.settings.scale,0.1..=5.).text("Escala")).changed();
         changed|=ui.add(egui::Slider::new(&mut draft.settings.crown_width,0.1..=5.).text("Largura da copa")).changed();
-        changed|=ui.add(egui::Slider::new(&mut draft.settings.radius,0.1..=5.).text("Espessura dos eixos")).changed();
+        changed|=ui.add(egui::DragValue::new(&mut draft.settings.radius).range(f64::MIN_POSITIVE..=f64::MAX).speed(0.02).prefix("Multiplicador de espessura dos eixos ")).changed();
         changed|=ui.add(egui::Slider::new(&mut draft.settings.leaf_length,0.1..=5.).text("Comprimento das folhas")).changed();
         changed|=ui.add(egui::Slider::new(&mut draft.settings.leaf_width,0.1..=5.).text("Largura das folhas")).changed();
         changed|=ui.add(egui::Slider::new(&mut draft.settings.leaf_density,0. ..=1.).text("Densidade de folhas")).changed();
@@ -226,7 +244,7 @@ pub(super) fn properties(
             }
             ui.add(egui::Slider::new(&mut state.edit.length,0.1..=5.).text("Comprimento do órgão"));
             ui.add(egui::Slider::new(&mut state.edit.width,0.1..=5.).text("Largura do órgão"));
-            ui.add(egui::Slider::new(&mut state.edit.radius,0.1..=5.).text(if recipe.source.organs.iter().any(|o|o.id==*id&&matches!(o.shape,crate::botany::Shape::Blade{..})){"Espessura da folha"}else{"Raio do órgão"}));
+            ui.add(egui::DragValue::new(&mut state.edit.radius).range(f64::MIN_POSITIVE..=f64::MAX).speed(0.02).prefix("Multiplicador de raio / espessura "));
             if let Some(crate::botany::Shape::Axis{radius,tip_ratio,..})=recipe.source.organs.iter().find(|o|o.id==*id).map(|o|&o.shape)
                 && let Some(action)=crate::botany::wood_surface::ui::editor(ui,&mut state.edit,*radius,*tip_ratio) {
                 use crate::botany::wood_surface::ui::Action;

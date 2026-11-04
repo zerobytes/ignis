@@ -370,6 +370,13 @@ impl Service {
                             json!({"plant":plant,"attached":plant.production.attached(&plant.definition.schedule,b::growth::MAX_ATTACHED).map_err(invalid)?}),
                         );
                     }
+                    b::growth::Action::SetStature { stature } => {
+                        if plant.definition.version<2 {return Err(invalid("Stature applies to broadleaf grammars2/3"));}
+                        stature.validate()?;
+                        plant.definition.version=3;
+                        plant.definition.stature=Some(stature.clone());
+                        plant.validate()?;
+                    }
                     b::growth::Action::Advance { time } => {
                         plant.advance(*time)?;
                     }

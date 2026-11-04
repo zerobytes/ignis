@@ -251,3 +251,51 @@ fn shaped_wood_preserves_material_and_sculpt_and_refuses_resolution_loss() {
     assert_eq!(s.engine.scene, before);
     assert_eq!(s.engine.revision, revision);
 }
+
+#[test]
+fn wide_wood_has_no_fixed_artistic_radius_ceiling() {
+    let mut r = specimen();
+    for o in &mut std::sync::Arc::make_mut(&mut r.source).organs {
+        for p in &mut o.path {
+            for x in p {
+                *x *= 100.;
+            }
+        }
+        if let b::Shape::Axis { radius, .. } = &mut o.shape {
+            *radius *= 100.;
+        }
+    }
+    let surface = r
+        .edits
+        .get_mut("trunk")
+        .unwrap()
+        .wood_surface
+        .as_mut()
+        .unwrap();
+    for section in &mut surface.sections {
+        for x in &mut section.radii {
+            *x *= 100.;
+        }
+        for x in &mut section.offset {
+            *x *= 100.;
+        }
+    }
+    for relief in &mut surface.relief {
+        relief.width *= 100.;
+        relief.height *= 100.;
+    }
+    r.settings.radius = 8.;
+    r.validate().unwrap();
+    r.settings.radius = 1.;
+    closed(&r);
+    // Numeric/coordinate validity remains distinct from an artistic diameter ceiling.
+    r.edits
+        .get_mut("trunk")
+        .unwrap()
+        .wood_surface
+        .as_mut()
+        .unwrap()
+        .sections[0]
+        .radii[0] = f64::INFINITY;
+    assert!(r.validate().is_err());
+}

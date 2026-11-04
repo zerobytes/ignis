@@ -413,7 +413,6 @@ impl Source {
                     ellipticity,
                 } if radius.is_finite()
                     && *radius > 0.
-                    && *radius <= 10.
                     && tip_ratio.is_finite()
                     && *tip_ratio > 0.
                     && *tip_ratio <= 1.
@@ -633,7 +632,6 @@ impl Recipe {
             || !finite(&[
                 s.scale,
                 s.crown_width,
-                s.radius,
                 s.leaf_length,
                 s.leaf_width,
                 s.leaf_density,
@@ -641,12 +639,12 @@ impl Recipe {
             || [
                 s.scale,
                 s.crown_width,
-                s.radius,
                 s.leaf_length,
                 s.leaf_width,
             ]
             .iter()
             .any(|v| *v < 0.1 || *v > 5.)
+            || !s.radius.is_finite() || s.radius <= 0.
             || !(0. ..=1.).contains(&s.leaf_density)
             || !(4..=64).contains(&s.axis_samples)
             || !(4..=32).contains(&s.blade_samples)
@@ -686,7 +684,8 @@ impl Recipe {
             if !ids.contains(id.as_str())
                 || !finite(&e.offset)
                 || !finite(&e.rotation)
-                || [e.length, e.width, e.radius]
+                || !e.radius.is_finite() || e.radius <= 0.
+                || [e.length, e.width]
                     .iter()
                     .any(|x| !x.is_finite() || *x < 0.1 || *x > 5.)
             {

@@ -57,13 +57,13 @@ pub fn editor(ui: &mut egui::Ui, edit: &mut OrganEdit, radius: f64, tip: f64) ->
                         ui.label(format!("Diâmetros radiais da seção: {:.2} a {:.2} m (antes de relevo/escala)",2.*minimum,2.*maximum));
                         number(ui, "Altura normalizada ", &mut section.u, 0., 1.);
                         number(ui, "Orientação (rad) ", &mut section.angle, -100., 100.);
-                        number(ui, "Centro N (m) ", &mut section.offset[0], -20., 20.);
-                        number(ui, "Centro B (m) ", &mut section.offset[1], -20., 20.);
+                        number(ui, "Centro N (m) ", &mut section.offset[0], -f64::MAX, f64::MAX);
+                        number(ui, "Centro B (m) ", &mut section.offset[1], -f64::MAX, f64::MAX);
                         // Spatial radial handles and numeric fields edit identical contour samples.
                         let (rect, _) =
                             ui.allocate_exact_size(egui::vec2(205., 205.), egui::Sense::hover());
                         let center = rect.center();
-                        let range = section.radii.iter().copied().fold(0.1, f64::max) * 1.3;
+                        let range = section.radii.iter().copied().fold(0.1, f64::max);
                         let range_id = ui.id().with("contour_range");
                         let range = ui.ctx().data_mut(|data| {
                             if !ui.input(|i| i.pointer.any_down())
@@ -73,7 +73,6 @@ pub fn editor(ui: &mut egui::Ui, edit: &mut OrganEdit, radius: f64, tip: f64) ->
                             }
                             data.get_temp::<f64>(range_id).unwrap()
                         });
-                        let scale = 90. / range as f32;
                         let n = section.radii.len();
                         let points: Vec<_> = section
                             .radii
@@ -83,7 +82,7 @@ pub fn editor(ui: &mut egui::Ui, edit: &mut OrganEdit, radius: f64, tip: f64) ->
                                 let a = section.angle + std::f64::consts::TAU * k as f64 / n as f64;
                                 center
                                     + egui::vec2(a.cos() as f32, -a.sin() as f32)
-                                        * (*r as f32 * scale)
+                                        * ((*r / range * 70.) as f32)
                             })
                             .collect();
                         ui.painter().add(egui::Shape::closed_line(
@@ -102,12 +101,12 @@ pub fn editor(ui: &mut egui::Ui, edit: &mut OrganEdit, radius: f64, tip: f64) ->
                                 && let Some(pointer) = response.interact_pointer_pos()
                             {
                                 // Frozen visual scale during a frame; numerical field remains exact.
-                                section.radii[k] =
-                                    (pointer.distance(center) / scale).clamp(0.02, 50.) as f64;
+                                let value=pointer.distance(center) as f64/70.*range;
+                                if value.is_finite(){section.radii[k]=value.max(0.02);}
                             }
                         }
                         for (k, r) in section.radii.iter_mut().enumerate() {
-                            number(ui, &format!("Raio {k} (m) "), r, 0.02, 50.);
+                            number(ui, &format!("Raio {k} (m) "), r, 0.02, f64::MAX);
                         }
                         if can_remove && i > 0 && ui.button("Remover seção").clicked() {
                             remove = Some(i);
@@ -135,13 +134,13 @@ pub fn editor(ui: &mut egui::Ui, edit: &mut OrganEdit, radius: f64, tip: f64) ->
                 ui.push_id(r.id.clone(), |ui| {
                     ui.collapsing(format!("Relevo {}", r.id), |ui| {
                         ui.checkbox(&mut r.enabled, "Ativo");
-                        number(ui, "Largura (m) ", &mut r.width, 0.02, 20.);
+                        number(ui, "Largura (m) ", &mut r.width, 0.02, f64::MAX);
                         number(
                             ui,
                             "Altura + / profundidade − (m) ",
                             &mut r.height,
-                            -10.,
-                            10.,
+                            -f64::MAX,
+                            f64::MAX,
                         );
                         number(ui, "Transição nas pontas (u) ", &mut r.end_fade, 0., 0.5);
                         for p in &mut r.path {
