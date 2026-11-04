@@ -6,6 +6,7 @@ of third-party materials, or revoke earlier grants for previously published copi
 
 | Component | Location | License and provenance |
 | --- | --- | --- |
+| Boolmesh 0.2.2, mesh Boolean kernel (unmodified Cargo dependency) | `Cargo.toml` / `Cargo.lock` | MPL-2.0; copyright Saki Komikado; pinned source package https://crates.io/crates/boolmesh/0.2.2 and upstream https://github.com/komietty/boolmesh. License retained at `licenses/boolmesh-MPL-2.0.txt`. The dependency retains its own license. |
 | MakeHuman graphical data: mesh, targets and rig data | `assets/characters/female-base/` | CC0-1.0; upstream revision, per-file hashes and original notices in `provenance.json`, `LICENSE.md` and `LICENSE.ASSETS.md`. No MakeHuman program logic is bundled here. |
 | img2threejs camera-fitting and tapered-sweep subset | `scripts/vendor/img2threejs/` | Apache-2.0; upstream authors, revision and changes in `NOTICE.md`; full license retained in `LICENSE`. |
 | Three.js, website renderer | `website/dist/assets/vendor/` | MIT; copyright and license in `LICENSE`. The website renderer is separate from the Rust engine. |

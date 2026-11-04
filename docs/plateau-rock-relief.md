@@ -351,3 +351,13 @@ source was independently compared with the current generator through MCP.
 Python compilation/diff checks and GIF decoding passed. No Rust/renderer changes,
 extra engine build, window or broad test-suite rerun was needed for this authored
 example. Human shape acceptance and live planetary residency remain open.
+
+## Follow-up: native finite chips
+
+The user's subsequent wall references require broad angular rock plates and
+localized missing chips. A reusable static-mesh `subtract_convex` operation is
+now available MCP-first; see [mesh-chipping.md](mesh-chipping.md) for the numerical
+kernel, guards, evidence and the still-open fracture-generator contract. It
+removes actual volume and closes the exposed faces. This does not change the
+rounded strata recipe or add Boolean edits to Landform1..3. Its rectangular
+test slab is a tool specimen, not an approved natural-rock reconstruction.

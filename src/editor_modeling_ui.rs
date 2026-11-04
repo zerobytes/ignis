@@ -187,6 +187,8 @@ impl State {
 }
 fn update_operation(d: &mut Draft) {
     match &mut d.operation {
+        // This operation is MCP-first; it has no drag draft in this panel.
+        Operation::SubtractConvex { .. } => {}
         Operation::Extrude { offset, .. } => {
             *offset = if d.use_normal {
                 d.normal.map(|x| x * d.amount)

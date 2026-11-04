@@ -11,10 +11,17 @@ use std::{
     sync::Arc,
 };
 mod bevel;
+mod subtract;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    /// Remove the finite convex hull of asset-local points from a static solid.
+    SubtractConvex {
+        #[serde(deserialize_with = "subtract::decode_points")]
+        #[schemars(length(min = 4, max = 32))]
+        points: Vec<[f32; 3]>,
+    },
     Extrude {
         faces: Vec<u32>,
         offset: [f32; 3],
@@ -38,6 +45,8 @@ pub struct Report {
     pub triangles: usize,
     pub selected_faces: Vec<u32>,
     pub effective_edges: Vec<[u32; 2]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub numerical_tolerance_meters: Option<f64>,
 }
 pub struct Evaluated {
     pub asset: Asset,
@@ -332,6 +341,7 @@ impl<'a> Builder<'a> {
                 .filter_map(|(i, f)| f.selected.then_some(i as u32))
                 .collect(),
             effective_edges: self.effective_edges,
+            numerical_tolerance_meters: None,
         };
         Ok(Evaluated { asset, report })
     }
@@ -411,6 +421,7 @@ pub(crate) fn evaluate_limited(
     }
     .validate()?;
     match operation {
+        Operation::SubtractConvex { points } => subtract::evaluate(source, points, limits),
         Operation::Extrude { faces, offset } => {
             let offset = v(*offset);
             if !offset.is_finite()

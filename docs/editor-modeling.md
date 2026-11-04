@@ -55,6 +55,9 @@ Validação geométrica cobre orientação/arestas manifold/degeneração e os d
 explicitados. Não há detecção global de auto-interseção para uma extrusão que
 atravesse outra parte da malha ou outro objeto. Não há bevel arredondado, inset
 côncavo, operações booleanas ou novo sistema persistente de IDs de componentes.
+Essa fronteira descreve as três operações originais. A subtração convexa finita
+adicionada em EAF-221 tem contrato estático próprio e entrada MCP-first em
+[mesh-chipping.md](mesh-chipping.md); não amplia o domínio de extrusão/inset/bevel.
 O bevel pode refazer a triangulação das faces cortadas. Rig/clipes são
 preservados e pesos interpolados; isso não substitui revisão artística de pesos.
 
