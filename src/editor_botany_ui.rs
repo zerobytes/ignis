@@ -15,6 +15,7 @@ pub(super) struct State {
     roots_enabled: bool,
     living_definition: crate::botany::growth::Definition,
     living_age_years: f64,
+    living_observed: Option<(String, u64, u64)>,
     living_horizon_years: f64,
 }
 impl Default for State {
@@ -33,6 +34,7 @@ impl Default for State {
             roots_enabled: false,
             living_definition: Default::default(),
             living_age_years: 0.,
+            living_observed: None,
             living_horizon_years: 2.,
         }
     }
@@ -81,7 +83,6 @@ pub(super) fn properties(
             state.prefix=Some(recipe.prefix.clone());state.organ=None;
         }
         if state.key!=key{state.draft=Some(recipe.clone());state.key=key;
-            if let Some(p)=&recipe.living {state.living_age_years=p.production.plant.time.saturating_sub(p.production.plant.born) as f64/365.;}
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
             let system=recipe.source.root_systems.iter().find(|r|r.stem==state.root_stem);state.roots_enabled=system.is_some();state.roots=system.map(|s|s.settings.clone()).unwrap_or_default();
         }
@@ -91,14 +92,20 @@ pub(super) fn properties(
             ui.label("Avanço explícito; não acompanha automaticamente o relógio de gameplay.");
             let born=plant.production.plant.born;
             let current_age=plant.production.plant.time.saturating_sub(born) as f64/365.;
+            let observed=(recipe.prefix.clone(),born,plant.production.plant.time);
+            if state.living_observed.as_ref()!=Some(&observed) {
+                state.living_age_years=current_age;
+                state.living_observed=Some(observed);
+            }
             let maximum_age=(crate::botany::growth::MAX_TIME-born) as f64/365.;
             ui.label(format!("Idade: {current_age:.3} anos · 1 ano = 365 dias de jogo"));
             ui.label("Arraste para avançar; aplica ao soltar. Para voltar, use Desfazer (⌘Z).");
             state.living_horizon_years=state.living_horizon_years.max(current_age).min(maximum_age);
             ui.add(egui::DragValue::new(&mut state.living_horizon_years).speed(0.1).range(current_age..=maximum_age).prefix("Alcance do slider (anos) "));
-            let response=ui.add(egui::Slider::new(&mut state.living_age_years,current_age..=state.living_horizon_years).step_by(1./365.).fixed_decimals(3).text("Idade alvo (anos)"));
+            let response=ui.add(egui::Slider::new(&mut state.living_age_years,0. ..=state.living_horizon_years).step_by(1./365.).fixed_decimals(3).text("Idade alvo (anos)"));
             if response.drag_stopped() || (response.changed()&&!response.dragged()) {
                 let time=born.saturating_add((state.living_age_years*365.).round() as u64).clamp(plant.production.plant.time,crate::botany::growth::MAX_TIME);
+                state.living_age_years=(time-born) as f64/365.;
                 if time>plant.production.plant.time {send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
             }
             if ui.button("+10 dias").clicked() && let Some(time)=plant.production.plant.time.checked_add(10){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
@@ -245,4 +252,74 @@ pub(super) fn properties(
             if let Some(action)=action{send(commands,Op::Physics{prefix:recipe.prefix.clone(),action});}
         });
     });
+}
+
+#[cfg(test)]
+mod living_slider_tests {
+    use super::*;
+
+    #[test]
+    fn living_age_draft_tracks_plant_time_not_unrelated_revisions() {
+        let root = tempfile::tempdir().unwrap();
+        let mut scene = crate::model::RoomRecipe::default().generate().unwrap();
+        scene.entities.clear();
+        let mut service = Service::new(root.path(), scene).unwrap();
+        service
+            .execute(
+                Command::Botany {
+                    operation: Box::new(Op::CreateLiving {
+                        definition: Default::default(),
+                        born: 0,
+                    }),
+                }
+                .into(),
+            )
+            .unwrap();
+        service
+            .execute(
+                Command::Botany {
+                    operation: Box::new(Op::Open {
+                        open: true,
+                        prefix: Some("living".into()),
+                    }),
+                }
+                .into(),
+            )
+            .unwrap();
+        let ctx = egui::Context::default();
+        let mut state = State::default();
+        let frame = |state: &mut State, service: &Service| {
+            ctx.begin_pass(egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1000., 1200.),
+                )),
+                ..Default::default()
+            });
+            egui::CentralPanel::default()
+                .show(&ctx, |ui| properties(ui, service, state, &mut Vec::new()));
+            let _ = ctx.end_pass();
+        };
+        frame(&mut state, &service);
+        state.living_age_years = 0.8;
+        service.engine.revision += 1;
+        frame(&mut state, &service);
+        assert_eq!(state.living_age_years, 0.8);
+        service
+            .execute(
+                Command::Botany {
+                    operation: Box::new(Op::Living {
+                        prefix: "living".into(),
+                        action: crate::botany::growth::Action::Advance { time: 190 },
+                    }),
+                }
+                .into(),
+            )
+            .unwrap();
+        frame(&mut state, &service);
+        assert_eq!(state.living_age_years, 190. / 365.);
+        service.execute(Command::Undo.into()).unwrap();
+        frame(&mut state, &service);
+        assert_eq!(state.living_age_years, 0.);
+    }
 }

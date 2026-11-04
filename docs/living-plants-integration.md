@@ -31,7 +31,10 @@ These controls dispatch the same operations as MCP; they do not maintain a
 second private plant state. The prototype uses authored integer game days, not a
 calibrated botanical growth rate. The age slider displays elapsed time since
 birth in years of exactly 365 game days, quantized to one day. Its adjustable
-horizon defaults to two years. Releasing the slider (or editing its number)
+horizon defaults to two years. Its lower bound stays at zero so committing an
+advance does not move the thumb back to the left. Draft synchronization follows
+the selected individual and its canonical time, not unrelated scene revisions.
+A backward edit snaps to the current age; use Undo to restore an older snapshot. Releasing the slider (or editing its number)
 commits a forward advance; dragging does not regenerate every frame. Undo
 (⌘Z) restores earlier authoring snapshots, including interventions. It is not
 biological reverse time. The current demonstration grows a node every 10 days
