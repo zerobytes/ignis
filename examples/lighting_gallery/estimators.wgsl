@@ -76,9 +76,14 @@ fn srgb(c:vec3<f32>)->vec3<f32>{let x=max(c,vec3(0.));return select(1.055*pow(x,
  if id.x>=u.dims.x || id.y>=u.dims.y {return;}let i=id.y*u.dims.x+id.x;let mode=u.dims.w;let frame=u32(u.light.y);
  var ao=1.;
  if r[i].p.w>0. && mode!=0u {
- var train=hash(i+frame*91237u+771u);var y=hash(i+frame*91237u+select(9923u,181331u,mode==9u));var a=1.;var budget=16u;
+ var train=hash(i+frame*91237u+771u);var y=hash(i+frame*91237u+select(9923u,181331u,mode==9u || mode==15u));var a=1.;var budget=16u;
  if mode==2u {ao=r[i].stats.x;}else{
- if mode==1u || mode==9u {a=0.;}if mode==9u{budget=512u;}
+ if mode==1u || mode==9u || mode>=10u {a=0.;}
+ if mode==9u{budget=512u;}
+ if mode==10u || mode==11u{budget=4u;}
+ if mode==13u || mode==14u{budget=64u;}
+ if mode==15u{budget=4096u;}
+ if mode==16u || mode==17u{budget=32u;}
  let constant=r[i].stats.x==0. || r[i].stats.x==1.;
  if mode>=4u && mode<=8u && constant {a=0.;}
  if (mode==4u || mode==5u) && !constant {a=learn(i,&train);budget-=4u;
@@ -95,7 +100,13 @@ fn srgb(c:vec3<f32>)->vec3<f32>{let x=max(c,vec3(0.));return select(1.055*pow(x,
  }
  if refresh {r[i].stats.y=learn(i,&train);r[i].stats.z=u.light.z;budget-=4u;}a=r[i].stats.y;
  }
- var sum=0.;for(var j=0u;j<budget;j++){let v=uv(&y);let f=visible(i,v);var c=0.;if mode>=2u && mode<=8u{c=g(i,v);}sum+=f-a*c;}
+ var sum=0.;for(var j=0u;j<budget;j++){var v=uv(&y);
+ if mode==11u || mode==12u || mode==14u || mode==17u {
+  let side=select(select(4u,2u,mode==11u),8u,mode==14u);
+  let rows=select(side,8u,mode==17u);
+  v=(vec2(f32(j%side),f32(j/side))+v)/vec2(f32(side),f32(rows));
+ }
+ let f=visible(i,v);var c=0.;if mode>=2u && mode<=8u{c=g(i,v);}sum+=f-a*c;}
  ao=a*r[i].stats.x+sum/f32(budget);
  }
  }

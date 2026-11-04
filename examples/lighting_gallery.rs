@@ -62,10 +62,32 @@ fn read(r: &Renderer, b: &wgpu::Buffer, size: u64) -> Result<Vec<u8>> {
     Ok(v)
 }
 fn main() -> Result<()> {
+    for arg in std::env::args().skip(1) {
+        ensure!(
+            [
+                "--visibility-audit",
+                "--sampling-audit",
+                "--offscreen-guard"
+            ]
+            .contains(&arg.as_str()),
+            "Unknown lighting diagnostic argument: {arg}"
+        );
+    }
     let audit = std::env::args().any(|a| a == "--visibility-audit");
+    let sampling = std::env::args().any(|a| a == "--sampling-audit");
+    ensure!(!(sampling && audit), "Choose one diagnostic mode");
     let guard = std::env::args().any(|a| a == "--offscreen-guard");
-    ensure!(!guard || audit, "Offscreen guard requires visibility audit");
-    let dir = if guard {
+    ensure!(
+        !guard || audit || sampling,
+        "Offscreen guard requires visibility or sampling audit"
+    );
+    let dir = if sampling {
+        if guard {
+            "artifacts/lighting-sampling/guard"
+        } else {
+            "artifacts/lighting-sampling/gallery"
+        }
+    } else if guard {
         "artifacts/lighting-visibility/guard"
     } else if audit {
         "artifacts/lighting-visibility/gallery"
@@ -392,16 +414,29 @@ fn main() -> Result<()> {
         "revision",
         "watched",
         "reference512",
+        "iid4",
+        "stratified4",
+        "stratified16",
+        "iid64",
+        "stratified64",
+        "reference4096",
+        "iid32",
+        "stratified32",
     ];
+    let modes: Vec<u32> = if sampling {
+        vec![1, 3, 4, 5, 6, 10, 11, 12, 13, 14, 15, 16, 17]
+    } else {
+        (0..10).collect()
+    };
     ensure!(
         boxes.len() <= 32,
         "Diagnostic influence mask supports at most32 boxes"
     );
     let mut rows = vec![];
     for round in 0..2 {
-        params.light[3] = if audit { 1. } else { 0. };
-        let mut cold = [(0., 0.); 10];
-        for mode in 1..10 {
+        params.light[3] = if audit || sampling { 1. } else { 0. };
+        let mut cold = [(0., 0.); 18];
+        for &mode in modes.iter().filter(|&&mode| mode != 0) {
             params.dims[3] = mode;
             params.light[1] = 0.;
             r.queue
@@ -422,15 +457,22 @@ fn main() -> Result<()> {
             .write_buffer(&uniform, 0, bytemuck::bytes_of(&params));
         compute(&r, &setup, &group, &queries, &resolve, &timing)?;
         for index in 0..64 {
-            for offset in 0..10 {
-                let mode = (index + if round == 0 { offset } else { 9 - offset }) % 10;
+            for offset in 0..modes.len() {
+                let order = (index as usize
+                    + if round == 0 {
+                        offset
+                    } else {
+                        modes.len() - 1 - offset
+                    })
+                    % modes.len();
+                let mode = modes[order];
                 for cull in 0..if audit { 2 } else { 1 } {
-                    let cull = if audit && (index + offset) % 2 == 1 {
+                    let cull = if audit && (index as usize + offset) % 2 == 1 {
                         1 - cull
                     } else {
                         cull
                     };
-                    params.light[3] = cull as f32;
+                    params.light[3] = if sampling { 1. } else { cull as f32 };
                     let cold = cold[mode as usize];
                     params.dims[3] = mode;
                     let t = Instant::now();
@@ -452,6 +494,15 @@ fn main() -> Result<()> {
                         compute(&r, &shade, &group, &queries, &resolve, &timing)?
                     };
                     rows.push(json!({"round":round,"culling":cull,"mode":mode,"name":names[mode as usize],"frame":index,"prepare_cpu_ms":prepare,"raster_cpu_ms":native_cpu,"raster_gpu_ms":native_gpu,"compute_cpu_ms":cpu+if mode==0{0.}else{upload},"compute_gpu_ms":gpu,"setup_cpu_ms":cold.0,"setup_gpu_ms":cold.1}));
+                    if sampling && round == 0 && [7, 23, 39, 55].contains(&index) && mode != 15 {
+                        let mut e = r.device.create_command_encoder(&Default::default());
+                        e.copy_buffer_to_buffer(&estimates, 0, &raw, 0, estimate_bytes);
+                        r.queue.submit([e.finish()]);
+                        fs::write(
+                            format!("{dir}/quality-{mode}-{index}.f32"),
+                            read(&r, &raw, estimate_bytes)?,
+                        )?;
+                    }
                     if round == 0 && (index == 15 || (mode == 0 && index == 0)) {
                         let image = if mode == 0 {
                             r.read_texture_png(&native, W, H)?
@@ -499,11 +550,13 @@ fn main() -> Result<()> {
     let baseline = r.read_texture_png(&native, W, H)?;
     ensure!(pass == baseline, "sRGB passthrough changed pixels");
     let suffix = if audit { "-0" } else { "" };
-    ensure!(
-        fs::read(format!("{dir}/06-ttl{suffix}.f32"))?
-            == fs::read(format!("{dir}/07-revision{suffix}.f32"))?,
-        "Static TTL/revision mismatch"
-    );
+    if !sampling {
+        ensure!(
+            fs::read(format!("{dir}/06-ttl{suffix}.f32"))?
+                == fs::read(format!("{dir}/07-revision{suffix}.f32"))?,
+            "Static TTL/revision mismatch"
+        );
+    }
     if audit {
         for mode in 0..10 {
             for ext in if mode == 0 {
@@ -518,6 +571,8 @@ fn main() -> Result<()> {
                 );
             }
         }
+    }
+    if audit || sampling {
         let staging = buffer(
             &r,
             "visibility audit receivers",
@@ -531,7 +586,7 @@ fn main() -> Result<()> {
             format!("{dir}/receivers.bin"),
             read(&r, &staging, receiver_bytes)?,
         )?;
-        if guard {
+        if guard && audit {
             params.dims[3] = 9;
             params.light[1] = 15.;
             params.light[3] = 2.;
@@ -549,7 +604,7 @@ fn main() -> Result<()> {
     fs::write(
         format!("{dir}/results.json"),
         serde_json::to_vec_pretty(
-            &json!({"adapter":{"name":r.adapter.get_info().name,"backend":format!("{:?}",r.adapter.get_info().backend),"device_type":format!("{:?}",r.adapter.get_info().device_type)},"width":W,"height":H,"renderer_setup_cpu_ms":renderer_setup,"resources_setup_cpu_ms":resources_ms,"receiver_bytes":receiver_bytes,"additional_resident_bytes":receiver_bytes+estimate_bytes+2*u64::from(W)*u64::from(H)*4+boxes.len() as u64*48+112+256+16,"timestamp_period_ns":r.queue.get_timestamp_period(),"visibility_audit":audit,"offscreen_guard":guard,"timestamp_resolution_fenced":true,"compute_timestamps_monotonic":true,"native_profile_identity":true,"passthrough_identity":true,"static_ttl_revision_identity":true,"rows":rows}),
+            &json!({"adapter":{"name":r.adapter.get_info().name,"backend":format!("{:?}",r.adapter.get_info().backend),"device_type":format!("{:?}",r.adapter.get_info().device_type)},"width":W,"height":H,"renderer_setup_cpu_ms":renderer_setup,"resources_setup_cpu_ms":resources_ms,"receiver_bytes":receiver_bytes,"additional_resident_bytes":receiver_bytes+estimate_bytes+2*u64::from(W)*u64::from(H)*4+boxes.len() as u64*48+112+256+16,"timestamp_period_ns":r.queue.get_timestamp_period(),"sampling_audit":sampling,"visibility_audit":audit,"offscreen_guard":guard,"timestamp_resolution_fenced":true,"compute_timestamps_monotonic":true,"native_profile_identity":true,"passthrough_identity":true,"static_ttl_revision_identity":!sampling,"rows":rows}),
         )?,
     )?;
     Ok(())

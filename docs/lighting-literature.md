@@ -6,6 +6,10 @@ response, GPU cost and memory. No superiority over Lumen has been established.
 This review extends [the source audit](lighting-research.md) and
 [the existing laboratory](runtime-visual-quality.md).
 
+Current implementation status is tracked by the [independent experiment map](lighting-experiment-map.md).
+The native AO gallery tests the residual/cache axis; its variants do not
+constitute implementations of the other GI architectures reviewed here.
+
 ## Scope and evidence
 
 Search covered primary author pages, papers, reference code and Epic's current
