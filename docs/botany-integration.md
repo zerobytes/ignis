@@ -245,3 +245,19 @@ reais via MCP; cenas só visuais restauram sem inventar um ator. Recibos:
 `identity-tests.log`, `clippy.log`, `check.log`, `gallery.scene.json` e PNGs.
 O app humano permaneceu aberto na outra frente; não houve demonstração física
 de mouse/teclado nesta janela, aceite humano, push ou produção.
+
+## Independent generated materials (LOS-21)
+
+Botanical regeneration under `Preserve` now transports validated procedural
+materials by the existing wood/leaves asset identities. Preview, publication
+and the physical overlay retain the same recipe/maps; legacy manual material,
+rig, topology, instance and sculpt-domain guards remain in force. `Reject`
+refuses a material override and explicit `Discard` restores the botanical
+material. Botanical files still contain geometry primaries only: save material
+libraries separately and use the scene/composition to retain their association.
+No source, Scene, replay or GPU layout change and no new work per frame.
+
+Validation: all20 botanical release tests passed, including fixed/runtime
+materials through preview/cancel/reject/publish/save, physical step/reset and
+Scene roundtrip; focused release Clippy and the current native build passed.
+This verifies preservation, not an artistic result or performance guarantee.

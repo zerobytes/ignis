@@ -58,6 +58,7 @@ impl Service {
             if current.rig != reference.rig
                 || current.clips != reference.clips
                 || current.material != reference.material
+                    && (policy != Policy::Preserve || current.material.procedural.is_none())
                 || current.shading != reference.shading
                 || current.geometry.triangles != reference.geometry.triangles
                 || current.geometry.positions.len() != reference.geometry.positions.len()
@@ -114,7 +115,36 @@ impl Service {
         }
         Ok(next)
     }
-    fn botanical_merge(&self, document: meshes::Document) -> Result<meshes::Document> {
+    /// Generator-authored materials are independent, validated appearance primaries.
+    /// Preserve their shared recipes/maps while the botanical kernel rebuilds geometry.
+    fn botanical_materials(
+        &self,
+        mut document: meshes::Document,
+        policy: Policy,
+    ) -> meshes::Document {
+        if policy == Policy::Preserve {
+            for asset in &mut document.assets {
+                if let Some(current) = self
+                    .engine
+                    .scene
+                    .meshes
+                    .assets
+                    .iter()
+                    .find(|a| a.id == asset.id)
+                    && current.material.procedural.is_some()
+                {
+                    asset.material = current.material.clone();
+                }
+            }
+        }
+        document
+    }
+    fn botanical_merge(
+        &self,
+        document: meshes::Document,
+        policy: Policy,
+    ) -> Result<meshes::Document> {
+        let document = self.botanical_materials(document, policy);
         let mut merged = self.engine.scene.meshes.clone();
         for asset in document.assets {
             merged.apply(meshes::Edit::PutAsset { asset })?;
@@ -134,7 +164,8 @@ impl Service {
         recipe.validate()?;
         recipe.version = b::VERSION;
         let recipe = self.botanical_preserve(recipe, policy)?;
-        let compiled = bake::compile(&recipe)?;
+        let mut compiled = bake::compile(&recipe)?;
+        compiled.document = self.botanical_materials(compiled.document, policy);
         let (minimum, maximum) = compiled
             .document
             .assets
@@ -244,7 +275,7 @@ impl Service {
                         .filter(|i| parts.contains(&i.id))
                         .cloned(),
                 );
-                self.botany.overlay = Some(self.botanical_merge(document)?);
+                self.botany.overlay = Some(self.botanical_merge(document, Policy::Preserve)?);
                 self.botany.revision = Some(self.engine.revision);
                 return Ok(());
             }
@@ -269,7 +300,7 @@ impl Service {
                     .filter(|v| *v <= 3600)
                     .ok_or_else(|| invalid("Botanical playing step exceeds1800 engine ticks"))?,
             )?;
-            let overlay = self.botanical_merge(candidate.document())?;
+            let overlay = self.botanical_merge(candidate.document(), Policy::Preserve)?;
             Some((candidate, overlay))
         } else {
             None
@@ -306,7 +337,7 @@ impl Service {
                 }
                 let recipe = self.botanical_preserve((**recipe).clone(), *policy)?;
                 let compiled = bake::compile(&recipe)?;
-                let overlay = self.botanical_merge(compiled.document)?;
+                let overlay = self.botanical_merge(compiled.document, *policy)?;
                 self.botany.basis = Some(self.botanical_basis(&recipe.prefix));
                 self.botany.overlay = Some(overlay);
                 self.botany.preview = Some(recipe);
@@ -490,7 +521,7 @@ impl Service {
                     _ => {}
                 }
                 let result = session.inspect();
-                let overlay = self.botanical_merge(session.document())?;
+                let overlay = self.botanical_merge(session.document(), Policy::Preserve)?;
                 self.botany.basis = Some(self.botanical_basis(prefix));
                 self.botany.physics = Some(session);
                 self.botany.overlay = Some(overlay);

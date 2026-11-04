@@ -1510,3 +1510,158 @@ fn valley_crown_versions_preserve_foliage_and_refuse_legacy_sculpt_loss() {
         bake::compile(&decoded).unwrap().document
     );
 }
+
+// Protect against losing generator textures when regenerating an editable plant,
+// and against a preview that disagrees with publication or bypasses strict policies.
+#[test]
+fn generated_materials_survive_botanical_preview_publish_and_physical_overlay() {
+    use ignis::materials::library::{Execution, Operation as MaterialOp, Preset};
+    let root = tempfile::tempdir().unwrap();
+    let mut s = Service::new(root.path(), RoomRecipe::default().generate().unwrap()).unwrap();
+    let r = fixture();
+    op(
+        &mut s,
+        b::Operation::Publish {
+            recipe: Box::new(r.clone()),
+            policy: b::ManualPolicy::Preserve,
+        },
+    )
+    .unwrap();
+    for (asset, execution) in [
+        ("plant_wood", Execution::Fixed { resolution: 16 }),
+        ("plant_leaves", Execution::Runtime),
+    ] {
+        s.execute(
+            Command::Material {
+                operation: Box::new(MaterialOp::Preset {
+                    asset: asset.into(),
+                    preset: Preset::Wood,
+                    seed: Some(21),
+                    unique_instances: false,
+                    execution,
+                }),
+            }
+            .into(),
+        )
+        .unwrap();
+    }
+    let materials = r
+        .parts()
+        .map(|id| s.engine.scene.meshes.asset(&id).unwrap().material.clone());
+    let before = s.engine.scene.clone();
+    let mut next = r.clone();
+    next.settings.leaf_length = 1.2;
+    op(
+        &mut s,
+        b::Operation::Preview {
+            recipe: Box::new(next.clone()),
+            policy: b::ManualPolicy::Preserve,
+        },
+    )
+    .unwrap();
+    assert_eq!(s.engine.scene, before);
+    for (id, expected) in r.parts().iter().zip(&materials) {
+        assert_eq!(
+            &s.botany
+                .overlay
+                .as_ref()
+                .unwrap()
+                .asset(id)
+                .unwrap()
+                .material,
+            expected
+        );
+    }
+    op(&mut s, b::Operation::CancelPreview).unwrap();
+    assert_eq!(s.engine.scene, before);
+    assert!(
+        op(
+            &mut s,
+            b::Operation::Publish {
+                recipe: Box::new(next.clone()),
+                policy: b::ManualPolicy::Reject
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(s.engine.scene, before);
+    op(
+        &mut s,
+        b::Operation::Publish {
+            recipe: Box::new(next.clone()),
+            policy: b::ManualPolicy::Preserve,
+        },
+    )
+    .unwrap();
+    for (id, expected) in r.parts().iter().zip(&materials) {
+        assert_eq!(&s.engine.scene.meshes.asset(id).unwrap().material, expected);
+    }
+    op(
+        &mut s,
+        b::Operation::Save {
+            prefix: r.prefix.clone(),
+            path: "textured.ignis-botany".into(),
+        },
+    )
+    .unwrap();
+    op(
+        &mut s,
+        b::Operation::Physics {
+            prefix: r.prefix.clone(),
+            action: dynamics::Action::Start {
+                settings: Default::default(),
+            },
+        },
+    )
+    .unwrap();
+    op(
+        &mut s,
+        b::Operation::Physics {
+            prefix: r.prefix.clone(),
+            action: dynamics::Action::Step { ticks: 2 },
+        },
+    )
+    .unwrap();
+    for (id, expected) in r.parts().iter().zip(&materials) {
+        assert_eq!(
+            &s.botany
+                .overlay
+                .as_ref()
+                .unwrap()
+                .asset(id)
+                .unwrap()
+                .material,
+            expected
+        );
+    }
+    op(
+        &mut s,
+        b::Operation::Physics {
+            prefix: r.prefix.clone(),
+            action: dynamics::Action::Reset,
+        },
+    )
+    .unwrap();
+    let scene: ignis::model::Scene =
+        serde_json::from_slice(&serde_json::to_vec(&s.engine.scene).unwrap()).unwrap();
+    scene.validate().unwrap();
+    assert_eq!(scene, s.engine.scene);
+    op(
+        &mut s,
+        b::Operation::Publish {
+            recipe: Box::new(next),
+            policy: b::ManualPolicy::Discard,
+        },
+    )
+    .unwrap();
+    assert!(
+        s.engine
+            .scene
+            .meshes
+            .asset("plant_wood")
+            .unwrap()
+            .material
+            .procedural
+            .is_none()
+    );
+}
