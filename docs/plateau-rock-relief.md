@@ -245,3 +245,26 @@ named PNGs; one current executable remains at `target/release/ignis`.
 No window was opened, FPS measured, renderer modified, or transported-world
 integration completed. Human artistic acceptance remains open; these results
 establish the new authoring capability and its current visual shortcomings.
+
+### Material preview requested by the user
+
+Run `python3 scripts/render_plateau_materials.py` for the native1600×1000 overview
+and closer view in `artifacts/plateau-relief/materials/`. This presentation uses
+an edited copy of the existing Alpine Rock2 material at24m scale, an explicitly
+authored oblique planar coordinate map, a grass surface material, directional
+sun/shadow, environment fill and light atmosphere. It does not change the rock's
+positions, triangles or collision. The script checks their exact shape hash;
+material coordinates are intentionally edited and are not included in that hash.
+
+The green roof is a visual copy of the existing flatY40 faces, selected and cut
+with native MCP topology operations, offset45mm to avoid depth ties. It is a
+surface material, not a new grass-blade generator. The original rock is retained
+whole; no rocks are added to conceal its current shape. A flat surrounding ground
+provides context and receives shadow. The script uses its own headless session.
+
+Performance review: no engine code, frame generation or new pass is introduced.
+The existing runtime rock/pattern evaluators add their visible-fragment cost;
+lighting uses the existing shadow pass. No fixed1024 material maps are baked.
+Native captures were opened and scene-save/reload produced exact PNG bytes.
+Reproducible script and render metadata are retained; no new test suite/build
+was needed for this presentation-only change. Morphology acceptance stays open.
