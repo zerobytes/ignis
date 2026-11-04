@@ -229,11 +229,21 @@ impl Graphics {
                 service
                     .engine
                     .update_render_frame_with_meshes(frame, &draft.document);
+            } else if service.botany.revision == Some(service.engine.revision)
+                && let Some(overlay) = &service.botany.overlay
+            {
+                service.engine.update_render_frame_with_meshes(frame, overlay);
             } else {
                 service.engine.update_render_frame(frame);
             }
         } else {
-            self.frame = Some(service.engine.render_frame());
+            let mut frame = service.engine.render_frame();
+            if service.botany.revision == Some(service.engine.revision)
+                && let Some(overlay) = &service.botany.overlay
+            {
+                service.engine.update_render_frame_with_meshes(&mut frame, overlay);
+            }
+            self.frame = Some(frame);
         }
         if !service.engine.planet_active() {
             if let Some(camera) = &service.editor.current().camera {

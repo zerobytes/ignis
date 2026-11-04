@@ -33,3 +33,7 @@ twelve years, with the Vegetation panel selected and a 30-year slider horizon.
 The source asset is saved at birth, retaining future growth potential. Native
 Rust generates all geometry; Python only drives commands and captures. Existing
 human windows/scenes are preserved.
+
+The age slider now supports back-and-forth growth previews. Confirming an
+advance is a separate action; preview cancellation restores the saved tree and
+its interventions. See [preview semantics](living-plants-integration.md).

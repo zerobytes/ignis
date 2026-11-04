@@ -276,3 +276,102 @@ fn produce_geometry_is_closed_oriented_and_manual_edits_are_not_lost() {
     assert!(live(&mut s, Action::Advance { time: 100 }).is_err());
     assert_eq!(before, s.engine.scene);
 }
+
+#[test]
+fn age_preview_is_reversible_and_preserves_saved_interventions() {
+    let root = tempfile::tempdir().unwrap();
+    let mut scene = RoomRecipe::default().generate().unwrap();
+    scene.entities.clear();
+    let mut s = Service::new(root.path(), scene).unwrap();
+    op(
+        &mut s,
+        b::Operation::CreateLiving {
+            definition: Definition::default(),
+            born: 0,
+        },
+    )
+    .unwrap();
+    live(&mut s, Action::Advance { time: 90 }).unwrap();
+    live(
+        &mut s,
+        Action::Harvest {
+            fruit: FruitId {
+                site: "node0".into(),
+                cohort: 0,
+                slot: 0,
+            },
+        },
+    )
+    .unwrap();
+    live(
+        &mut s,
+        Action::Prune {
+            site: "node1".into(),
+        },
+    )
+    .unwrap();
+    let saved = s.engine.scene.clone();
+    let revision = s.engine.revision;
+    let preview = |s: &mut Service, time| {
+        op(
+            s,
+            b::Operation::PreviewLivingAge {
+                prefix: "living".into(),
+                time,
+            },
+        )
+    };
+    preview(&mut s, 40).unwrap();
+    let young = s.botany.overlay.clone().unwrap();
+    preview(&mut s, 190).unwrap();
+    assert_ne!(s.botany.overlay.as_ref().unwrap(), &young);
+    preview(&mut s, 40).unwrap();
+    assert_eq!(s.botany.overlay.as_ref().unwrap(), &young);
+    assert_eq!(s.engine.scene, saved);
+    assert_eq!(s.engine.revision, revision);
+    assert!(
+        s.botany
+            .preview
+            .as_ref()
+            .unwrap()
+            .living
+            .as_ref()
+            .unwrap()
+            .production
+            .removed_sites
+            .is_empty()
+    );
+    preview(&mut s, 190).unwrap();
+    let ripe = s
+        .botany
+        .overlay
+        .as_ref()
+        .unwrap()
+        .asset("living_ripe_fruit")
+        .unwrap()
+        .geometry
+        .clone();
+    let mut camera = s.engine.scene.camera.clone();
+    camera.position[0] += 0.1;
+    s.execute(Command::SetCamera { camera }.into()).unwrap();
+    assert_eq!(
+        s.botany
+            .overlay
+            .as_ref()
+            .unwrap()
+            .asset("living_ripe_fruit")
+            .unwrap()
+            .geometry,
+        ripe
+    );
+    let overlay = s.botany.overlay.clone();
+    assert!(preview(&mut s, b::growth::MAX_TIME + 1).is_err());
+    assert_eq!(s.botany.overlay, overlay);
+    op(&mut s, b::Operation::CancelPreview).unwrap();
+    assert!(s.botany.overlay.is_none());
+    assert_eq!(s.engine.scene.botany, saved.botany);
+    assert_eq!(s.engine.scene.meshes, saved.meshes);
+    assert!(state(&s).production.removed_sites.contains("node1"));
+    assert_eq!(state(&s).production.harvested.len(), 1);
+    assert_eq!(state(&s).production.plant.time, 90);
+}

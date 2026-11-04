@@ -16,7 +16,7 @@ pub(super) struct State {
     roots_enabled: bool,
     living_definition: crate::botany::growth::Definition,
     living_age_years: f64,
-    living_observed: Option<(String, u64, u64)>,
+    living_observed: Option<(String, u64, u64, Option<u64>)>,
     living_horizon_years: f64,
 }
 impl Default for State {
@@ -35,6 +35,7 @@ impl Default for State {
             roots: Default::default(),
             roots_enabled: false,
             living_definition: Default::default(),
+            living_stature: Default::default(),
             living_age_years: 0.,
             living_observed: None,
             living_horizon_years: 2.,
@@ -94,24 +95,35 @@ pub(super) fn properties(
             ui.label("Avanço explícito; não acompanha automaticamente o relógio de gameplay.");
             let born=plant.production.plant.born;
             let current_age=plant.production.plant.time.saturating_sub(born) as f64/365.;
-            let observed=(recipe.prefix.clone(),born,plant.production.plant.time);
+            let preview_time=service.botany.preview.as_ref().filter(|r|r.prefix==recipe.prefix && service.botany.revision==Some(service.engine.revision)).and_then(|r|r.living.as_ref()).map(|p|p.production.plant.time);
+            let observed=(recipe.prefix.clone(),born,plant.production.plant.time,preview_time);
             if state.living_observed.as_ref()!=Some(&observed) {
-                state.living_age_years=current_age;
+                state.living_age_years=preview_time.unwrap_or(plant.production.plant.time).saturating_sub(born) as f64/365.;
                 if plant.definition.version==2 {state.living_horizon_years=state.living_horizon_years.max(30.);}
                 state.living_observed=Some(observed);
             }
             let maximum_age=(crate::botany::growth::MAX_TIME-born) as f64/365.;
-            ui.label(format!("Idade: {current_age:.3} anos · 1 ano = 365 dias de jogo"));
-            ui.label("Arraste para avançar; aplica ao soltar. Para voltar, use Desfazer (⌘Z).");
+            ui.label(format!("Idade salva: {current_age:.3} anos · 1 ano = 365 dias de jogo"));
+            ui.label("Arraste nos dois sentidos; atualiza a prévia ao soltar.");
             state.living_horizon_years=state.living_horizon_years.max(current_age).min(maximum_age);
             ui.add(egui::DragValue::new(&mut state.living_horizon_years).speed(0.1).range(current_age..=maximum_age).prefix("Alcance do slider (anos) "));
-            let response=ui.add(egui::Slider::new(&mut state.living_age_years,0. ..=state.living_horizon_years).step_by(1./365.).fixed_decimals(3).text("Idade alvo (anos)"));
+            let response=ui.add(egui::Slider::new(&mut state.living_age_years,0. ..=state.living_horizon_years).step_by(1./365.).fixed_decimals(3).text("Prévia de idade (anos)"));
             if response.drag_stopped() || (response.changed()&&!response.dragged()) {
-                let time=born.saturating_add((state.living_age_years*365.).round() as u64).clamp(plant.production.plant.time,crate::botany::growth::MAX_TIME);
+                let time=born.saturating_add((state.living_age_years*365.).round() as u64).clamp(born,crate::botany::growth::MAX_TIME);
                 state.living_age_years=(time-born) as f64/365.;
-                if time>plant.production.plant.time {send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
+                if time==plant.production.plant.time {send(commands,Op::CancelPreview);}else{send(commands,Op::PreviewLivingAge{prefix:recipe.prefix.clone(),time});}
             }
-            if ui.button("+10 dias").clicked() && let Some(time)=plant.production.plant.time.checked_add(10){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
+            if ui.button("+10 dias na prévia").clicked() {
+                let time=born.saturating_add((state.living_age_years*365.).round() as u64).saturating_add(10).min(crate::botany::growth::MAX_TIME);
+                send(commands,Op::PreviewLivingAge{prefix:recipe.prefix.clone(),time});
+            }
+            if let Some(time)=preview_time {
+                ui.label(format!("PRÉVIA: {:.3} anos · a árvore salva permanece com {current_age:.3} anos",time.saturating_sub(born) as f64/365.));
+                ui.label("Comparação de crescimento sem podas, colheitas ou escultura. Não é reprodução do histórico.");
+                if ui.button("Voltar à árvore salva").clicked(){state.living_age_years=current_age;send(commands,Op::CancelPreview);}
+                if time>plant.production.plant.time && ui.button("Confirmar avanço na árvore salva").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
+                return;
+            }
             if let Ok(fruits)=plant.production.attached(&plant.definition.schedule,crate::botany::growth::MAX_ATTACHED) {
                 ui.label(format!("{} unidades reprodutivas ativas",fruits.len()));
                 for (fruit,stage) in fruits {ui.horizontal(|ui|{

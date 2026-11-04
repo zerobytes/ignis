@@ -31,13 +31,20 @@ These controls dispatch the same operations as MCP; they do not maintain a
 second private plant state. The prototype uses authored integer game days, not a
 calibrated botanical growth rate. The age slider displays elapsed time since
 birth in years of exactly 365 game days, quantized to one day. Its adjustable
-horizon defaults to two years. Its lower bound stays at zero so committing an
-advance does not move the thumb back to the left. Draft synchronization follows
-the selected individual and its canonical time, not unrelated scene revisions.
-A backward edit snaps to the current age; use Undo to restore an older snapshot. Releasing the slider (or editing its number)
-commits a forward advance; dragging does not regenerate every frame. Undo
-(⌘Z) restores earlier authoring snapshots, including interventions. It is not
-biological reverse time. The current demonstration grows a node every 10 days
+horizon defaults to two years (30 for the broadleaf tree). Its scale stays fixed
+at zero..horizon. Releasing the slider or editing its number evaluates a
+**reversible preview**, in either direction, without advancing the saved plant.
+The UI distinguishes preview age from saved age. "Voltar à árvore salva"
+cancels it; "Confirmar avanço na árvore salva" is offered only for a later age
+and uses the normal monotonic command, preserving saved interventions.
+
+Preview starts from the definition and birth date, without pruning, harvesting
+or sculpt edits. It is an authoring comparison of growth, not replay of an
+individual's life: tombstones do not yet contain the event dates needed for that.
+The saved individual, interventions, geometry, undo history and serialized scene
+are not replaced by preview. Materials and authoring settings remain visible.
+Dragging does not rebuild on every frame; release commits only the session
+preview. Undo remains available for actual canonical edits. The current demonstration grows a node every 10 days
 and repeats reproduction every 100 days; these accelerated values are test
 parameters, not a realistic species calendar.
 
@@ -57,6 +64,18 @@ Grammar version1 is explicit and validated. Commands go through `botany`:
 ```json
 {"op":"botany","operation":{"kind":"living","prefix":"living","action":{"kind":"prune","site":"node1"}}}
 ```
+
+`preview_living_age` takes `prefix` and absolute `time`, re-evaluates growth in
+session state only, and supports earlier/later dates from birth to MAX_TIME:
+
+```json
+{"op":"botany","operation":{"kind":"preview_living_age","prefix":"living","time":40}}
+```
+
+`cancel_preview` restores the saved appearance. Saving during preview writes
+the canonical plant, not the overlay. Camera edits preserve all preview parts,
+including reproductive geometry; edits changing the botanical basis invalidate
+it through the existing session guard.
 
 `create_living` takes `definition` and absolute `born`; `living/inspect` returns
 canonical state and currently attached reproductive units. Creation, advance,

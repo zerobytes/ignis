@@ -288,7 +288,12 @@ impl Service {
         if let Some(prefix) = prefix
             && self.botany.basis.as_ref() == Some(&self.botanical_basis(prefix))
         {
-            let parts = [format!("{prefix}_wood"), format!("{prefix}_leaves")];
+            let parts = self
+                .botany
+                .preview
+                .as_ref()
+                .map(|r| r.all_parts())
+                .unwrap_or_else(|| vec![format!("{prefix}_wood"), format!("{prefix}_leaves")]);
             if let Some(old) = &self.botany.overlay {
                 let mut document = meshes::Document::default();
                 document
@@ -386,6 +391,34 @@ impl Service {
                 next.edits = old.edits;
                 next.manual = old.manual;
                 self.botanical_publish(next, Policy::Preserve)
+            }
+            Op::PreviewLivingAge { prefix, time } => {
+                if self.engine.playing || self.remote_client() {
+                    return Err(invalid("Pause the local editor before living age preview"));
+                }
+                let old = self.botanical_recipe(prefix)?;
+                let saved = old
+                    .living
+                    .as_ref()
+                    .ok_or_else(|| invalid("Recipe is not a living plant"))?;
+                // Authoring evaluation, not a biological rewind. No historical event replay
+                // is possible from tombstones alone. Keep the canonical individual intact.
+                let mut plant =
+                    b::growth::Plant::new(saved.definition.clone(), saved.production.plant.born)?;
+                plant.advance(*time)?;
+                let mut recipe = plant.bound_recipe()?;
+                recipe.settings = old.settings;
+                recipe.validate()?;
+                let compiled = bake::compile(&recipe)?;
+                let overlay = self.botanical_merge(compiled.document, Policy::Preserve)?;
+                self.botany.basis = Some(self.botanical_basis(prefix));
+                self.botany.overlay = Some(overlay);
+                self.botany.preview = Some(recipe);
+                self.botany.physics = None;
+                self.botany.revision = Some(self.engine.revision);
+                Ok(
+                    json!({"preview":true,"time":time,"world_changed":false,"interventions_applied":false}),
+                )
             }
             Op::Inspect => Ok(
                 json!({"open":self.botany.open,"selected":self.botany.selected,"organ":self.botany.organ,"preview":self.botany.preview.is_some()&&self.botany.revision==Some(self.engine.revision),"recipes":self.engine.scene.botany,"physics":self.botany.physics.as_ref().filter(|_|self.botany.revision==Some(self.engine.revision)).map(|p|p.inspect())}),

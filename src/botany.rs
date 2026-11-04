@@ -238,6 +238,10 @@ pub enum Operation {
         prefix: String,
         action: growth::Action,
     },
+    PreviewLivingAge {
+        prefix: String,
+        time: u64,
+    },
     Inspect,
     Open {
         open: bool,
