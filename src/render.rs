@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
 
+mod gpu_timing;
 pub mod object_impostor;
 
 #[repr(C)]
@@ -367,6 +368,7 @@ pub struct Renderer {
     pub queue: wgpu::Queue,
     pub adapter: wgpu::Adapter,
     pub format: wgpu::TextureFormat,
+    gpu_timing: Option<gpu_timing::Timing>,
     pipeline: wgpu::RenderPipeline,
     transparent_pipeline: wgpu::RenderPipeline,
     transparency: crate::render_transparency::Transparency,
@@ -423,6 +425,20 @@ impl Renderer {
         instance: &wgpu::Instance,
         surface: Option<&wgpu::Surface<'_>>,
     ) -> Result<Self> {
+        Self::new_internal(instance, surface, false).await
+    }
+    /// Diagnostic pass timestamps; ordinary construction has no query overhead.
+    pub async fn new_profiled(
+        instance: &wgpu::Instance,
+        surface: Option<&wgpu::Surface<'_>>,
+    ) -> Result<Self> {
+        Self::new_internal(instance, surface, true).await
+    }
+    async fn new_internal(
+        instance: &wgpu::Instance,
+        surface: Option<&wgpu::Surface<'_>>,
+        profile: bool,
+    ) -> Result<Self> {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::LowPower,
@@ -431,9 +447,15 @@ impl Renderer {
             })
             .await
             .context("No compatible graphics adapter")?;
+        let timed = profile && adapter.features().contains(wgpu::Features::TIMESTAMP_QUERY);
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("Ignis device"),
+                required_features: if timed {
+                    wgpu::Features::TIMESTAMP_QUERY
+                } else {
+                    wgpu::Features::empty()
+                },
                 required_limits: wgpu::Limits {
                     max_buffer_size: adapter.limits().max_buffer_size,
                     max_texture_array_layers: adapter.limits().max_texture_array_layers,
@@ -937,7 +959,9 @@ impl Renderer {
         });
         let particles = crate::render_particles::Gpu::new(&device, &pipeline_layout, &shader);
         let outline = crate::render_outline::Outline::new(&device, format);
+        let gpu_timing = timed.then(|| gpu_timing::Timing::new(&device));
         let mut renderer = Self {
+            gpu_timing,
             environment,
             material_buffer,
             procedural_buffer,
@@ -1821,6 +1845,9 @@ impl Renderer {
             field.prepare(&self.queue, &scene.camera, width, height, &scene.light);
         }
         let mut encoder = self.device.create_command_encoder(&Default::default());
+        if let Some(timer) = &mut self.gpu_timing {
+            timer.reset();
+        }
         self.instanced.encode_occlusion(
             &mut encoder,
             &self.bind_group,
@@ -1841,7 +1868,7 @@ impl Renderer {
                     stencil_ops: None,
                 }),
                 occlusion_query_set: None,
-                timestamp_writes: None,
+                timestamp_writes: self.gpu_timing.as_mut().map(|t| t.pass("shadow")),
             });
             pass.set_pipeline(&self.shadow_pipeline);
             pass.set_bind_group(0, &self.shadow_bind_group, &[]);
@@ -1899,7 +1926,7 @@ impl Renderer {
                     stencil_ops: None,
                 }),
                 occlusion_query_set: None,
-                timestamp_writes: None,
+                timestamp_writes: self.gpu_timing.as_mut().map(|t| t.pass("scene")),
             });
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind_group, &[]);
@@ -1966,7 +1993,7 @@ impl Renderer {
                     depth_ops: None,
                     stencil_ops: None,
                 }),
-                timestamp_writes: None,
+                timestamp_writes: self.gpu_timing.as_mut().map(|t| t.pass("transparency")),
                 occlusion_query_set: None,
             });
             pass.set_bind_group(0, &self.bind_group, &[]);
@@ -2003,7 +2030,7 @@ impl Renderer {
                     stencil_ops: None,
                 }),
                 occlusion_query_set: None,
-                timestamp_writes: None,
+                timestamp_writes: self.gpu_timing.as_mut().map(|t| t.pass("guides")),
             });
             pass.set_pipeline(&self.guide_pipeline);
             pass.set_bind_group(0, &self.bind_group, &[]);
@@ -2023,6 +2050,15 @@ impl Renderer {
         );
         self.queue.submit([encoder.finish()]);
         Ok(())
+    }
+    /// Blocks for diagnostic results only when explicitly called.
+    /// The sum covers named render passes, excluding auxiliary compute,
+    /// atmosphere composition, outlines, transfer, and presentation.
+    pub fn read_gpu_timing(&self) -> Result<Option<serde_json::Value>> {
+        self.gpu_timing
+            .as_ref()
+            .map(|t| t.read(&self.device, &self.queue))
+            .transpose()
     }
     pub fn capture(&mut self, scene: &RenderFrame, width: u32, height: u32) -> Result<Vec<u8>> {
         anyhow::ensure!(
@@ -2056,7 +2092,7 @@ impl Renderer {
         )?;
         self.read_texture_png(&texture, width, height)
     }
-    pub(crate) fn read_texture_png(
+    pub fn read_texture_png(
         &self,
         texture: &wgpu::Texture,
         width: u32,
