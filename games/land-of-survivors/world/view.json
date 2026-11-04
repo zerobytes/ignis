@@ -1,0 +1,8 @@
+{
+  "distance_meters": 19113000,
+  "viewport": [1280, 800],
+  "max_error_pixels": 2,
+  "max_tiles": 384,
+  "incremental_generation": false,
+  "atmosphere_optical_depth": 0.08
+}

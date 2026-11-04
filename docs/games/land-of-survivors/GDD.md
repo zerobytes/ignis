@@ -1,8 +1,8 @@
 # Land of Survivors GDD
 
-Versão 1.0 · 3 de novembro de 2026 · Desenvolvimento no Ignis.
+Versão 1.1 · 3 de novembro de 2026 · Desenvolvimento no Ignis.
 
-Land of Survivors é um RPG 3D de fantasia clássica, com exploração de mundo aberto, evolução do personagem, combate PvE/PvP e histórias com consequências permanentes. Preserva a lore, a história e as decisões não técnicas do projeto anterior. Toda a construção do jogo no Ignis será nova.
+Land of Survivors é um RPG 3D de fantasia clássica, com exploração de um planeta esférico finito do tamanho da Terra, evolução do personagem, combate PvE/PvP e histórias com consequências permanentes. Preserva a lore, a história e as decisões não técnicas do projeto anterior. Toda a construção do jogo no Ignis será nova.
 
 ## Escopo preservado
 
@@ -16,13 +16,13 @@ As regras descritas como definidas orientam o produto. Os conceitos identificado
 
 O jogador cria uma identidade, explora lugares desconhecidos, encontra povos e criaturas, participa de conflitos, melhora suas capacidades e deixa acontecimentos que o mundo conserva. O ciclo de experiência combina explorar, conhecer personagens, assumir aventuras, enfrentar desafios, receber recompensas e retornar a um mundo transformado.
 
-- Exploração contínua, sem fronteiras de cena impostas ao jogador.
+- Exploração contínua de um planeta finito, sem fronteiras de cena impostas ao jogador.
 - Personagens reconhecíveis por identidade, classe, aparência e equipamento.
 - Combate legível, com preparação, execução, impacto e recuperação compreensíveis.
 - Diversidade de estilos de jogo, incluindo dano, cura e proteção em todas as especializações.
 - Continuidade das pessoas, dos lugares, das escolhas e das consequências.
 
-World of Warcraft permanece como referência para câmera, alvo, barra de habilidades, interação e quests. A expansão de Minecraft orienta a continuidade da exploração. Referências não determinam automaticamente escala MMO, mineração ou construção livre.
+World of Warcraft permanece como referência para câmera, alvo, barra de habilidades, interação e quests. Genshin Impact orienta o estudo de geografia, relevo e composição regional. A nova decisão de mundo esférico substitui a expansão infinita inspirada em Minecraft; a continuidade da exploração e a permanência das histórias são preservadas. Referências não determinam automaticamente escala MMO, mineração ou construção livre.
 
 ## Universo e história
 
@@ -108,7 +108,13 @@ Slots finais, restrições por classe, requisitos de nível, raridades, durabili
 
 ## Exploração e mundo
 
-O mundo se expande continuamente a partir de uma semente e preserva sua identidade. Terreno, biomas, árvores, rios, lagos, mar, ilhas e montanhas formam uma geografia conectada. Lugares visitados e mudanças do jogador continuam existindo quando ele se afasta e retorna.
+O mundo é uma esfera finita com raio de referência de 6.371 km e diâmetro de 12.742 km, equivalentes ao tamanho médio terrestre. Sua circunferência de referência é aproximadamente 40.030 km. É possível contornar o planeta e retornar ao ponto de partida; não há geração de terra infinita além do globo. Isso não exige reproduzir os continentes da Terra.
+
+Terreno, biomas, árvores, rios, lagos, mar, ilhas e montanhas formarão uma geografia conectada. A semente continua sendo uma ferramenta de autoria e identidade do mundo, sem mudar seu tamanho finito. Lugares visitados e mudanças do jogador continuam existindo quando ele se afasta e retorna.
+
+A topografia terá Genshin Impact como referência de linguagem geográfica. Primeiro se estuda como suas regiões combinam planícies, cristas, vales, patamares, costas e bacias; depois se compõe uma geografia própria para Land of Survivors. Não se copia o mapa de Teyvat nem se amplia sua escala de maneira uniforme para preencher o planeta. O estudo e as decisões pendentes estão em [Geografia e relevo](geografia.md).
+
+O [projeto nativo](../../../games/land-of-survivors/README.md) já contém uma esfera-base própria. Continentes, oceanos, relevo e hidrografia ainda serão compostos após esse estudo. A etapa atual inclui somente o mundo, sem construir personagens, vilas, vegetação ou gameplay.
 
 Os biomas iniciais são floresta temperada, pradaria, floresta úmida, deserto, tundra, terras alpinas, costa e oceano. A cultura de um povo não é determinada automaticamente pelo bioma. A construção anterior desses ambientes não será reutilizada.
 
@@ -175,7 +181,7 @@ Inglês é o idioma padrão, prioritário e fonte dos textos de produto; portugu
 - Relação de Chaos/Overdrive com o novo jogo: os antigos nomes técnicos não estabelecem recurso ou lore.
 - Regras comerciais, duração, dificuldade, voz e limites das aventuras por IA.
 
-O nome Survivors não acrescenta automaticamente fome, sede, crafting ou outras mecânicas de sobrevivência. A primeira experiência curta sugerida no chat continua uma proposta de produção, sem reduzir o escopo de mundo contínuo nem substituir as decisões acima.
+O nome Survivors não acrescenta automaticamente fome, sede, crafting ou outras mecânicas de sobrevivência. A primeira experiência curta sugerida no chat permanece uma proposta futura; a prioridade atual é criar o mundo esférico e estudar sua geografia antes de elaborar a topografia.
 
 ## Origem das decisões
 

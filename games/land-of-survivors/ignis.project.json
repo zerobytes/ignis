@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "name": "Land of Survivors",
+  "entry_scene": "scenes/Principal.scene.json",
+  "scenes": [
+    "scenes/Principal.scene.json"
+  ]
+}

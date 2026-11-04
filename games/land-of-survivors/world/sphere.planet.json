@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "space_version": 1,
+  "id": "land_of_survivors_world",
+  "revision": 1,
+  "center": {
+    "cell": [
+      "0",
+      "0",
+      "0"
+    ],
+    "offset": [
+      0,
+      0,
+      0
+    ]
+  },
+  "diameter_meters": 12742000,
+  "surface_gravity_mps2": 9.81,
+  "base_height_meters": 0,
+  "operations": []
+}
