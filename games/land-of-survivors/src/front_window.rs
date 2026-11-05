@@ -1,0 +1,520 @@
+use crate::{
+    characters::{Draft, Store},
+    front_end::{Action, Front, Page},
+    front_ui::Ui,
+};
+use anyhow::{Result, ensure};
+use egui::{Pos2, Rect, Vec2};
+use ignis::{editor_ui::Graphics, physics::Input, render::Renderer};
+use std::{
+    collections::BTreeSet,
+    fs,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use winit::{
+    application::ApplicationHandler,
+    event::{ElementState, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowId},
+};
+
+pub struct Composition {
+    pub graphics: Graphics,
+    pub ui: Ui,
+}
+impl Composition {
+    fn new(renderer: Renderer) -> Result<Self> {
+        let graphics = Graphics::new(renderer);
+        let ui = Ui::new(&graphics.context)?;
+        Ok(Self { graphics, ui })
+    }
+    fn frame(&mut self, front: &mut Front, raw: egui::RawInput) -> egui::FullOutput {
+        let mut actions = vec![];
+        let ui = &mut self.ui;
+        let output = self.graphics.build_custom(raw, |ctx, texture| {
+            let (view, a) = ui.draw(ctx, texture, front);
+            actions = a;
+            view
+        });
+        for action in actions {
+            if let Err(e) = front.execute(action) {
+                front.error = e.to_string();
+            }
+        }
+        self.graphics.update_custom_scene(front.service());
+        output
+    }
+    fn raw() -> egui::RawInput {
+        egui::RawInput {
+            screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1440., 960.))),
+            ..Default::default()
+        }
+    }
+    fn target(&self) -> wgpu::Texture {
+        self.graphics
+            .renderer
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: Some("game UI capture"),
+                size: wgpu::Extent3d {
+                    width: 1440,
+                    height: 960,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.graphics.renderer.format,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+                view_formats: &[],
+            })
+    }
+    fn input(&mut self, front: &mut Front, events: Vec<egui::Event>) -> Result<()> {
+        let mut raw = Self::raw();
+        raw.events = events;
+        let target = self.target();
+        let output = self.frame(front, raw);
+        self.graphics
+            .paint(output, &target.create_view(&Default::default()), 1440, 960)
+    }
+    fn capture(&mut self, front: &mut Front, path: &Path) -> Result<()> {
+        let target = self.target();
+        for _ in 0..3 {
+            let output = self.frame(front, Self::raw());
+            self.graphics
+                .paint(output, &target.create_view(&Default::default()), 1440, 960)?;
+        }
+        fs::write(
+            path,
+            self.graphics
+                .renderer
+                .read_texture_png(&target, 1440, 960)?,
+        )?;
+        Ok(())
+    }
+    fn click(&mut self, front: &mut Front, id: &str) -> Result<()> {
+        // Areas need their sizing passes before they enter egui's hit-test map.
+        for _ in 0..3 {
+            self.input(front, vec![])?;
+        }
+        let pos = self
+            .ui
+            .hits
+            .get(id)
+            .ok_or_else(|| anyhow::anyhow!("Button {id} missing"))?
+            .center();
+        self.input(front, vec![egui::Event::PointerMoved(pos)])?;
+        self.input(
+            front,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: Default::default(),
+                },
+            ],
+        )?;
+        self.input(
+            front,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: false,
+                    modifiers: Default::default(),
+                },
+            ],
+        )?;
+        ensure!(front.error.is_empty(), "{}", front.error);
+        Ok(())
+    }
+}
+struct App {
+    front: Front,
+    window: Option<Arc<Window>>,
+    surface: Option<wgpu::Surface<'static>>,
+    config: Option<wgpu::SurfaceConfiguration>,
+    composition: Option<Composition>,
+    input: Option<egui_winit::State>,
+    keys: BTreeSet<KeyCode>,
+    last: Instant,
+    error: Option<String>,
+}
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_some() {
+            return;
+        }
+        let result = (|| -> Result<()> {
+            let window = Arc::new(
+                event_loop.create_window(
+                    Window::default_attributes()
+                        .with_title("Land of Survivors")
+                        .with_inner_size(winit::dpi::LogicalSize::new(1440., 960.))
+                        .with_min_inner_size(winit::dpi::LogicalSize::new(1040., 760.)),
+                )?,
+            );
+            let instance = wgpu::Instance::new(&Default::default());
+            let surface = instance.create_surface(window.clone())?;
+            let renderer = pollster::block_on(Renderer::new(&instance, Some(&surface)))?;
+            let size = window.inner_size();
+            let mut config = surface
+                .get_default_config(&renderer.adapter, size.width.max(1), size.height.max(1))
+                .ok_or_else(|| anyhow::anyhow!("Unsupported game surface"))?;
+            config.format = renderer.format;
+            config.present_mode = wgpu::PresentMode::AutoVsync;
+            surface.configure(&renderer.device, &config);
+            let composition = Composition::new(renderer)?;
+            let input = egui_winit::State::new(
+                composition.graphics.context.clone(),
+                egui::ViewportId::ROOT,
+                window.as_ref(),
+                Some(window.scale_factor() as f32),
+                window.theme(),
+                None,
+            );
+            self.window = Some(window);
+            self.surface = Some(surface);
+            self.config = Some(config);
+            self.composition = Some(composition);
+            self.input = Some(input);
+            self.last = Instant::now();
+            Ok(())
+        })();
+        if let Err(e) = result {
+            self.error = Some(e.to_string());
+            event_loop.exit();
+        }
+    }
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+        let Some(window) = self.window.as_ref().cloned() else {
+            return;
+        };
+        let _ = self
+            .input
+            .as_mut()
+            .unwrap()
+            .on_window_event(&window, &event);
+        match event {
+            WindowEvent::CloseRequested => match self.front.leave() {
+                Ok(()) => event_loop.exit(),
+                Err(e) => self.front.error = e.to_string(),
+            },
+            WindowEvent::Focused(false) => {
+                self.keys.clear();
+            }
+            WindowEvent::KeyboardInput { event, .. } => {
+                if let PhysicalKey::Code(code) = event.physical_key {
+                    if event.state == ElementState::Pressed {
+                        self.keys.insert(code);
+                    } else {
+                        self.keys.remove(&code);
+                    }
+                    if code == KeyCode::Escape && event.state == ElementState::Pressed {
+                        let action = if self.front.page == Page::Session {
+                            Some(Action::Leave)
+                        } else if matches!(self.front.page, Page::Create | Page::Cosmetics) {
+                            Some(Action::Cancel)
+                        } else {
+                            None
+                        };
+                        if let Some(action) = action
+                            && let Err(e) = self.front.execute(action)
+                        {
+                            self.front.error = e.to_string();
+                        }
+                    }
+                }
+            }
+            WindowEvent::Resized(size) => {
+                if size.width > 0 && size.height > 0 {
+                    let config = self.config.as_mut().unwrap();
+                    config.width = size.width;
+                    config.height = size.height;
+                    self.surface.as_ref().unwrap().configure(
+                        &self.composition.as_ref().unwrap().graphics.renderer.device,
+                        config,
+                    );
+                }
+            }
+            WindowEvent::RedrawRequested => {
+                let result = (|| -> Result<()> {
+                    let size = window.inner_size();
+                    if size.width == 0 || size.height == 0 {
+                        return Ok(());
+                    }
+                    let elapsed = self.last.elapsed().as_secs_f32().min(0.1);
+                    self.last = Instant::now();
+                    let g = self.composition.as_mut().unwrap();
+                    let wants = g.graphics.context.wants_keyboard_input();
+                    let held = |key| !wants && self.keys.contains(&key);
+                    let input = Input {
+                        x: i32::from(held(KeyCode::KeyD)) as f32
+                            - i32::from(held(KeyCode::KeyA)) as f32,
+                        z: i32::from(held(KeyCode::KeyS)) as f32
+                            - i32::from(held(KeyCode::KeyW)) as f32,
+                        mode: if held(KeyCode::ShiftLeft) || held(KeyCode::ShiftRight) {
+                            ignis::model::MovementMode::Run
+                        } else {
+                            ignis::model::MovementMode::Walk
+                        },
+                    };
+                    if let Err(e) = self.front.tick(elapsed, input) {
+                        self.front.error = e.to_string();
+                    }
+                    let raw = self.input.as_mut().unwrap().take_egui_input(&window);
+                    let output = g.frame(&mut self.front, raw);
+                    self.input
+                        .as_mut()
+                        .unwrap()
+                        .handle_platform_output(&window, output.platform_output.clone());
+                    let surface = self.surface.as_ref().unwrap();
+                    let frame = match surface.get_current_texture() {
+                        Ok(f) => f,
+                        Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                            surface.configure(
+                                &g.graphics.renderer.device,
+                                self.config.as_ref().unwrap(),
+                            );
+                            return Ok(());
+                        }
+                        Err(wgpu::SurfaceError::Timeout) => return Ok(()),
+                        Err(e) => return Err(e.into()),
+                    };
+                    g.graphics.paint(
+                        output,
+                        &frame.texture.create_view(&Default::default()),
+                        size.width,
+                        size.height,
+                    )?;
+                    frame.present();
+                    Ok(())
+                })();
+                if let Err(e) = result {
+                    self.front.error = e.to_string();
+                }
+            }
+            _ => {}
+        }
+    }
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        event_loop.set_control_flow(ControlFlow::WaitUntil(
+            Instant::now()
+                + Duration::from_millis(if self.front.page == Page::Session {
+                    16
+                } else {
+                    33
+                }),
+        ));
+        if let Some(w) = &self.window {
+            w.request_redraw();
+        }
+    }
+}
+fn verify(root: &Path, out: &Path) -> Result<()> {
+    fs::create_dir_all(out)?;
+    let dir = tempfile::tempdir()?;
+    let profile = dir.path().join("characters.json");
+    let mut f = Front::new(root.into(), profile.clone())?;
+    let instance = wgpu::Instance::new(&Default::default());
+    let renderer = pollster::block_on(Renderer::new(&instance, None))?;
+    let mut graphics = Composition::new(renderer)?;
+    graphics.capture(&mut f, &out.join("title.png"))?;
+    graphics.click(&mut f, "begin")?;
+    ensure!(f.page == Page::Roster, "Characters list did not open");
+    graphics.capture(&mut f, &out.join("empty-roster.png"))?;
+    graphics.click(&mut f, "new")?;
+    ensure!(f.page == Page::Create, "New character did not open");
+    graphics.click(&mut f, "name")?;
+    graphics.input(&mut f, vec![egui::Event::Text("Aelara".into())])?;
+    graphics.capture(&mut f, &out.join("creator.png"))?;
+    graphics.click(&mut f, "confirm")?;
+    ensure!(f.page == Page::Roster, "Confirmation failed: {}", f.error);
+    let id = f.selected().unwrap().id.clone();
+    let before = fs::read(&profile)?;
+    graphics.click(&mut f, "new")?;
+    graphics.click(&mut f, "cancel")?;
+    ensure!(fs::read(&profile)? == before, "Cancel mutated roster");
+    graphics.capture(&mut f, &out.join("characters.png"))?;
+    let mut reopened = Front::new(root.into(), profile.clone())?;
+    ensure!(
+        reopened.selected().unwrap().id == id,
+        "Identity changed on reopen"
+    );
+    reopened.execute(Action::Offline)?;
+    let mut concurrent = Front::new(root.into(), profile.clone())?;
+    ensure!(
+        concurrent.execute(Action::Offline).is_err(),
+        "Concurrent offline save writer was admitted"
+    );
+    drop(concurrent);
+    let before = reopened
+        .session
+        .as_ref()
+        .unwrap()
+        .client
+        .engine
+        .simulation
+        .positions();
+    for _ in 0..120 {
+        reopened.tick(
+            1. / 60.,
+            Input {
+                x: 1.,
+                z: 0.,
+                mode: ignis::model::MovementMode::Walk,
+            },
+        )?;
+    }
+    let after = reopened
+        .session
+        .as_ref()
+        .unwrap()
+        .client
+        .engine
+        .simulation
+        .positions();
+    ensure!(before != after, "Offline movement did not execute");
+    reopened.leave()?;
+    ensure!(
+        reopened.selected_save_path().unwrap().is_file(),
+        "Character save missing"
+    );
+    reopened.execute(Action::Offline)?;
+    let restored = reopened
+        .session
+        .as_ref()
+        .unwrap()
+        .client
+        .engine
+        .simulation
+        .positions();
+    ensure!(
+        after == restored,
+        "Offline character position was not restored"
+    );
+    reopened.leave()?;
+    f.bind = "127.0.0.1:0".into();
+    f.execute(Action::Host)?;
+    let mut peer = Front::new(root.into(), dir.path().join("peer/characters.json"))?;
+    let d = Draft {
+        name: "Gorak".into(),
+        ..Default::default()
+    };
+    let hash = peer.source_hash.clone();
+    peer.store_mut()?.create(d, hash)?;
+    let started = Instant::now();
+    while f.session.as_ref().unwrap().invitation.is_empty()
+        && started.elapsed() < Duration::from_secs(8)
+    {
+        f.tick(0.016, Input::default())?;
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    peer.invitation = f.session.as_ref().unwrap().invitation.clone();
+    ensure!(!peer.invitation.is_empty(), "Host did not start");
+    peer.execute(Action::Join)?;
+    let start = Instant::now();
+    let mut connected = false;
+    while start.elapsed() < Duration::from_secs(10) {
+        f.tick(0.016, Input::default())?;
+        peer.tick(0.016, Input::default())?;
+        if f.session.as_ref().unwrap().status["state"] == "connected"
+            && peer.session.as_ref().unwrap().status["state"] == "connected"
+        {
+            connected = true;
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    ensure!(
+        connected,
+        "Two real QUIC clients did not connect: {} / {}",
+        f.session.as_ref().unwrap().status,
+        peer.session.as_ref().unwrap().status
+    );
+    ensure!(
+        f.session.as_ref().unwrap().status["actor"]
+            != peer.session.as_ref().unwrap().status["actor"],
+        "Clients share an actor lease"
+    );
+    let before_network = f
+        .session
+        .as_ref()
+        .unwrap()
+        .host
+        .as_ref()
+        .unwrap()
+        .engine
+        .simulation
+        .positions();
+    for _ in 0..120 {
+        f.tick(0.016, Input::default())?;
+        peer.tick(
+            0.016,
+            Input {
+                x: 1.,
+                z: 0.,
+                mode: ignis::model::MovementMode::Walk,
+            },
+        )?;
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let after_network = f
+        .session
+        .as_ref()
+        .unwrap()
+        .host
+        .as_ref()
+        .unwrap()
+        .engine
+        .simulation
+        .positions();
+    ensure!(
+        after_network.iter().any(|(id, p)| before_network
+            .get(id)
+            .is_some_and(|old| (p[0] - old[0]).abs() > 0.5)),
+        "Remote movement was not applied by authority"
+    );
+    graphics.capture(&mut f, &out.join("multiplayer.png"))?;
+    peer.leave()?;
+    f.leave()?;
+    fs::write(
+        out.join("verification.json"),
+        serde_json::to_vec_pretty(
+            &serde_json::json!({"native_ui_click_flow":true,"cancel_preserves_file":true,"identity_reopen":true,"offline_movement_and_portable_save":true,"concurrent_save_writer_rejected":true,"real_quic_clients":2,"remote_movement_authoritative":true,"logo_original":true,"human_acceptance":false}),
+        )?,
+    )?;
+    println!("Native creator, durable characters, offline save and two QUIC clients verified.");
+    Ok(())
+}
+pub fn main() -> Result<()> {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let args: Vec<_> = std::env::args().collect();
+    if args.iter().any(|a| a == "--verify") {
+        return verify(&root, &root.join("games/land-of-survivors/artifacts/app"));
+    }
+    let front = Front::new(root, Store::default_path())?;
+    let mut app = App {
+        front,
+        window: None,
+        surface: None,
+        config: None,
+        composition: None,
+        input: None,
+        keys: BTreeSet::new(),
+        last: Instant::now(),
+        error: None,
+    };
+    let event_loop = EventLoop::new()?;
+    event_loop.run_app(&mut app)?;
+    if let Some(e) = app.error {
+        anyhow::bail!(e);
+    }
+    Ok(())
+}

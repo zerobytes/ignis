@@ -1,18 +1,19 @@
 # Land of Survivors
 
-Projeto nativo Ignis, iniciado em 3 de novembro de 2026. A entrada atual é uma cena vazia de 200 × 200 m para construir a tela inicial e a seleção de personagens. O mundo planetário e as 284 habilidades em laboratório separado estão preservados. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Habilidades funcionais](../../docs/games/land-of-survivors/habilidades-runtime.md) · [Geografia](../../docs/games/land-of-survivors/geografia.md) · [Protótipo e ferramentas](../../docs/games/land-of-survivors/prototipo-relevo.md).
+Projeto nativo Ignis, iniciado em 3 de novembro de 2026. A entrada usa um palco de 200 × 200 m com menu e criação/seleção nativa de personagens. Veja [Entrada e personagens](../../docs/games/land-of-survivors/entrada-e-personagens.md) para persistência, prévia e limites do multiplayer. O mundo planetário e as 284 habilidades em laboratório separado estão preservados. [GDD](../../docs/games/land-of-survivors/GDD.md) · [Habilidades funcionais](../../docs/games/land-of-survivors/habilidades-runtime.md) · [Geografia](../../docs/games/land-of-survivors/geografia.md) · [Protótipo e ferramentas](../../docs/games/land-of-survivors/prototipo-relevo.md).
 
 ## Entrada do app
 
-`scenes/Inicio.scene.json` é a cena inicial registrada no manifesto. Contém somente um piso físico plano de 200 × 200 m, de −100 a +100 m nos eixos X/Z, com topo em Y=0. Câmera e iluminação são configurações da cena. Não há jogador, NPC, personagem visual, decoração ou combate. Essa é a base de construção; menu, lista e criação de personagens ainda não foram implementados.
+`scenes/Inicio.scene.json` é a cena inicial registrada no manifesto. Contém somente um piso físico plano de 200 × 200 m, de −100 a +100 m nos eixos X/Z, com topo em Y=0. Câmera e iluminação são configurações da cena. Não há jogador, NPC, personagem visual, decoração ou combate. Essa cena é a base do palco. O launcher do jogo compõe menu, lista e criação por cima dela, com personagens persistidos separadamente.
 
 ```sh
 python3 games/land-of-survivors/start.py
-python3 games/land-of-survivors/start.py --open
+python3 games/land-of-survivors/app.py --build
+python3 games/land-of-survivors/app.py --open
 python3 games/land-of-survivors/start.py --editor
 ```
 
-Sem opção, verifica a entrada, as dimensões, save/load e preservação da câmera por MCP, capturando `artifacts/front-end/start.png` e `overview.png`. `--open` abre a cena na janela nativa; `--editor` abre o projeto para autoria. Usa o executável corrente do Ignis, sem compilar ou copiar um app. As capturas foram inspecionadas offscreen; não comprovam interação desktop ou menus prontos.
+Sem opção, verifica a entrada, as dimensões, save/load e preservação da câmera por MCP, capturando `artifacts/front-end/start.png` e `overview.png`. `start.py --open` abre o jogo com seu menu; `--editor` abre o projeto para autoria. Usa o executável corrente do Ignis, sem compilar ou copiar um app. As capturas foram inspecionadas offscreen; não comprovam interação desktop ou menus prontos.
 
 `scenes/Principal.scene.json` continua sendo a cena do observador planetário. Os launchers de mundo/relevo selecionam essa cena explicitamente, sem depender da nova entrada. A geografia e o laboratório de habilidades continuam independentes do palco de interface.
 

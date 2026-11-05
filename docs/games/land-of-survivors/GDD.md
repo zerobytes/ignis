@@ -1,6 +1,6 @@
 # Land of Survivors GDD
 
-Versão 1.4 · 4 de novembro de 2026 · Desenvolvimento no Ignis.
+Versão 1.5 · 5 de novembro de 2026 · Desenvolvimento no Ignis.
 
 Land of Survivors é um RPG 3D de fantasia clássica, com exploração de um planeta esférico finito do tamanho da Terra, evolução do personagem, combate PvE/PvP e histórias com consequências permanentes. Preserva a lore, a história e as decisões não técnicas do projeto anterior. Toda a construção do jogo no Ignis será nova.
 
@@ -8,7 +8,9 @@ Land of Survivors é um RPG 3D de fantasia clássica, com exploração de um pla
 
 Permanecem os povos, personagens, criaturas, histórias, classes, habilidades, regras de jogo, personalização, progressão, equipamentos, comércio, exploração, viagens e aventuras por IA. Os catálogos completos de [lore e criaturas](lore.md) e [habilidades](habilidades.md) fazem parte deste GDD.
 
-Nenhum asset anterior será reaproveitado: modelos, meshes, construções, terrenos, cenas, materiais, texturas, imagens, interface pronta, animações, rigs, áudio ou efeitos. Código, geradores, receitas de construção, ferramentas e soluções técnicas anteriores também ficam fora. Uma vila, um portal ou um Guarda de Pedra permanece como conceito do universo, sem importar sua construção anterior.
+Exceção autorizada em 5 de novembro de 2026: reutilizar o logo original de Land of Survivors na entrada. A exceção se limita à marca; os demais assets e implementações continuam novos.
+
+Nenhum outro asset anterior será reaproveitado: modelos, meshes, construções, terrenos, cenas, materiais, texturas, imagens, interface pronta, animações, rigs, áudio ou efeitos. Código, geradores, receitas de construção, ferramentas e soluções técnicas anteriores também ficam fora. Uma vila, um portal ou um Guarda de Pedra permanece como conceito do universo, sem importar sua construção anterior.
 
 As regras descritas como definidas orientam o produto. Os conceitos identificados como propostas e os valores de balanceamento provisórios permanecem disponíveis para desenvolvimento, sem se tornarem decisões finais. O GDD especifica o jogo desejado; não declara esses sistemas implementados no Ignis.
 
@@ -48,7 +50,7 @@ Cada personagem conserva nome, identidade, espécie, base, aparência, classe, f
 
 O fluxo de entrada apresenta menu, lista de personagens e criação. Confirmar cria a identidade antes da entrada; cancelar não cria um personagem. Editar aparência permite confirmar ou restaurar o estado anterior. Trocar de personagem preserva o progresso individual e os acontecimentos do mundo compartilhado.
 
-A base atual desse fluxo é uma cena própria vazia de 200 × 200 m, registrada como entrada do projeto em `scenes/Inicio.scene.json`. Ela contém apenas piso, câmera e iluminação, sem jogador ou NPC. Menu, lista, criação e apresentação de personagens serão construídos nessa cena; ainda não estão implementados. O mundo planetário e o laboratório de habilidades permanecem separados e preservados. Os comandos para verificar/abrir estão no [projeto nativo](../../../games/land-of-survivors/README.md#entrada-do-app).
+A base atual desse fluxo é uma cena própria vazia de 200 × 200 m, registrada como entrada do projeto em `scenes/Inicio.scene.json`. Ela contém apenas piso, câmera e iluminação, sem jogador ou NPC. O fluxo nativo de menu, lista e criação de personagens usa esse palco; seu contrato, estado e limites de multiplayer estão em [Entrada e personagens](entrada-e-personagens.md). As bases artísticas e a conexão com o RPG completo seguem em desenvolvimento. O mundo planetário e o laboratório de habilidades permanecem separados e preservados. Os comandos para verificar/abrir estão no [projeto nativo](../../../games/land-of-survivors/README.md#entrada-do-app).
 
 ## Classes e estilos de jogo
 

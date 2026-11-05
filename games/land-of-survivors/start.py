@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Inspect or open the empty native front-end scene with the current Ignis executable."""
+"""Inspect the 200m stage or open the native game front end."""
 import argparse
 import json
 from pathlib import Path
 import sys
+import subprocess
 
 PROJECT = Path(__file__).resolve().parent
 ENGINE = PROJECT.parents[1]
@@ -32,6 +33,9 @@ def main():
     display.add_argument('--editor', action='store_true', help='Open this project in the native editor')
     parser.add_argument('--binary', type=Path, default=ENGINE / 'target/release/ignis')
     args = parser.parse_args()
+    if args.open:
+        subprocess.run([sys.executable, str(PROJECT / "app.py"), "--open"], check=True)
+        return
     binary = args.binary.resolve()
     if not binary.is_file():
         parser.error('Build Ignis first; this scene uses the current executable')
@@ -77,7 +81,8 @@ def main():
                   'entities': 1, 'players': 0, 'npcs': 0,
                   'native_roundtrip': True, 'original_camera_preserved': True,
                   'planet_scene_preserved': True, 'window_opened': False,
-                  'menus_implemented': False, 'character_selector_implemented': False}
+                  'menus_in_scene_file': False, 'character_selector_in_scene_file': False,
+                  'native_app_front_end': 'examples/land_of_survivors_app'}
         (out / 'verification.json').write_text(json.dumps(report, indent=2) + '\n')
         print(json.dumps({'verified': True, 'size_meters': [200, 200], 'entry_scene': ENTRY}))
     finally:

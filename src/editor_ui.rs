@@ -161,6 +161,25 @@ impl Graphics {
     pub fn project_dialog_open(&self) -> bool {
         self.ui.project.modal()
     }
+    /// Compose a game's UI with the native scene renderer, without editor panels.
+    /// The caller owns its UI state and applies actions after this read-only pass.
+    pub fn build_custom(
+        &mut self,
+        input: egui::RawInput,
+        draw: impl FnOnce(&egui::Context, egui::TextureId) -> Option<Rect>,
+    ) -> egui::FullOutput {
+        self.context.begin_pass(input);
+        self.viewport = draw(&self.context, self.viewport_id);
+        self.context.end_pass()
+    }
+    /// Refresh the scene after applying a game's actions and before painting.
+    pub fn update_custom_scene(&mut self, service: &Service) {
+        if let Some(frame) = &mut self.frame {
+            service.update_game_frame(frame);
+        } else {
+            self.frame = Some(service.game_frame());
+        }
+    }
     pub fn build(
         &mut self,
         service: &Service,
