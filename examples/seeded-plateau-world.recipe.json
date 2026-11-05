@@ -1,0 +1,317 @@
+{
+  "version": 1,
+  "world_seed": 12345,
+  "count": 40,
+  "expected_geometry": [
+    {
+      "id": "p0_0_0",
+      "seed": 2861030665713521062,
+      "effective_seed": 16312769708626671882,
+      "geometry_sha256": "a823588f3093eeae7af97ad6380c847b9fdc04d835e678691242086f7ba41eb8"
+    },
+    {
+      "id": "p0_0_1",
+      "seed": 16135831360279739930,
+      "effective_seed": 16014910358493175754,
+      "geometry_sha256": "6f13e27026f320fbb8dc451216ed893e8af5ac3515370c4f11c93ae5db4724f0"
+    },
+    {
+      "id": "p0_0_2",
+      "seed": 9892052844757323654,
+      "effective_seed": 13425600122218006090,
+      "geometry_sha256": "c96f924590237e250d209221d6c2271951dd6f2a75b103cc2eaf673e397fff26"
+    },
+    {
+      "id": "p0_0_3",
+      "seed": 5052889002556026646,
+      "effective_seed": 11519279935432688929,
+      "geometry_sha256": "e538c2627051dff18adb62f6671405814804ea604fafec9e99335f8720d57732"
+    },
+    {
+      "id": "p0_2_0",
+      "seed": 14793863196136608413,
+      "effective_seed": 1524816484591577899,
+      "geometry_sha256": "f7ce9a8b0e4f04b3db2464aa53a966bbcab355ec33e1e7dcc6fbe385bd5edd39"
+    },
+    {
+      "id": "p0_2_1",
+      "seed": 10422057317979500455,
+      "effective_seed": 5893901937651136036,
+      "geometry_sha256": "d0b4aae5aaceae69b1860374b36bc0f39eb31424beea58b375ad1fdcdaa50ddb"
+    },
+    {
+      "id": "p0_2_2",
+      "seed": 15392958637674071161,
+      "effective_seed": 16148424472418094651,
+      "geometry_sha256": "b87db3be510045b3fdd48c734dc549bd3bd9a674ea8925088a2cbe8bad458a63"
+    },
+    {
+      "id": "p0_2_3",
+      "seed": 13551313616754570908,
+      "effective_seed": 14767322730080269428,
+      "geometry_sha256": "9833b7cc423841167aa4410021143d1b26e8be2aea44ff9ddf85b2b4ea2d6fcb"
+    },
+    {
+      "id": "p1_0_0",
+      "seed": 16816122847119441402,
+      "effective_seed": 15713045549129702592,
+      "geometry_sha256": "5bd29e51799e925a5dbfb07e6108f01b4b8e0505f28aa6b980e99d7fdf324e12"
+    },
+    {
+      "id": "p1_0_1",
+      "seed": 4191234509434962492,
+      "effective_seed": 15265392075224652197,
+      "geometry_sha256": "c0f409d16fefdd0e2ef22e3b11d2baa3384c222a813aeac6d4f4bf05e08ccf8c"
+    },
+    {
+      "id": "p1_0_2",
+      "seed": 9759882934286645037,
+      "effective_seed": 17869676475228840088,
+      "geometry_sha256": "b4e497f3d4616706c4efbb8726395313b869916c49166d401c5a5f94052184c1"
+    },
+    {
+      "id": "p1_0_3",
+      "seed": 16802077393972266660,
+      "effective_seed": 12756346205147188229,
+      "geometry_sha256": "986496264319b7434fe4a265b0071a317464dc424f54f956456da0d38ffa84f8"
+    },
+    {
+      "id": "p1_2_0",
+      "seed": 3674429496194797959,
+      "effective_seed": 15402448029614757018,
+      "geometry_sha256": "3e2b7dffe8812b7928fc9a7739269a4cb53bb4390cd5c48854e2f128798a4b96"
+    },
+    {
+      "id": "p1_2_1",
+      "seed": 17900634594762361045,
+      "effective_seed": 6006299413451788117,
+      "geometry_sha256": "a32484acc90602feb334efb0c90cbdd55342fd696bc52796f5b05f5a637d2894"
+    },
+    {
+      "id": "p1_2_2",
+      "seed": 8269324002795666189,
+      "effective_seed": 1017901048738041459,
+      "geometry_sha256": "88a15fc232a18a80fab1c6d703a563495a9ac1d0db036b409b24dad8dd4b6df7"
+    },
+    {
+      "id": "p1_2_3",
+      "seed": 8515357976483690918,
+      "effective_seed": 4470377315793651942,
+      "geometry_sha256": "f84a801a4438aa0df58f69204644918766ca50955cb607dd4e626a25fa76f86b"
+    },
+    {
+      "id": "p2_0_0",
+      "seed": 15992754896334844805,
+      "effective_seed": 11837818786752382114,
+      "geometry_sha256": "98da336cf1dbcc008f6a7340d4c518cf725f4719832541d6e3f09ee30abe8c3c"
+    },
+    {
+      "id": "p2_0_1",
+      "seed": 961839078564502159,
+      "effective_seed": 12023860454458272829,
+      "geometry_sha256": "5274f5ff6c64db5acdf19be86960874ffea6092463a548f749a3202c16f8ff03"
+    },
+    {
+      "id": "p2_0_2",
+      "seed": 10662806229010875155,
+      "effective_seed": 12771261271686225301,
+      "geometry_sha256": "6e0739716dd1bae5226ab2203c158a4c0808c4c8618fa53cdbfc021cc1d195eb"
+    },
+    {
+      "id": "p2_0_3",
+      "seed": 2773763246241027460,
+      "effective_seed": 12641146139347355124,
+      "geometry_sha256": "68927bd23fe61417c40665a79759f492c2e6edcfdddc72e6254cfd8869ae8693"
+    },
+    {
+      "id": "p2_2_0",
+      "seed": 1476814929930887118,
+      "effective_seed": 9950201664215951581,
+      "geometry_sha256": "a331cf724cd6ee341a71592af2a06b130b3eba480beb602408d13109b75fa7a6"
+    },
+    {
+      "id": "p2_2_1",
+      "seed": 4983547653370080482,
+      "effective_seed": 13590859381522273482,
+      "geometry_sha256": "c92924c19b3b76b4785fe8309b088287c55f57543b4ea59a8949cf511da67941"
+    },
+    {
+      "id": "p2_2_2",
+      "seed": 9288734554950180981,
+      "effective_seed": 3217865050296480684,
+      "geometry_sha256": "f982c15b2127419951891e1d995208fa8052bb93dd76e705168289fa75c5c329"
+    },
+    {
+      "id": "p2_2_3",
+      "seed": 10084917110599390755,
+      "effective_seed": 15567432149599452609,
+      "geometry_sha256": "fc58127364776a0c27c3c7fc6e21f7387aefadfd489c7f39b55a4418340090ed"
+    },
+    {
+      "id": "p3_0_0",
+      "seed": 17042954229482020405,
+      "effective_seed": 4033901826930044002,
+      "geometry_sha256": "89e24261ab11ef5deee467244fa3f76a3e777561d3e85b831b2bba029591f2ea"
+    },
+    {
+      "id": "p3_0_1",
+      "seed": 7063940242124231591,
+      "effective_seed": 7249425395819377642,
+      "geometry_sha256": "530ac1ab37cc99660273ac49c237c5ba3fdb2b2ad76abd789151b2ea9ed6004f"
+    },
+    {
+      "id": "p3_0_2",
+      "seed": 10476364225184814055,
+      "effective_seed": 11674007961088508020,
+      "geometry_sha256": "e762d27cf2d1499a2f6f571ce8d4372babfea293bc6becf5626bac891ceaa843"
+    },
+    {
+      "id": "p3_0_3",
+      "seed": 11530704261403252551,
+      "effective_seed": 16001874272631109798,
+      "geometry_sha256": "ee4cdc8dcc5ce9f19fd75af161981f460fefb5f757bc2ad749a7e3e666566cc4"
+    },
+    {
+      "id": "p3_2_0",
+      "seed": 4607904348459192264,
+      "effective_seed": 15264536200883527614,
+      "geometry_sha256": "95a24227cbe04ae3b74b332c1d229200052c94b57912688df5e0ca23fd3f2d18"
+    },
+    {
+      "id": "p3_2_1",
+      "seed": 15899065206008037048,
+      "effective_seed": 9380294488219724842,
+      "geometry_sha256": "7e96401dbc05f232420c6c3d5d307befac5ded3001ff3e70101c856783504eb2"
+    },
+    {
+      "id": "p3_2_2",
+      "seed": 13783995257000041276,
+      "effective_seed": 9355040093383777512,
+      "geometry_sha256": "0dbe7da50f2d22750a287efcfa0041c35d544c5832e077c7c8e6c794db1da559"
+    },
+    {
+      "id": "p3_2_3",
+      "seed": 1068568686650606203,
+      "effective_seed": 7286987494522526171,
+      "geometry_sha256": "5915ea7f9724edc4287eb7af9f416114a462de8ba2948bf139e57ecff426ba6c"
+    },
+    {
+      "id": "p4_0_0",
+      "seed": 5097489584476223124,
+      "effective_seed": 1369502874077231064,
+      "geometry_sha256": "23264f80ac7722e319b743587f2fcbe70ba20382953fa8bf2dcc4a20dabbd7f8"
+    },
+    {
+      "id": "p4_0_1",
+      "seed": 6493647156826225290,
+      "effective_seed": 5905260007046798844,
+      "geometry_sha256": "206ea64b8ab7727361851834f2732bdd49db45f98e69aa707550e384ca77cf32"
+    },
+    {
+      "id": "p4_0_2",
+      "seed": 10928662337046773145,
+      "effective_seed": 10717289980068512038,
+      "geometry_sha256": "e7b013ade1f9286c106952f0f6eb41c83eb7a869a8959905db2218a39c1c8940"
+    },
+    {
+      "id": "p4_0_3",
+      "seed": 5251311175292654376,
+      "effective_seed": 14084086556332362346,
+      "geometry_sha256": "856a962bde25da8118d08aeefc24d5dc88dfa97a920ed0f9c15c9c8d9a9f65ac"
+    },
+    {
+      "id": "p4_2_0",
+      "seed": 15008246106206117431,
+      "effective_seed": 1155752428458448186,
+      "geometry_sha256": "e331fecbaa73cf10e8130dac968f7326585bebae71cab038bfd6a51e7a4027bc"
+    },
+    {
+      "id": "p4_2_1",
+      "seed": 9448272890825042237,
+      "effective_seed": 14224644479843732331,
+      "geometry_sha256": "d27bb37f244c0f1911cf35da3d9e96c5d9871ac78398b3503ce34e473a8d334c"
+    },
+    {
+      "id": "p4_2_2",
+      "seed": 10738134900712820636,
+      "effective_seed": 9860593242707255008,
+      "geometry_sha256": "75f5176ecc11402f53e45a87c0b3ec8d56203fc4dc3a08300c500f2dbde4c415"
+    },
+    {
+      "id": "p4_2_3",
+      "seed": 13213656708671350060,
+      "effective_seed": 1155778994693256683,
+      "geometry_sha256": "f3fe4f39e76b7fabf49f68ba1b5959026cc1f05420bbe0a132df1881a844780d"
+    }
+  ],
+  "light": {
+    "direction": [
+      0.4,
+      -0.75,
+      0.55
+    ],
+    "ambient": 0.25,
+    "direct_intensity": 1.15,
+    "direct_color": [
+      1,
+      0.96,
+      0.9
+    ],
+    "atmosphere": {
+      "density": 8e-05,
+      "color": [
+        0.61,
+        0.74,
+        0.84
+      ],
+      "reduce_details": false,
+      "sun_color": [
+        1,
+        0.95,
+        0.85
+      ],
+      "sun_strength": 0.05
+    }
+  },
+  "views": {
+    "overview": {
+      "position": [
+        590,
+        450,
+        -640
+      ],
+      "target": [
+        0,
+        40,
+        100
+      ],
+      "fov_degrees": 54
+    },
+    "valley": {
+      "position": [
+        155,
+        160,
+        -540
+      ],
+      "target": [
+        10,
+        60,
+        135
+      ],
+      "fov_degrees": 65
+    },
+    "reverse": {
+      "position": [
+        -690,
+        600,
+        910
+      ],
+      "target": [
+        0,
+        40,
+        75
+      ],
+      "fov_degrees": 50
+    }
+  }
+}

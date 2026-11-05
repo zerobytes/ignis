@@ -62,3 +62,11 @@ then python3 scripts/render_plateau_amphitheatre.py. Composition controls/source
 hash/cameras: examples/plateau-amphitheatre.recipe.json. Current scene/captures/
 verification: artifacts/plateau-amphitheatre/. Parallel LoS work/source scene
 preserved. Local commit only; EAF-221 remains In Progress for broader requirements.
+
+## Scope correction after user review
+
+The user explicitly clarified that seed must generate each plateau's geometry,
+not just place this repeated shape. This document describes the historical
+instancing experiment only. Current seeded authoring and distinct native bakes:
+[seeded-plateaus.md](seeded-plateaus.md). Do not call this forty-instance recipe
+a completed procedural plateau generator.

@@ -8,8 +8,8 @@ OUT=ROOT/'artifacts/plateau-amphitheatre';PREFIX='artifacts/plateau-amphitheatre
 BASE='artifacts/patchy-plateau/plateau.scene.json'
 GROUND_Y=-1.5
 
-def placements():
- rng=random.Random(81477);result=[]
+def placements(seed=81477):
+ rng=random.Random(seed);result=[]
  for level,depth in enumerate([0,18,38,60,84]):
   z=-170+level*125;valley=30*math.sin(level*.85)
   for side in [-1,1]:
