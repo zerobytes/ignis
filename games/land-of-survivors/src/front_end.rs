@@ -593,7 +593,14 @@ impl Front {
             return Ok(());
         };
         s.clock += f64::from(dt);
-        let input = s.controls.world_input(input);
+        let mut input = s.controls.world_input(input);
+        if input.mode == ignis::model::MovementMode::Walk {
+            // Game walk cadence: 1.6 m/s over the native 4 m/s profile. Use
+            // analog input so existing portable worlds and network slots agree.
+            let length = input.x.hypot(input.z).max(1.);
+            input.x *= 0.4 / length;
+            input.z *= 0.4 / length;
+        }
         s.last_input = input;
         s.elapsed = (s.elapsed + dt).min(0.25);
         s.inspect_elapsed += dt;

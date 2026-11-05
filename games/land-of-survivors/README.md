@@ -24,8 +24,10 @@ Clipes, passada e fases de apoio ficam em `assets/animations/locomotion.ignis-mo
 com edição/save/load pelo MCP e recarga visual durante a sessão.
 `app.py --animation-preview` abre um palco sem save de personagem.
 Veja [o fluxo de autoria nativo](../../docs/animation-authoring.md) para exportar
-uma cena, editar o rig/clipes e gravar apoios no clipe. Os ciclos iniciais ainda
-são rascunhos; a caminhada natural continua pendente de trabalho e revisão visual.
+uma cena, editar o rig/clipes e gravar apoios no clipe. Caminhada e corrida foram
+refeitas com trajetórias de apoio/retorno, rolagem do pé, peso do corpo e braços
+contralaterais. [Receita e autoria](../../docs/games/land-of-survivors/locomocao.md).
+A revisão artística do usuário continua separada do funcionamento dos clipes.
 
 ## Habilidades funcionais
 

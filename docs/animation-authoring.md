@@ -8,7 +8,9 @@ The existing mesh editor/MCP remains the rig and keyframe authoring surface.
 Land of Survivors loads
 `games/land-of-survivors/assets/animations/locomotion.ignis-motion` for idle, walk
 and run. The old draft cycles only seed the file when it does not exist. They
-are not a newly approved natural walk. Saving the library reloads the visual
+are only a fallback. The tracked library now contains the authored walk/run from
+`games/land-of-survivors/author_locomotion.py` and its editable recipe. Human
+artistic acceptance is separate. Saving the library reloads the visual
 models in a running game session, normally within half a second. Physics,
 character identity and the physical save are not replaced. Invalid reloads keep
 the last usable models and display an error. Rebuilding a large character can
@@ -99,7 +101,9 @@ claiming exact contact preservation across different morphologies.
 
 This increment does not provide planted-foot anchors during turns, arbitrary
 terrain IK for the player, motion matching, a Blender-equivalent curve editor,
-or an approved natural walk. Those require follow-up animation and runtime work.
+or a human-approved natural walk. The game now has authored forward walk/run
+cycles; further artistic refinement and directional/terrain behavior remain
+separate work.
 The generic native NPC root-motion/physics support systems remain separate.
 
 The library inherits native clip/key/rig budgets and adds a 2 MiB document limit,

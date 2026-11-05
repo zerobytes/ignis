@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "character_height": 1.8,
+  "walk": {
+    "duration_ticks": 54,
+    "stride_metres": 1.44,
+    "stance_fraction": 0.6,
+    "clearance_metres": 0.08,
+    "root_drop_metres": 0.075,
+    "root_bob_metres": 0.055,
+    "lean_degrees": -2.0,
+    "arm_swing_degrees": 21.0,
+    "elbow_degrees": 17.0,
+    "heel_strike_degrees": 12.0,
+    "toe_off_degrees": -29.0
+  },
+  "run": {
+    "duration_ticks": 40,
+    "stride_metres": 4.0,
+    "stance_fraction": 0.3,
+    "clearance_metres": 0.5,
+    "root_drop_metres": 0.125,
+    "root_bob_metres": 0.085,
+    "lean_degrees": -10.0,
+    "arm_swing_degrees": 37.0,
+    "elbow_degrees": 78.0,
+    "heel_strike_degrees": 5.0,
+    "toe_off_degrees": -38.0
+  }
+}
