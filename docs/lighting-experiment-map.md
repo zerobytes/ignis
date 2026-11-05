@@ -177,3 +177,14 @@ This preserves the existing finite sampled bake; it is not a continuous-radiance
 certificate, async engine scheduler or frame-budgeted dynamic GI. Material edits
 save more than broad geometry changes; global sun direction still invalidates
 all. Dependency storage and conservative false positives are explicit costs.
+
+## GPU Gems 3 applicability checkpoint (2026-11-05)
+
+The [correlated review](lighting-gpu-gems3-review.md) identifies direct-to-indirect
+response storage(ch9) as an alternative to ray rebuilds for supported material
+edits, and contribution-based rejection(ch19's principle) as an experiment on
+existing native lighting cost. Ch20 cosine/GGX/quasirandom ideas partly exist
+already; ch10/8 shadow allocation/filtering and ch16/14 material appearance are
+separate experiments. Historical book results do not establish Ignis speedups.
+A new read-only script records zero-direct-lobe eligibility and response-storage
+planning from existing datasets; no renderer optimization is implemented here.
