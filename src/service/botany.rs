@@ -344,6 +344,11 @@ impl Service {
     }
     pub(super) fn botany_command(&mut self, operation: &Op) -> Result<Value> {
         match operation {
+            Op::AdoptLiving{prefix,timing,born}=>{
+                let old=self.botanical_recipe(prefix)?;
+                let plant=b::growth::authored::adopt(&old,timing,*born)?;
+                self.botanical_publish(plant.bound_recipe()?,Policy::Preserve)
+            }
             Op::SetWoodDetails{prefix,details,preview,policy}=>{
                 let mut recipe=self.botanical_recipe(prefix)?;
                 b::wood_details::preserve_losses(recipe.wood_details.as_ref(),details.as_ref())?;

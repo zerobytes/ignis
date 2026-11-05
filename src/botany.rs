@@ -243,6 +243,7 @@ pub enum ManualPolicy {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    AdoptLiving { prefix: String, #[serde(default)] timing: growth::authored::Timing, #[serde(default)] born: u64 },
     SetWoodDetails { prefix: String, details: Option<wood_details::Details>, #[serde(default)] preview: bool, #[serde(default)] policy: ManualPolicy },
     LoseBranch { prefix: String, organ: String, cause: wood_details::Cause, #[serde(default)] policy: ManualPolicy },
     CreateLiving {

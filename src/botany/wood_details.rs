@@ -617,7 +617,7 @@ pub fn advance(old: &Recipe, plant: &mut growth::Plant, time: u64) -> Result<Opt
     }
     // Record the frozen legacy maturity rule rather than silently erasing branches.
     let maturity = born + 300 * 365 + u64::from(plant.definition.version >= 6);
-    if plant.definition.version >= 5 {
+    if (5..=8).contains(&plant.definition.version) {
         dates.push((maturity, None));
     }
     dates.sort();

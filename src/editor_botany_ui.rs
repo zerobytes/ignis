@@ -180,6 +180,7 @@ pub(super) fn properties(
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
             let system=recipe.source.root_systems.iter().find(|r|r.stem==state.root_stem);state.roots_enabled=system.is_some();state.roots=system.map(|s|s.settings.clone()).unwrap_or_default();
         }
+        if recipe.living.is_none() && ui.button("Adaptar fonte adulta ao desenvolvimento vivo").clicked() {send(commands,Op::AdoptLiving{prefix:recipe.prefix.clone(),timing:Default::default(),born:0});}
         let (detail_action,loss)=crate::botany::wood_details::ui::editor(ui,recipe,&mut state.wood_details,&mut state.loss_branch);
         if let Some(action)=detail_action {use crate::botany::wood_surface::ui::Action;
             if matches!(action,Action::Cancel){state.wood_details=recipe.wood_details.clone();send(commands,Op::CancelPreview);}else{send(commands,Op::SetWoodDetails{prefix:recipe.prefix.clone(),details:state.wood_details.clone(),preview:matches!(action,Action::Preview),policy:ManualPolicy::Preserve});}
@@ -195,7 +196,7 @@ pub(super) fn properties(
             let observed=(recipe.prefix.clone(),born,plant.production.plant.time,preview_time);
             if state.living_observed.as_ref()!=Some(&observed) {
                 state.living_age_years=preview_time.unwrap_or(plant.production.plant.time).saturating_sub(born) as f64/365.;
-                if plant.definition.version>=2 {state.living_horizon_years=state.living_horizon_years.max(if plant.definition.version>=5 {3000.}else{30.});}
+                if plant.definition.version>=2 {state.living_horizon_years=state.living_horizon_years.max(if (5..=8).contains(&plant.definition.version) {3000.}else{30.});}
                 state.living_observed=Some(observed);
             }
             let maximum_age=(crate::botany::growth::MAX_TIME-born) as f64/365.;

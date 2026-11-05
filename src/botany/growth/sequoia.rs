@@ -6,6 +6,7 @@ use tree::noise;
 
 pub fn definition(prefix: String, seed: u64) -> Definition {
     Definition {
+        authored: None,
         version: 5,
         prefix,
         seed,

@@ -1,0 +1,20 @@
+{
+  "source_library": "assets/botany/genshin-birch/library.json",
+  "timing": {
+    "reference_years": 20,
+    "seedling_height_m": 0.55,
+    "height_time_years": 35,
+    "crown_time_years": 35,
+    "radial_time_years": 35,
+    "branch_interval_days": 200,
+    "order_delay_days": 120,
+    "expansion_days": 730
+  },
+  "stages_years": [
+    0,
+    2,
+    8,
+    20,
+    80
+  ]
+}
