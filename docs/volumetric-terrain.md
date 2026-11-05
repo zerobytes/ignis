@@ -152,3 +152,52 @@ The real MCP demonstration passed source/baked Scene/replay checks, undo/redo,
 atomic invalid-publication refusal, empty GPU queries and grounded physics.
 This is not a claim that the entire repository test suite passed. The current
 binary is target/release/ignis; no engine window was launched for this work.
+
+## Larger regional experiment and timing interpretation
+
+`scripts/volume_terrain_region.py` schedules a common source field over a4×4
+layout of52m blocks (208×208m,10.5625times the previous area). Cell size remains
+0.5m; each block samples104×192×104cells, including a96m vertical interval.
+This grows the sampled domain, not the scale of the existing rocks. All geometry
+comes from the native MCP publication. Read-only mesh inspection compares shared
+boundary vertex sets and checks that no surface reaches the vertical cut planes.
+Matching vertex sets alone does not certify ambiguous-face connectivity or
+normal continuity. It remains a fully resident finite authoring experiment.
+
+Performance checklist for this extension: reuse the GPU pipeline and source;
+keep per-block sample buffers bounded; keep only boundary sets from read-only
+inspection; do not regenerate geometry per frame. Timing adds a few `Instant`
+reads per cold operation, not per sample/frame. No code rebuild is needed merely
+to change seed or region size. Scene publication currently reuses the existing
+transaction/physics path; repeated cold publications can cost more as the resident
+scene grows. This is not asynchronous world streaming.
+
+The MCP report now exposes wall times for combined density setup/dispatch,
+synchronization/readback/conversion, CPU extraction/validation, and scene
+publication including collision. These are host wall times, not GPU timestamps;
+density execution and readback are intentionally not presented as isolated
+measurements. The client additionally records full MCP latency, serialization,
+captures and saving separately. Captures include rendering/readback/PNG work and
+are not frame-rate measurements. A first query can include renderer/pipeline
+initialization; subsequent queries still regenerate the field and mesh.
+
+Measured on this Mac for the208×208m run:397,237vertices/782,522triangles,
+24shared boundaries with identical vertex sets, no upper/lower clipping,
+grounded contact and pixel-identical Scene reload. Original64m patch benchmark:
+first MCP call98.05ms, warmed median15.87ms (still regenerates, not cached mesh).
+Across16larger blocks:225.47ms density/readback,195.73ms CPU extraction,
+3377.13ms scene publication including collision. Total publication MCP calls
+3802.11ms; including separate read-only geometry inspections4363.86ms. Saving
+89.78ms; captures148.53–224.47ms each. These are one observed run, not universal
+budgets or GPU timestamps. Most cold authoring cost here is the current separate
+scene transaction/physics publication per block. A future batch/incremental
+publication path should address that before claiming streaming readiness.
+
+Review of overview and ledges captures: the extended region contains different
+features from the same global source, with tiers and reentrances at the original
+scale. Neutral materials, open outer boundaries, occasional disconnected density
+islands and soft detail remain visible; larger area is not artistic acceptance.
+Recipe:examples/volume-terrain-region.recipe.json; current captures and timing
+report:artifacts/volumetric-terrain-region/. Static review, release lib/bin Clippy,
+focused rustfmt, Python syntax and the real MCP run validate this extension;
+no terrain mathematics or persisted Scene/source format changed.

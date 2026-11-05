@@ -28,9 +28,13 @@ impl Gpu {
         doc: &Document,
         grid: &Grid,
     ) -> Result<Compiled> {
+        let start = std::time::Instant::now();
         let (n, values) = self.sample(device, queue, doc, grid)?;
+        let density_readback_ms = start.elapsed().as_secs_f64() * 1000.;
+        let extraction_start = std::time::Instant::now();
         let mut c =
             super::extract::extract_values(doc, grid, n, values, "gpu_density_cpu_extraction")?;
+        c.report["timing_wall_ms"] = serde_json::json!({"density_and_readback":density_readback_ms,"cpu_extraction":extraction_start.elapsed().as_secs_f64()*1000.});
         c.report["gpu_readback_bytes"] = serde_json::json!(n.iter().product::<usize>() * 4);
         c.report["gpu_resident_extraction"] = serde_json::json!(false);
         Ok(c)

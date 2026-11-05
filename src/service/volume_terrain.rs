@@ -51,8 +51,12 @@ impl Service {
                     enabled,
                 });
             }
+            let publication_start = std::time::Instant::now();
             let mut result = self.engine.execute(Command::EditScene { edits }.into())?;
+            let publication_ms = publication_start.elapsed().as_secs_f64() * 1000.;
             result["terrain"] = report;
+            result["terrain"]["timing_wall_ms"]["scene_publication_including_collision"] =
+                json!(publication_ms);
             result["source_embedded_in_scene"] = json!(false);
             result["visual_only"] = json!(!self.engine.scene.collision_meshes.contains(&id));
             Ok(result)
