@@ -1,0 +1,13 @@
+import fs from 'node:fs';import vm from 'node:vm';import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'../artifacts/appearance-probe/rich-relief');const html=fs.readFileSync(path.join(root,process.argv.includes('--auto')?'auto.html':(process.argv.includes('--refined')?'refined.html':'index.html')),'utf8');const code=html.match(/<script>([\s\S]*?)<\/script>/)[1];let count=0;
+for(const dpr of [1,2]){const elements={};for(const id of ['resolution','case','frame','mode','fit','source','candidate','candidateTitle','scale','outcome','metric','timings','qualityTable','builds'])elements[id]={value:({resolution:3456,case:0,frame:1,mode:'regional'})[id]??'',checked:id==='fit',style:{},addEventListener(){},clientWidth:1000,clientHeight:800,parentElement:{clientWidth:600,clientHeight:400}};
+const context={document:{getElementById:id=>elements[id]},window:{addEventListener(){}},devicePixelRatio:dpr};vm.createContext(context);vm.runInContext(code,context);
+for(const width of [1728,3456])for(let c=0;c<5;c++)for(let frame=0;frame<=(c===4?32:8);frame++)for(const mode of ['previous','conservative','regional','exploratory'])for(const fit of [false,true]){
+for(const[id,value]of Object.entries({resolution:width,case:c,frame,mode}))elements[id].value=value;elements.fit.checked=fit;vm.runInContext('update()',context);
+for(const id of ['source','candidate']){const im=elements[id];if(!fs.existsSync(path.join(root,im.src)))throw Error(im.src);if(im.style.width!==(fit?'100%':`${width/dpr}px`))throw Error('physical pixel scale');im.onload();if(!fit&&im.parentElement.scrollTop!==200)throw Error('centering');}
+const unstableReference=vm.runInContext(`!data.summary.returns.find(r=>r.width===${width}&&r.case===${c}&&r.mode==='source').pass`,context);if(unstableReference&&!elements.outcome.textContent.includes('FALHA NA REFERÊNCIA'))throw Error('reference failure hidden');
+const returnFailed=vm.runInContext(`!data.summary.returns.find(r=>r.width===${width}&&r.case===${c}&&r.mode==='${mode}').pass`,context);if(!unstableReference&&returnFailed&&!elements.outcome.textContent.includes('não repetiu'))throw Error('candidate return failure hidden');
+if(!elements.metric.textContent.includes('entrada'))throw Error('missing metrics');count++;
+}}
+if(process.argv.includes('--auto')&&!html.includes('Automático reprovado.')){const d=JSON.parse(fs.readFileSync(path.join(root,'auto-results.json'),'utf8'));if(d.returns.some(r=>r.mode==='conservative'&&!r.pass))throw Error('automatic rejection banner missing');}
+console.log(`${count} simulated DOM/DPR states passed; no native browser acceptance claimed`);

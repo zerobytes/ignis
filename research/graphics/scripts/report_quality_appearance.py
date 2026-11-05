@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Offline quality/transition comparison; no server or network dependency."""
+import csv
+import json
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1]) if len(sys.argv)>1 else Path('artifacts/appearance-probe/quality')
+data = json.loads((root/'report.json').read_text())
+assert data['schema']==1
+rows=[]
+for r in data['cases']:
+    for m in r['methods']:
+        rows.append(dict(scene=r['case'],frame=r['frame'],distance=r['parameters']['distance'],profile=m['profile'],method=m['method'],triangles=m['triangles'],partial_nodes=m['partial_nodes'],rmse=m['error']['rmse_surface'],boundary_rmse=m['error']['rmse_boundary'],column_step=m['column_step'],temporal=m['temporal'],cpu_us=m['cpu_us'],queue_us=m['queue_us'],upload_bytes=m['upload_bytes'],gpu_ms=m['timing']['gpu_ms_median']))
+with (root/'results.csv').open('w',newline='') as f:
+    w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
+page=r'''<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ignis · Qualidade e transição</title><style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0d1219;color:#e9eef7}body{max-width:1370px;margin:auto;padding:28px 24px}h1{font-size:38px;letter-spacing:-1px;margin:12px 0}h2{font-size:22px}p{line-height:1.6;color:#b5c5d7;max-width:1130px}.tag{color:#ffae62;font-size:12px;letter-spacing:2px}.box{padding:20px;background:#161f2c;border:1px solid #324257;border-radius:12px;margin:22px 0}.controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.controls+.controls{margin-top:18px}button,select{font:inherit;background:#27364a;color:inherit;border:1px solid #475d78;padding:8px;border-radius:6px}input[type=range]{min-width:200px;flex:1;accent-color:#ffad57}label{font-size:14px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}figure{margin:0}canvas{width:100%;max-width:256px;background:#20252d;border:1px solid #34455c;border-radius:5px}figcaption{margin-top:9px;line-height:1.5;font-size:14px}.small{font-size:12px;color:#afc2d9;line-height:1.7}.stats{display:flex;gap:28px;flex-wrap:wrap}.stats b{font-size:27px;color:#fff;display:block}.stats span{font-size:13px;color:#b5c5d7}a{color:#ffad57}.note{border-left:3px solid #ffad57;padding-left:14px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;border-bottom:1px solid #34455c;padding:9px}th:first-child,td:first-child{text-align:left}svg{width:100%}summary{cursor:pointer}code{color:#ffcf9e}@media(max-width:950px){.grid{grid-template-columns:1fr 1fr}h1{font-size:28px}}@media(max-width:500px){.grid{grid-template-columns:1fr}}
+</style><div class="tag">IGNIS / LABORATÓRIO GRÁFICO / EAF-66</div><h1>Detalhe que converge antes de desaparecer.</h1>
+<p>Compare os perfis com a câmera se aproximando e afastando. Na transição gradual, a altura e a aparência dos detalhes convergem para o resumo antes de remover os triângulos. O controle binário usa o mesmo ponto de substituição, permitindo observar o efeito da transição separadamente.</p>
+<div class="box"><div class="controls"><label>Cena <select id="scene"><option value="diffuse">Difusa · 35°</option><option value="glossy" selected>Brilhante · 35°</option><option value="grazing">Rasante · 75°</option><option value="transition">Movimento fino · distância10–11</option></select></label><button id="play">Reproduzir ida e volta</button><button id="back" aria-label="Frame anterior">←</button><button id="next" aria-label="Próximo frame">→</button><label><input type="checkbox" id="zoom"> Ampliar objeto</label><label><input type="checkbox" id="pixels"> Grade de pixels</label></div>
+<div class="controls"><label for="quality">Mais resumos</label><input id="quality" type="range" min="0" max="2" step="1" value="0" aria-label="Perfil de qualidade"><label for="quality">Mais geometria</label><strong id="profile"></strong></div>
+<div class="controls"><label for="frame">Câmera</label><input id="frame" type="range" min="0" value="9"><span id="position"></span></div><p id="pose" aria-live="polite"></p><div class="stats" id="stats"></div></div>
+<div class="grid" id="images"></div>
+<div class="controls" style="margin-top:20px"><label>Quarto painel <select id="control"><option value="old">Seleção antiga · regiões fixas</option><option value="fixed">Sempre resumo fixo</option><option value="full">Geometria completa filtrada</option></select></label><label><input id="errors" type="checkbox"> Ver erro dos dois métodos ×8</label></div>
+<p class="note">As faixas da seleção antiga permanecem no quarto painel como comparação. Avalie a transição gradual no segundo painel. A grade mostra os pixels reais de256×256; os quadrados coloridos do objeto contêm muitos detalhes. A ampliação usa o mesmo recorte em todos os painéis.</p>
+<div class="box"><h2>O que o perfil muda nesta posição</h2><div id="measurements"></div><p id="cost"></p><p id="diagnostic"></p></div>
+<div class="box"><h2>Triângulos ao longo do percurso</h2><div id="chart"></div><p>Mais resumos usa extensão máxima de1pixel; intermediário0,75; mais geometria0,5. Em todos os perfis, o volume inteiro precisa caber no mesmo pixel. Mais geometria não garante menor erro de amostragem nem mais resumos garante menor tempo GPU.</p></div>
+<details class="box"><summary><b>Como interpretar fidelidade, linhas e custo</b></summary>
+<p>RMSE compara RGB linear com a referência integrada; menor é melhor nesse critério. O contorno e a visibilidade também podem mudar porque o resumo é plano. O diagnóstico de coluna mede diferenças entre médias verticais do erro, para destacar faixas coerentes. Ele não certifica ausência de linhas. O resíduo temporal inclui movimento da câmera; o percurso fino permite comparar variações menores.</p>
+<p>A mistura começa somente no domínio subpixel e zera suavemente quando a região toca a borda do pixel. A redução de topologia só ocorre após os descendentes convergirem para o mesmo plano e a mesma radiância. O shader ainda calcula distribuições por vértice e percorre ancestrais, aumentando o custo da transição. No teste de remoção da geometria já convergida, a cobertura ainda variou em até1/128 em um pixel: a rasterização de triangulações diferentes deixa um resíduo medido. Portanto, a troca não é certificada como idêntica em pixels. Não há TAA, crossfade de imagens, sombras ou GI.</p>
+<p>As imagens são capturas pré-calculadas de um experimento Rust/Metal: câmera e perfil navegam pela mesma matriz de medições. Referência2.048amostras/pixel; todos os candidatos128, com a mesma sequência. Tempos GPU medem31 passes nativos de1amostra/pixel, após aquecimento, e excluem CPU, uploads, capturas e PNG. Não equivalem ao FPS do gameplay.</p>
+<p>Este é um controle de laboratório. Para virar configuração da engine, precisará ser integrado pelo dispatcher compartilhado entre UI e MCP, com orçamento de erro, cache/invalidação e medição em cenas representativas.</p></details>
+<p><a href="endpoints.json">Resíduo da troca de topologia</a> · <a href="report.json">Dados JSON</a> · <a href="results.csv">CSV</a> · <a href="../multiscale/index.html">Contenção multiescala anterior</a> · <a href="../adaptive/index.html">Seleção antiga</a></p><p class="small" id="metadata"></p><p class="small">Reproduzir: <code>cargo run --locked --release --example appearance_probe -- --quality</code> e <code>python3 scripts/report_quality_appearance.py</code>.</p>
+<script>
+const data=__DATA__,$=id=>document.getElementById(id),fmt=(x,n=5)=>x==null?'indisponível':x.toFixed(n),names={smooth:'Transição gradual',hard:'Troca binária',old:'Seleção antiga · regiões fixas',fixed:'Sempre resumo fixo',full:'Geometria completa filtrada',reference:'Referência integrada'};
+const series=()=>data.cases.filter(r=>r.case===$('scene').value);let timer=null,request=0;const cache=new Map();
+function stop(){clearInterval(timer);timer=null;$('play').textContent='Reproduzir ida e volta'}
+function load(src){if(cache.has(src))return cache.get(src);const p=new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>{cache.delete(src);reject(Error('Imagem indisponível: '+src))};img.src=src});cache.set(src,p);while(cache.size>48)cache.delete(cache.keys().next().value);return p}
+function canvas(img,r,title){const c=document.createElement('canvas');c.width=c.height=256;c.setAttribute('role','img');c.setAttribute('aria-label',title);const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;let x=0,y=0,w=256;if($('zoom').checked){const b=r.screen_bounds;w=Math.min(256,Math.ceil(Math.max(b[2]-b[0],b[3]-b[1]))+6);x=Math.max(0,Math.min(256-w,Math.floor((b[0]+b[2]-w)/2)));y=Math.max(0,Math.min(256-w,Math.floor((b[1]+b[3]-w)/2)))}ctx.drawImage(img,x,y,w,w,0,0,256,256);if($('pixels').checked&&$('zoom').checked&&w<90){ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=.5;ctx.beginPath();for(let i=0;i<=w;i++){const p=i*256/w;ctx.moveTo(p,0);ctx.lineTo(p,256);ctx.moveTo(0,p);ctx.lineTo(256,p)}ctx.stroke()}return c}
+async function show(){const ticket=++request,rows=series();$('frame').max=rows.length-1;const i=Math.min(Number($('frame').value),rows.length-1),r=rows[i],profile=Number($('quality').value),methods=r.methods.filter(m=>m.profile===profile),get=m=>methods.find(x=>x.method===m),smooth=get('smooth'),hard=get('hard'),control=$('control').value;
+try{const figures=await Promise.all(['reference','smooth','hard',control].map(async method=>{const experimental=method==='smooth'||method==='hard',m=experimental?get(method):r.controls.find(x=>x.method===method),file=experimental?m.file:r.id+'_'+method,error=experimental&&$('errors').checked,title=names[method]+(error?' · erro ×8':'');const img=await load(file+(error?'_error':'')+'.png'),fig=document.createElement('figure');fig.append(canvas(img,r,title));const cap=document.createElement('figcaption');cap.textContent=title;fig.append(cap);const info=document.createElement('div');info.className='small';info.textContent=method==='reference'?`Residual da referência: ${fmt(r.reference_residual.rmse_surface)}`:`RMSE ${fmt(m.error.rmse_surface)} · contorno ${fmt(m.error.rmse_boundary)}`;fig.append(info);return fig}));if(ticket!==request)return;$('images').replaceChildren(...figures)}catch(e){if(ticket===request)$('pose').textContent=e.message;return}
+$('profile').textContent=data.profiles[profile].name;$('position').textContent=`${i+1}/${rows.length}`;$('pose').textContent=`${r.direction.toUpperCase()} · distância ${r.parameters.distance.toFixed(3)} · ${r.parameters.tilt}° · orçamento ${data.profiles[profile].budget.toFixed(2)}px`;
+$('stats').innerHTML=[[smooth.triangles.toLocaleString('pt-BR'),'triângulos desenhados'],[(100*(1-smooth.triangles/65536)).toFixed(1)+'%','redução de triângulos'],[smooth.partial_nodes.toLocaleString('pt-BR'),'nós em transição'],[fmt(smooth.timing.gpu_ms_median,4)+'ms','GPU nativa · gradual']].map(([v,t])=>`<span><b>${v}</b>${t}</span>`).join('');
+$('measurements').innerHTML='<table><tr><th>Perfil · gradual</th><th>Triângulos</th><th>RMSE</th><th>GPU ms</th><th>p10–p90 ms</th></tr>'+data.profiles.map((p,j)=>{const m=r.methods.find(m=>m.profile===j&&m.method==='smooth');return `<tr style="${j===profile?'color:#ffad57':''}"><td>${p.name}</td><td>${m.triangles.toLocaleString('pt-BR')}</td><td>${fmt(m.error.rmse_surface)}</td><td>${fmt(m.timing.gpu_ms_median,4)}</td><td>${fmt(m.timing.gpu_ms_p10,4)}–${fmt(m.timing.gpu_ms_p90,4)}</td></tr>`}).join('')+'</table>';
+$('cost').textContent=`Neste perfil, troca binária: ${hard.triangles.toLocaleString('pt-BR')} triângulos, GPU ${fmt(hard.timing.gpu_ms_median,4)}ms. Gradual: seleção CPU ${fmt(smooth.cpu_us,1)}µs; validação/envio ${fmt(smooth.queue_us,1)}µs; ${(smooth.upload_bytes/1024).toFixed(1)}KiB enviados. CPU e GPU medidos separadamente; não some essas amostras para estimar FPS.`;
+$('diagnostic').textContent=`Degrau entre colunas do erro: gradual ${fmt(smooth.column_step)}, binária ${fmt(hard.column_step)}, antiga ${fmt(r.controls.find(c=>c.method==='old').column_step)}. Resíduo temporal: gradual ${fmt(smooth.temporal)}, binária ${fmt(hard.temporal)}. Menor é melhor nesses diagnósticos, sujeitos ao erro da referência.`;
+const W=1000,H=230,L=65,R=25,T=15,B=35,min=rows[0].parameters.distance,max=rows[r.turn].parameters.distance,X=d=>L+Math.log(d/min)/Math.log(max/min)*(W-L-R),Y=t=>T+(1-t/65536)*(H-T-B);let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Triângulos por distância e perfil">`;for(const y of [0,32768,65536])svg+=`<line x1="${L}" x2="${W-R}" y1="${Y(y)}" y2="${Y(y)}" stroke="#35465a"/><text x="0" y="${Y(y)+4}" fill="#b6c5d5" font-size="12">${y}</text>`;for(const [j,color] of [[0,'#ffad57'],[1,'#62beff'],[2,'#a6d77a']]){svg+=`<polyline points="${rows.slice(0,r.turn+1).map(q=>X(q.parameters.distance)+','+Y(q.methods.find(m=>m.profile===j&&m.method==='smooth').triangles)).join(' ')}" fill="none" stroke="${color}" stroke-width="2"/>`}svg+=`<circle cx="${X(r.parameters.distance)}" cy="${Y(smooth.triangles)}" r="5" fill="white"/><text x="${L}" y="${H-8}" fill="#b6c5d5" font-size="12">${min}</text><text x="${W-R}" y="${H-8}" text-anchor="end" fill="#b6c5d5" font-size="12">${max}</text>`;$('chart').innerHTML=svg+'</svg><p class="small">Laranja: mais resumos · azul: intermediário · verde: mais geometria. Ida e volta reproduzem a mesma seleção; distância em escala logarítmica.</p>';
+}
+function step(d){$('frame').value=(Number($('frame').value)+d+series().length)%series().length;show()}
+for(const id of ['scene','zoom','pixels','control','errors'])$(id).onchange=()=>{stop();show()};for(const id of ['quality','frame'])$(id).oninput=()=>{stop();show()};$('back').onclick=()=>{stop();step(-1)};$('next').onclick=()=>{stop();step(1)};$('play').onclick=()=>{if(timer)stop();else{$('play').textContent='Pausar';timer=setInterval(()=>step(1),350)}};
+$('metadata').textContent=`${data.adapter} · ${data.cases.length} poses ×3perfis ×2transições · ${data.seconds.toFixed(1)}s de geração offline · ${(data.transition_bytes/1024).toFixed(1)}KiB adicionais de estado de transição na GPU. Aceite visual separado dos testes automáticos.`;show();
+</script></html>'''
+if (root.parent/'cost'/'report.json').is_file():
+    page=page.replace('<h1>', '<p class="note"><a href="../cost/index.html">Nova comparação: custo dos resumos, com aparência preservada →</a></p><h1>',1)
+if (root.parent/'views'/'report.json').is_file():
+    page=page.replace('<h1>', '<p class="note"><a href="../views/index.html">Novo experimento: vistas e material preparados no build, com câmera e luz móveis →</a></p><h1>',1)
+if (root.parent/'compression'/'index.html').exists():
+    page=page.replace('<h1>', '<p class="note"><a href="../compression/index.html">Novo: atlas compactado, memória e comparação de qualidade →</a></p><h1>',1)
+(root/'index.html').write_text(page.replace('__DATA__',json.dumps(data,ensure_ascii=False).replace('<','\\u003c')))
+print(root/'index.html')
+try:
+    from PIL import Image,ImageDraw,ImageFont
+except ImportError:
+    pass
+else:
+    out=Image.new('RGB',(1280,1090),'#101722');draw=ImageDraw.Draw(out)
+    font=ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial.ttf',18)
+    small=ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial.ttf',15)
+    draw.text((24,20),'IGNIS / qualidade e transição contínua',font=font,fill='#e8eef7')
+    draw.text((24,55),'Mesmo recorte em cada linha. Referência2048spp; candidatos128spp.',font=small,fill='#b6c5d5')
+    for row,frame in enumerate([9,16,21]):
+        r=next(r for r in data['cases'] if r['case']=='glossy' and r['frame']==frame)
+        b=r['screen_bounds'];side=min(256,int(max(b[2]-b[0],b[3]-b[1]))+7)
+        x=max(0,min(256-side,int((b[0]+b[2]-side)/2)));y=max(0,min(256-side,int((b[1]+b[3]-side)/2)))
+        yy=100+row*325
+        draw.text((24,yy),f'Distância {r["parameters"]["distance"]:.2f} / perfil Mais resumos',font=font,fill='#ffad57')
+        for col,(method,label) in enumerate([('reference','Referência integrada'),('p0_smooth','Transição gradual'),('p0_hard','Troca binária'),('old','Seleção antiga')]):
+            img=Image.open(root/(r['id']+'_'+method+'.png')).crop((x,y,x+side,y+side)).resize((250,250),Image.Resampling.NEAREST)
+            xx=24+col*312;out.paste(img,(xx+20,yy+35));draw.text((xx,yy+291),label,font=small,fill='#b6c5d5')
+    out.save(root/'comparison.png')

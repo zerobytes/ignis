@@ -1,5 +1,14 @@
 # Consolidação da Ignis na main — EAF-128
 
+Atualização de05/11/2026: por novo pedido de Guilherme, os244arquivos de pesquisa
+gráfica antes excluídos foram preservados em `research/graphics/`, com manifesto
+de origem e conteúdo original. Não substituem o renderer atual nem são alvos
+Cargo ativos. As demais branches antigas já estavam incorporadas; a correção
+final da emerald-quality tem patch id idêntico ao commit público d3d1841.
+Esta consolidação publica a história pública corrente, sem ancestrais privados,
+e preserva as edições ainda em andamento de outros chats. O registro abaixo
+descreve a integração histórica de29/10, inclusive suas fronteiras à época.
+
 Direção de Guilherme em29/10/2026: integrar frentes estáveis e desenvolver no checkout principal/main. Modly e Nanites continuam isolados. Sem push, publicação ou nova promessa de suporte de plataforma.
 
 ## Origens e fronteiras

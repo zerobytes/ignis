@@ -1,0 +1,982 @@
+{
+  "source_branch": "codex/graphics-research",
+  "source_revision": "8a5e66454a151ba54b26891b98a963e005fb018b",
+  "files": [
+    {
+      "path": "docs/adaptive-appearance-probe.md",
+      "git_blob": "adadc55ad083b1dcc1ca8a2c893455b801423729"
+    },
+    {
+      "path": "docs/appearance-probe.md",
+      "git_blob": "a8cd2f87b5b93eb7a8351cad6369796ccab1dbb5"
+    },
+    {
+      "path": "docs/automatic-shading-study.md",
+      "git_blob": "56606144ee0d1128a165c469fb46b9771d6782d8"
+    },
+    {
+      "path": "docs/border-recovery-study.md",
+      "git_blob": "5de9ae1609d79200810f920d0fbef50e866d8db6"
+    },
+    {
+      "path": "docs/calibrated-cost-study.md",
+      "git_blob": "c4bce8ac9f9f815916238623538b2f4d89eac725"
+    },
+    {
+      "path": "docs/certificate-hierarchy-study.md",
+      "git_blob": "eab64d67465c10aefef0c8d3376baee7e5e39145"
+    },
+    {
+      "path": "docs/combined-symbol-study.md",
+      "git_blob": "185307c9e7db1e7cf8c8ba99e24ac5c5f0eaf6bc"
+    },
+    {
+      "path": "docs/compiled-rock-study.md",
+      "git_blob": "88478a4eaa70f14738dcf4c860c42a4e96e52fbd"
+    },
+    {
+      "path": "docs/compressed-views-probe.md",
+      "git_blob": "b939415bf18636bc74894f604d38b92563166697"
+    },
+    {
+      "path": "docs/coordinated-regions-study.md",
+      "git_blob": "d21ba43d58e1deb4642a5cdd2495f9f5502762b0"
+    },
+    {
+      "path": "docs/external-recovery-study.md",
+      "git_blob": "cec2e195b3d9f4edf480053180f0978befe10e88"
+    },
+    {
+      "path": "docs/geometric-field-study.md",
+      "git_blob": "04cef2cd7a0097558c2ee59e4f1ad4554ceadb29"
+    },
+    {
+      "path": "docs/geometry-compiler-study.md",
+      "git_blob": "f060b6562cff1f679e701defa49e8b01d165df97"
+    },
+    {
+      "path": "docs/gpu-visibility-study.md",
+      "git_blob": "86d136d0c7504affd6ff2cba577c1ce207ced358"
+    },
+    {
+      "path": "docs/graphics-roadmap.md",
+      "git_blob": "020ccb601e814edd34e9964878f5d786c3fb876e"
+    },
+    {
+      "path": "docs/hierarchical-field-study.md",
+      "git_blob": "59b2d0f53b8154c2db04b285e1cfd6c985065934"
+    },
+    {
+      "path": "docs/hybrid-scaling-study.md",
+      "git_blob": "1d4feb56719d784f5dfe4d3e2e67e4c2009e059a"
+    },
+    {
+      "path": "docs/irregular-lod-study.md",
+      "git_blob": "f5b6538a232e211278f891f51d8549061fc603a5"
+    },
+    {
+      "path": "docs/multiscale-appearance-probe.md",
+      "git_blob": "106742dea218ea2a7798d351f98e5ff92cdbf19a"
+    },
+    {
+      "path": "docs/near-plateau-study.md",
+      "git_blob": "472e549a5b4fd5c604776b61e3cc0d1d517ec45e"
+    },
+    {
+      "path": "docs/normal-field-study.md",
+      "git_blob": "fe56645a54bd8eb8c1e675fe5aecbad3e1f67f7b"
+    },
+    {
+      "path": "docs/physical-adaptive-probe.md",
+      "git_blob": "a0c33fd9e312b5dc78c92f1de8bf312e334d429c"
+    },
+    {
+      "path": "docs/pixel-density-study.md",
+      "git_blob": "d7394d5405a74610a7f81b9f614cfa50f163bd0e"
+    },
+    {
+      "path": "docs/precomputed-views-probe.md",
+      "git_blob": "c9ab4231e5609acb2629543fde5f11bb6d812837"
+    },
+    {
+      "path": "docs/quality-appearance-probe.md",
+      "git_blob": "90110b58550d6410841a134538b7dae759ba0a27"
+    },
+    {
+      "path": "docs/recovery-stability-study.md",
+      "git_blob": "d0b7d220f1501fb6a074966c173bcb53049e83a0"
+    },
+    {
+      "path": "docs/regional-efficiency-study.md",
+      "git_blob": "226b073930e401b2f7e0106b01fa74ef556805e8"
+    },
+    {
+      "path": "docs/regional-scaling-study.md",
+      "git_blob": "cc1f44252cc793059fcf2e2ed6c410441188e095"
+    },
+    {
+      "path": "docs/regional-scene-probe.md",
+      "git_blob": "5d28c55af7ff113089473803b35fb7b51a123e15"
+    },
+    {
+      "path": "docs/representative-assets-probe.md",
+      "git_blob": "fa2512104594e19268f8927ddb7fe744c7fa80de"
+    },
+    {
+      "path": "docs/rich-relief-study.md",
+      "git_blob": "137f42a73cddf876df6c39d65e65e745c1bc6b38"
+    },
+    {
+      "path": "docs/rock-symbol-study.md",
+      "git_blob": "180f004aacb86bebbe5569b38a71d0aa8b07da7d"
+    },
+    {
+      "path": "docs/scaling-ablation-study.md",
+      "git_blob": "ec63289bd8766b9f47f2752a14e607bb1f90c21a"
+    },
+    {
+      "path": "docs/summary-cost-probe.md",
+      "git_blob": "56ac5278914f79a9bfc5d6311bcecf9c041af9f9"
+    },
+    {
+      "path": "docs/tiled-field-study.md",
+      "git_blob": "062dfeb03c725972504870433da31e58451d6251"
+    },
+    {
+      "path": "docs/triangle-scaling-study.md",
+      "git_blob": "56b6743be988f47c6a1981d19f9a94dd82109e36"
+    },
+    {
+      "path": "examples/appearance_probe.rs",
+      "git_blob": "8b5196822b18920724145830cabce575d02363d0"
+    },
+    {
+      "path": "examples/appearance_probe/adaptive.rs",
+      "git_blob": "c6ced0e56940bffbb2a4e7c8413d2f914eb4a28d"
+    },
+    {
+      "path": "examples/appearance_probe/automatic_shading.rs",
+      "git_blob": "237b5a054e7d1cdd25a12a5b4c5c4c3d24a2f605"
+    },
+    {
+      "path": "examples/appearance_probe/combined_symbol.rs",
+      "git_blob": "aadb32c6e805fbd5469f80342a2694994d71356b"
+    },
+    {
+      "path": "examples/appearance_probe/compiled_rock.rs",
+      "git_blob": "ed8f4c0fa1861dc85da8655582f619c4c1b8ba07"
+    },
+    {
+      "path": "examples/appearance_probe/compiled_rock.wgsl",
+      "git_blob": "25e90ae4ef072b7a5eda62b7f9130a3e9f4f3a10"
+    },
+    {
+      "path": "examples/appearance_probe/compiled_rock_data.rs",
+      "git_blob": "45df7c334f9b7868cba373997dd3f2fcf047636d"
+    },
+    {
+      "path": "examples/appearance_probe/compressed_lookup.wgsl",
+      "git_blob": "8ea7f28004a2c9fdc16c9daf287237cf65af4de8"
+    },
+    {
+      "path": "examples/appearance_probe/compressed_views.rs",
+      "git_blob": "5a92effc4ac8f154e86c6463d9789c534f216cf4"
+    },
+    {
+      "path": "examples/appearance_probe/cost_model.rs",
+      "git_blob": "ae0f0b1851dba961d36b86683a2b154e319ad883"
+    },
+    {
+      "path": "examples/appearance_probe/cost_scaling.rs",
+      "git_blob": "37e4b55ff7e92deff17a9447c8839fb22824c71d"
+    },
+    {
+      "path": "examples/appearance_probe/evaluate.wgsl",
+      "git_blob": "7d5a5bf23bb6eb22a49a62f1c757d2969354d1f3"
+    },
+    {
+      "path": "examples/appearance_probe/geometric_comparison.rs",
+      "git_blob": "3f40c7aa7d23b9e0b10700a4f7df21919e567f94"
+    },
+    {
+      "path": "examples/appearance_probe/geometric_field.rs",
+      "git_blob": "00c66566634e0231aaa7955958270ae5fe3172d3"
+    },
+    {
+      "path": "examples/appearance_probe/geometric_field.wgsl",
+      "git_blob": "a2f8e4f254a56b866f24cbfc2cfb2389f3272bc3"
+    },
+    {
+      "path": "examples/appearance_probe/geometry.rs",
+      "git_blob": "951c5e80a89e9c3c6664ffe2e231dcfe3645729c"
+    },
+    {
+      "path": "examples/appearance_probe/gpu.rs",
+      "git_blob": "e1f431ca15ed01788de446ae5200e87c76ff767e"
+    },
+    {
+      "path": "examples/appearance_probe/gpu_visibility.rs",
+      "git_blob": "12d2b14941a5eefde1f2f0f45caee8b06ed97122"
+    },
+    {
+      "path": "examples/appearance_probe/gpu_visibility.wgsl",
+      "git_blob": "c4fd843a409be9ee4ef41477903e01efde9e1dd1"
+    },
+    {
+      "path": "examples/appearance_probe/gpu_visibility_bench.rs",
+      "git_blob": "e4ef93298558083b145a136d3836763d614464ec"
+    },
+    {
+      "path": "examples/appearance_probe/gpu_visibility_depth.wgsl",
+      "git_blob": "aff5ba7579c4b3de420d2de257b8e636b016e9e9"
+    },
+    {
+      "path": "examples/appearance_probe/gpu_visibility_edges.rs",
+      "git_blob": "aacf9f319c24ce2777f2bf090c4c6a9e83434b05"
+    },
+    {
+      "path": "examples/appearance_probe/gpu_visibility_render.rs",
+      "git_blob": "13fed8b7f9f46d3fd978a20a8cd87e6f0e13b026"
+    },
+    {
+      "path": "examples/appearance_probe/gpu_visibility_scene.rs",
+      "git_blob": "350ce7db4ff8770aad8aee5d38af9bd3b53128f5"
+    },
+    {
+      "path": "examples/appearance_probe/hierarchical_comparison.rs",
+      "git_blob": "9e11ceae13956fb71fef8fd953eebaeb38dd2b6e"
+    },
+    {
+      "path": "examples/appearance_probe/hierarchical_field.rs",
+      "git_blob": "55c88410559eda33023b19046be43fc8478ff9d2"
+    },
+    {
+      "path": "examples/appearance_probe/hierarchical_field.wgsl",
+      "git_blob": "c6f863b760b9d62d240effd8f5014d065d4b7b15"
+    },
+    {
+      "path": "examples/appearance_probe/hierarchy.rs",
+      "git_blob": "06e35435cc1b50e79712cafff5f17a5326438ba9"
+    },
+    {
+      "path": "examples/appearance_probe/hybrid_scaling.rs",
+      "git_blob": "1b5b0d41a4a64c3eec094242cacc747a3c008542"
+    },
+    {
+      "path": "examples/appearance_probe/material_symbol.rs",
+      "git_blob": "bf258254029a9470499268fb8cc13947e2d546bd"
+    },
+    {
+      "path": "examples/appearance_probe/material_symbol.wgsl",
+      "git_blob": "e88003027b9b3f6567641af0f64ce91874b981d2"
+    },
+    {
+      "path": "examples/appearance_probe/metrics.rs",
+      "git_blob": "043dec5833236fb92c9ebc5f53231d3ffe92e110"
+    },
+    {
+      "path": "examples/appearance_probe/multiscale.rs",
+      "git_blob": "b37f3e3a2acfab66af1526dd615a58f49e63ea10"
+    },
+    {
+      "path": "examples/appearance_probe/near_plateau.rs",
+      "git_blob": "1bdd8038baf9538c1b05d62e0f67c1a25fdc3eed"
+    },
+    {
+      "path": "examples/appearance_probe/physical_adaptive.rs",
+      "git_blob": "668a8f0301c83fdda2618fc36a373ce128cd3b62"
+    },
+    {
+      "path": "examples/appearance_probe/pixel_density.rs",
+      "git_blob": "a9ddd51017bcd2ac760f918124a9b846e59c01d1"
+    },
+    {
+      "path": "examples/appearance_probe/quality.rs",
+      "git_blob": "38181bbadee117c99f8722021eb51c1a065a3b81"
+    },
+    {
+      "path": "examples/appearance_probe/regional_build.rs",
+      "git_blob": "75d328e7e2a5deb7f25847e2d17481a1a97f0809"
+    },
+    {
+      "path": "examples/appearance_probe/regional_efficiency.rs",
+      "git_blob": "4fce2b748d6e5af5f4f33f1d362157af83be4c36"
+    },
+    {
+      "path": "examples/appearance_probe/regional_efficiency_bench.rs",
+      "git_blob": "b79de9aaf5bf90de0172015783c4f9041907d187"
+    },
+    {
+      "path": "examples/appearance_probe/regional_render.rs",
+      "git_blob": "fde58cf1bb1ca6606e15a4b6862da63f9436443a"
+    },
+    {
+      "path": "examples/appearance_probe/regional_scaling.rs",
+      "git_blob": "f144f6de33b00a9d30a2d1e5452bd6f5c9eefc9e"
+    },
+    {
+      "path": "examples/appearance_probe/regional_scaling_build.rs",
+      "git_blob": "445d517958dc40fc6bcee7c2a1dd1997badc8fea"
+    },
+    {
+      "path": "examples/appearance_probe/regional_scaling_render.rs",
+      "git_blob": "58dde6f3619a273106c564839832927521cee03d"
+    },
+    {
+      "path": "examples/appearance_probe/regional_scene.rs",
+      "git_blob": "a2877078c2b5bc6034299df350d405d7118e05a7"
+    },
+    {
+      "path": "examples/appearance_probe/regional_scene.wgsl",
+      "git_blob": "1f339ea87b06e3ff1a686020a7f8407d4c835993"
+    },
+    {
+      "path": "examples/appearance_probe/representative.rs",
+      "git_blob": "f84e6d166929ec245563dbfeafbc6ed21bbdea18"
+    },
+    {
+      "path": "examples/appearance_probe/representative.wgsl",
+      "git_blob": "7bc2586f4b11503647e92b6e7609a6bc9a46aa27"
+    },
+    {
+      "path": "examples/appearance_probe/rock_symbol.rs",
+      "git_blob": "17155b851312cf540d15aa40f89dfc8e9169d080"
+    },
+    {
+      "path": "examples/appearance_probe/rock_symbol.wgsl",
+      "git_blob": "8a6d6e174756e9d13e13ba0ed9fb4d849884ff59"
+    },
+    {
+      "path": "examples/appearance_probe/rock_symbol_build.rs",
+      "git_blob": "0bfcf9733d9a09cad8d8dc3632bc4edddc0f0ba0"
+    },
+    {
+      "path": "examples/appearance_probe/scaling_ablation.rs",
+      "git_blob": "f33d5ea3f348b873909db482ea697306b33e5df6"
+    },
+    {
+      "path": "examples/appearance_probe/scaling_deferred.wgsl",
+      "git_blob": "0043acd51e8c2a92504595538d6f185989905188"
+    },
+    {
+      "path": "examples/appearance_probe/scaling_depth.wgsl",
+      "git_blob": "255a208b5b77cf838b41391c5194d356540fb501"
+    },
+    {
+      "path": "examples/appearance_probe/selection.rs",
+      "git_blob": "0a8e7211bc0581a4bc7dc09bb6887c09ad683fe1"
+    },
+    {
+      "path": "examples/appearance_probe/shader.wgsl",
+      "git_blob": "03df9b951fa8fb8d12e9b5e715e18f7921ed47ef"
+    },
+    {
+      "path": "examples/appearance_probe/summary_cost.rs",
+      "git_blob": "1fc67c44b054d6d973921579cf14dbcb3ca14dd9"
+    },
+    {
+      "path": "examples/appearance_probe/tiled_comparison.rs",
+      "git_blob": "70dca00925e76643f4585a0a42a66837968c4932"
+    },
+    {
+      "path": "examples/appearance_probe/tiled_field.rs",
+      "git_blob": "39bb5a8ee29338df99ac98f6095ad8ad1dcf4688"
+    },
+    {
+      "path": "examples/appearance_probe/tiled_field.wgsl",
+      "git_blob": "201652c2f80939a3fd397d541b95ebb38495be67"
+    },
+    {
+      "path": "examples/appearance_probe/triangle_scaling.rs",
+      "git_blob": "c92c44e9f9c2275114e4f75723ddff5183cf1a1c"
+    },
+    {
+      "path": "examples/appearance_probe/triangle_scaling.wgsl",
+      "git_blob": "227289894073b5a905acb8dc160f855fff609503"
+    },
+    {
+      "path": "examples/appearance_probe/triangle_scaling_build.rs",
+      "git_blob": "57b0efdd0b6fe783cfb02d78596c6a234d552cf5"
+    },
+    {
+      "path": "examples/appearance_probe/triangle_scaling_render.rs",
+      "git_blob": "7f7a1bac370a304ca9d91604205fe62338872ed3"
+    },
+    {
+      "path": "examples/appearance_probe/view_downsample.wgsl",
+      "git_blob": "cf46b5a7d63e06bfd6f8933d6ca3acf2351ca7bf"
+    },
+    {
+      "path": "examples/appearance_probe/views.rs",
+      "git_blob": "99e39574ea314631f45f334447cc1ebc4aba9542"
+    },
+    {
+      "path": "examples/appearance_probe/views.wgsl",
+      "git_blob": "332852f79091024e6078d35ec492a6e98ea00b86"
+    },
+    {
+      "path": "examples/coordinated_probe.rs",
+      "git_blob": "b13b3de1393a54f62e0970bd56a5c0beddf32be1"
+    },
+    {
+      "path": "examples/coordinated_probe/experiment.rs",
+      "git_blob": "d84d472adb020587d59cb714a1dd1190b887add1"
+    },
+    {
+      "path": "examples/external_recovery_probe.rs",
+      "git_blob": "a3e726954d6e60972af8cfd28dddc1570ccc11d7"
+    },
+    {
+      "path": "examples/external_recovery_probe/integrated.rs",
+      "git_blob": "35236a1221d77b8d9aea12555e6b79e62e5e242b"
+    },
+    {
+      "path": "examples/geometry_compiler_probe.rs",
+      "git_blob": "88a925cd541c7b7b20f4d5cf3ed885c78b913c47"
+    },
+    {
+      "path": "examples/geometry_compiler_probe/compiler.rs",
+      "git_blob": "77e3fd02c2e64d6b3c06949c126f5cb5ca93a224"
+    },
+    {
+      "path": "examples/geometry_compiler_probe/experiment.rs",
+      "git_blob": "c47bf43bc83b843d8452dbd953cf7923dc276f10"
+    },
+    {
+      "path": "examples/geometry_compiler_probe/fixtures.rs",
+      "git_blob": "097aeb7bbccb468ecb9b66f2c8e719cd4183c7ce"
+    },
+    {
+      "path": "examples/geometry_compiler_probe/render.rs",
+      "git_blob": "2a17daaf19557944f7f4a2d3b4a87af88060379e"
+    },
+    {
+      "path": "examples/geometry_compiler_probe/shader.wgsl",
+      "git_blob": "6938eb7fd74ebed77fbbdceedbdc19fdca43191c"
+    },
+    {
+      "path": "examples/irregular_lod_probe.rs",
+      "git_blob": "6f129363181f07b6d8de2bacde5f199f73a60c9d"
+    },
+    {
+      "path": "examples/irregular_lod_probe/compile.rs",
+      "git_blob": "54908808ca445f4296f812e7824046356b041d7b"
+    },
+    {
+      "path": "examples/irregular_lod_probe/experiment.rs",
+      "git_blob": "902a827ee3344a706cc01b96015833c660b221a8"
+    },
+    {
+      "path": "examples/irregular_lod_probe/select.rs",
+      "git_blob": "b58fdfc5607824c9b02a1d36d1a89e8b86ab1cda"
+    },
+    {
+      "path": "examples/normal_field_probe.rs",
+      "git_blob": "0edcf5abaf8c87b442528e70c3e4ced6d31470d6"
+    },
+    {
+      "path": "examples/normal_field_probe/experiment.rs",
+      "git_blob": "3d44f7f6ce55974bb895f2452257c149ddbcd243"
+    },
+    {
+      "path": "examples/normal_field_probe/field.rs",
+      "git_blob": "cb9b3f63585f4f23a88952cbaf0cdaf2d6380e0c"
+    },
+    {
+      "path": "examples/normal_field_probe/gpu.rs",
+      "git_blob": "f3708fde1089dd54511064e012d30a47825a5435"
+    },
+    {
+      "path": "examples/normal_field_probe/shader.wgsl",
+      "git_blob": "fd23fa14f2b173fbafa33e74464a088781fb5132"
+    },
+    {
+      "path": "examples/recovery_probe.rs",
+      "git_blob": "2f07022a936673dba74503fc7102408bd14ad745"
+    },
+    {
+      "path": "examples/recovery_probe/certificates.rs",
+      "git_blob": "20049cb31423c1b5d48489ab221219b05361539b"
+    },
+    {
+      "path": "examples/recovery_probe/experiment.rs",
+      "git_blob": "172b5a9798f50095284c60b378db448e261290f7"
+    },
+    {
+      "path": "examples/recovery_probe/rays.rs",
+      "git_blob": "d1d22e6e2d38e665313786418ff3dec1545dcdbe"
+    },
+    {
+      "path": "examples/rich_relief_probe.rs",
+      "git_blob": "bc97e994bf4458965284eec2e69f6bf6ee30ef13"
+    },
+    {
+      "path": "examples/rich_relief_probe/analytic.rs",
+      "git_blob": "d0dd9b835f35e6a5c82cc74b99920522b9278cab"
+    },
+    {
+      "path": "examples/rich_relief_probe/analytic.wgsl",
+      "git_blob": "75f5959a5074f35bd150a67bb79297405da28b03"
+    },
+    {
+      "path": "examples/rich_relief_probe/build.rs",
+      "git_blob": "97222c93d0ea6c4a62a947d232e66ea7229f8e99"
+    },
+    {
+      "path": "examples/rich_relief_probe/compact.rs",
+      "git_blob": "d2381f3587632c1203749f4089dffb4c65d32db0"
+    },
+    {
+      "path": "examples/rich_relief_probe/cost.rs",
+      "git_blob": "1c891215af405c052ee5e931f54f1dd18b576e9a"
+    },
+    {
+      "path": "examples/rich_relief_probe/experiment.rs",
+      "git_blob": "3bb25a5fd8369f9e00e11706b017a45a81991d44"
+    },
+    {
+      "path": "examples/rich_relief_probe/geometric.wgsl",
+      "git_blob": "3f689a959dd9ce1ba73cee0dff9c1407b3a2352c"
+    },
+    {
+      "path": "examples/rich_relief_probe/gpu.rs",
+      "git_blob": "83481cec392786bc34e1c4ff21491c3529975795"
+    },
+    {
+      "path": "examples/rich_relief_probe/material.rs",
+      "git_blob": "536f02abaa2c5642f70d3bd4f888aedb454934dc"
+    },
+    {
+      "path": "examples/rich_relief_probe/repeat.rs",
+      "git_blob": "085f573df33ca6247b74b7b35bfa0c3db3670291"
+    },
+    {
+      "path": "examples/rich_relief_probe/screen.wgsl",
+      "git_blob": "3aaf94e5d47d435f564b8243f7e23d5c1b52da4f"
+    },
+    {
+      "path": "examples/rich_relief_probe/shader.wgsl",
+      "git_blob": "b1dfc0b722cc76a553393cbcaa2d361d32585aad"
+    },
+    {
+      "path": "examples/rich_relief_probe/tangent.rs",
+      "git_blob": "b12d5b2b8de997667824282195fd19261f7a6ff3"
+    },
+    {
+      "path": "examples/rich_relief_probe/texel.wgsl",
+      "git_blob": "a69b2077330955d8eca6bcc627f94392bb7466a1"
+    },
+    {
+      "path": "scripts/analyze_scaling_ablation.py",
+      "git_blob": "9b1f577ac9e6e67189bc55558f12c8fa77436a69"
+    },
+    {
+      "path": "scripts/audit_external_certificates.py",
+      "git_blob": "60836b1e582dc0eb5d767689b4278c3235979ce7"
+    },
+    {
+      "path": "scripts/build_probe_assets.py",
+      "git_blob": "05d501ef4ff475da4a47dd844387d5de76ec4f30"
+    },
+    {
+      "path": "scripts/check_automatic_shading.py",
+      "git_blob": "a3f194641667a3241836c5bd4f6b81708476ad2c"
+    },
+    {
+      "path": "scripts/check_combined_symbol.py",
+      "git_blob": "ac9d7d5f668c15e0ed3b438b665b9e8ceb339b30"
+    },
+    {
+      "path": "scripts/check_combined_symbol_ui.mjs",
+      "git_blob": "d3fcddc455caa2c0892cd2b59f3601407049fa32"
+    },
+    {
+      "path": "scripts/check_compiled_rock.py",
+      "git_blob": "32deacb6b812011c18585fa940dd286399c7ece7"
+    },
+    {
+      "path": "scripts/check_compiled_rock_ui.mjs",
+      "git_blob": "33336824a48cbf1ba2d833a36cb27fc2deb92aef"
+    },
+    {
+      "path": "scripts/check_coordinated_regions_ui.mjs",
+      "git_blob": "1c1570467d9b701bd7b8571fb907f836c00b3458"
+    },
+    {
+      "path": "scripts/check_cost_scaling.py",
+      "git_blob": "128bb04ec6a8d681663024250ec375421bd51f8e"
+    },
+    {
+      "path": "scripts/check_geometric_field.py",
+      "git_blob": "0b8ae55a884191dc3cce9538c3ed2f4dc8e0d5c6"
+    },
+    {
+      "path": "scripts/check_geometric_field_ui.mjs",
+      "git_blob": "42bbc83c19647d134e3816f67a1442f94285e2dc"
+    },
+    {
+      "path": "scripts/check_gpu_visibility.py",
+      "git_blob": "65ac07151f5956b6b5f15e75a538800ea838c106"
+    },
+    {
+      "path": "scripts/check_hierarchical_field.py",
+      "git_blob": "8beb90dc30ee43872a13d90c0a17595f35ea8f2e"
+    },
+    {
+      "path": "scripts/check_hierarchical_field_ui.mjs",
+      "git_blob": "35f89cd6b50b9c3cab063e55174dd02f5a423661"
+    },
+    {
+      "path": "scripts/check_hybrid_scaling.py",
+      "git_blob": "e45aad7e72f7d4943e91ab2ba76af2f06535b800"
+    },
+    {
+      "path": "scripts/check_near_plateau.py",
+      "git_blob": "d3ed3f782e8d57d0538f5fc667a8f25e8af8a856"
+    },
+    {
+      "path": "scripts/check_normal_field_ui.mjs",
+      "git_blob": "3f765f8924bd7f35c49ed47a4e31f863791c79ff"
+    },
+    {
+      "path": "scripts/check_physical_adaptive.py",
+      "git_blob": "c78b26f2fcdb1d09a334f270caf78365274d746e"
+    },
+    {
+      "path": "scripts/check_pixel_density.py",
+      "git_blob": "e379800abdd0575856361534a7c092f61321e848"
+    },
+    {
+      "path": "scripts/check_recovery_stability_ui.mjs",
+      "git_blob": "97ac677c4f5aee7bbece23aded26d5686ee6c07e"
+    },
+    {
+      "path": "scripts/check_regional_efficiency.py",
+      "git_blob": "c447b42a7c22541a6fe4a6f39d083817dbf29550"
+    },
+    {
+      "path": "scripts/check_regional_scaling.py",
+      "git_blob": "84020e306eec4d5ed391bbf8cf5c10944fcb3187"
+    },
+    {
+      "path": "scripts/check_regional_scene.py",
+      "git_blob": "6ca33ed4b3109dbfc4d0efd433c364b02d1b76d2"
+    },
+    {
+      "path": "scripts/check_rich_relief_analytic_ui.mjs",
+      "git_blob": "196aba31f76b8515656c67f44137023a53a2441d"
+    },
+    {
+      "path": "scripts/check_rich_relief_compact_images.py",
+      "git_blob": "3cbf8f7fd09d2b3be8dcb9e75f8a5db148d12599"
+    },
+    {
+      "path": "scripts/check_rich_relief_compact_ui.mjs",
+      "git_blob": "659ab5621bf127de76e3f23d608ea630fe0633e5"
+    },
+    {
+      "path": "scripts/check_rich_relief_tangent_ui.mjs",
+      "git_blob": "a5bf8d8c5ab218a81c1d6d71ed76e875a0078cd4"
+    },
+    {
+      "path": "scripts/check_rich_relief_ui.mjs",
+      "git_blob": "f3a94d69211d61d9d9ad7cbca7ded30dcf011089"
+    },
+    {
+      "path": "scripts/check_rock_symbol.py",
+      "git_blob": "ffee22c064b042885713ba97dd70272fc3535737"
+    },
+    {
+      "path": "scripts/check_scaling_ablation.py",
+      "git_blob": "3b5995eb8651479eceac40d34944570fbf56ff8d"
+    },
+    {
+      "path": "scripts/check_tiled_field.py",
+      "git_blob": "614b11637a1d4bae080f695c3931f3941d26d095"
+    },
+    {
+      "path": "scripts/check_tiled_field_ui.mjs",
+      "git_blob": "d63078b8932b957891d5899fec7fe527e1bf7a25"
+    },
+    {
+      "path": "scripts/check_triangle_scaling.py",
+      "git_blob": "303afc85649ca7500097f80940f4c74ad9f01eb6"
+    },
+    {
+      "path": "scripts/compiled_rock_report.html",
+      "git_blob": "2c478cfb0ecad61069628f11dbbf29a84c8f7199"
+    },
+    {
+      "path": "scripts/cost_scaling_report.html",
+      "git_blob": "a6497032ef9b827e4a5bace66a69ec2bab3dba10"
+    },
+    {
+      "path": "scripts/fit_automatic_shading.py",
+      "git_blob": "74c964fa022eec6d1098bcf133fd272b7e56555e"
+    },
+    {
+      "path": "scripts/fit_cost_model.py",
+      "git_blob": "f51e1a1ce85d116aa88faa30722a1b0df6ca5b54"
+    },
+    {
+      "path": "scripts/geometry_compiler_report.py",
+      "git_blob": "81b7d795f880c92cd622dc2feed712f6b1213293"
+    },
+    {
+      "path": "scripts/gpu_visibility_report.html",
+      "git_blob": "b6d6964471c604bfcf19d5f92ffbf5396f86c6d6"
+    },
+    {
+      "path": "scripts/hybrid_scaling_report.html",
+      "git_blob": "151b847efd0453ce66640b9eb3a3d1a9a8c04b9c"
+    },
+    {
+      "path": "scripts/import_external_stool.py",
+      "git_blob": "cfaed853958a655ba1a6859f5723fc784533e475"
+    },
+    {
+      "path": "scripts/import_irregular_boulder.py",
+      "git_blob": "07b26118f06abd6896833d3e98e5492c25299dad"
+    },
+    {
+      "path": "scripts/pixel_density_report.html",
+      "git_blob": "3bdba368f600c64dc1075176ec729bbf4f0127fb"
+    },
+    {
+      "path": "scripts/report_adaptive_appearance.py",
+      "git_blob": "1726172ebc71b52bf69822d152e6c6dbe88d1cce"
+    },
+    {
+      "path": "scripts/report_appearance_probe.py",
+      "git_blob": "b1c047dd2f9d747bb2bd44e9a5c1409ab2160c55"
+    },
+    {
+      "path": "scripts/report_automatic_shading.py",
+      "git_blob": "0770a8039579f8073d404ba080fa031f84b63f71"
+    },
+    {
+      "path": "scripts/report_certificate_hierarchy.py",
+      "git_blob": "05f484e28b02075a4b7299d223c6989f649369ab"
+    },
+    {
+      "path": "scripts/report_combined_symbol.py",
+      "git_blob": "1cfef15e13ec95489a72c671d376655230061eee"
+    },
+    {
+      "path": "scripts/report_compiled_rock.py",
+      "git_blob": "200ec4647e14bbc5d6406d06ecfd99c858ef7a4a"
+    },
+    {
+      "path": "scripts/report_compressed_views.py",
+      "git_blob": "3910e6a39386bbd0ff1f1f5dcc26c9ea1f4b44d0"
+    },
+    {
+      "path": "scripts/report_coordinated_regions.py",
+      "git_blob": "d79e197b386119eaca60b373edcdeae1f21dd335"
+    },
+    {
+      "path": "scripts/report_cost_scaling.py",
+      "git_blob": "4035bedd0f60f18c34ebabe667639635d805dec7"
+    },
+    {
+      "path": "scripts/report_geometric_field.py",
+      "git_blob": "9a4f5e81d0a68de4962323207b9fa7159c5f1a02"
+    },
+    {
+      "path": "scripts/report_gpu_visibility.py",
+      "git_blob": "151276f25f71d2ca3836ef64b08ce75cde9f0412"
+    },
+    {
+      "path": "scripts/report_hierarchical_field.py",
+      "git_blob": "1f66e0b7c77675c9835d10d0acb4b1018c845dee"
+    },
+    {
+      "path": "scripts/report_hybrid_scaling.py",
+      "git_blob": "e63f6f72c2ff7ab6bf69b0f434e4145570e4641a"
+    },
+    {
+      "path": "scripts/report_irregular_lod.py",
+      "git_blob": "fe7721b056d54f5026aeef455ba2d0eeec0e3378"
+    },
+    {
+      "path": "scripts/report_multiscale_appearance.py",
+      "git_blob": "1340eaabf412d36a19df17b3f3efa30cd28c02c9"
+    },
+    {
+      "path": "scripts/report_near_plateau.py",
+      "git_blob": "699a262a450de9ace16d419466d382dbce6ff748"
+    },
+    {
+      "path": "scripts/report_normal_field.py",
+      "git_blob": "f920e954ccd03267885dcc744bb3cc6cebdc41c7"
+    },
+    {
+      "path": "scripts/report_physical_adaptive.py",
+      "git_blob": "967f2a0fcc8244a0ccbe6a259366e69805502a48"
+    },
+    {
+      "path": "scripts/report_pixel_density.py",
+      "git_blob": "676c3eadd541e91d16bd4283028f818f306a36c8"
+    },
+    {
+      "path": "scripts/report_precomputed_views.py",
+      "git_blob": "20410e3a441d45e44282523f71847246ed655344"
+    },
+    {
+      "path": "scripts/report_quality_appearance.py",
+      "git_blob": "8977557a3d12be293908e4201d57a75101110aae"
+    },
+    {
+      "path": "scripts/report_recovery_stability.py",
+      "git_blob": "8d96f26eea1754c25a281e0c457548710d5b2649"
+    },
+    {
+      "path": "scripts/report_regional_efficiency.py",
+      "git_blob": "a9976c2b604fa6373028fd147724f4a92f68215d"
+    },
+    {
+      "path": "scripts/report_regional_scaling.py",
+      "git_blob": "c3313b0b2670970693efd7b845da7217270ba6c4"
+    },
+    {
+      "path": "scripts/report_regional_scene.py",
+      "git_blob": "67050bb10311dd8b3a3d2a64617ff87412bda716"
+    },
+    {
+      "path": "scripts/report_representative_assets.py",
+      "git_blob": "282c3b7b7268861aff78ecd8e4d4ffa7f9e29f01"
+    },
+    {
+      "path": "scripts/report_rich_relief.py",
+      "git_blob": "c5e4dc6b33bb9dd2d5ac9204aa3c9a8af62898ca"
+    },
+    {
+      "path": "scripts/report_rich_relief_analytic.py",
+      "git_blob": "00324af18741221a955228d3fe1d8fb85b5a15e9"
+    },
+    {
+      "path": "scripts/report_rich_relief_compact.py",
+      "git_blob": "f800b0081926f11b1a5151cce3737adf5ab89be1"
+    },
+    {
+      "path": "scripts/report_rich_relief_repeat.py",
+      "git_blob": "5e1c132652cc393e6901ec5d2bb123063e5b1c54"
+    },
+    {
+      "path": "scripts/report_rich_relief_tangent.py",
+      "git_blob": "01ca92a8da83c3ff753007c78c6ec3c7cd685c75"
+    },
+    {
+      "path": "scripts/report_rock_symbol.py",
+      "git_blob": "9b3177448305e111c38fcc2190ebd27c8c326357"
+    },
+    {
+      "path": "scripts/report_scaling_ablation.py",
+      "git_blob": "153398e9d1c0dfb103ba1e357adbe9056c7c87ae"
+    },
+    {
+      "path": "scripts/report_summary_cost.py",
+      "git_blob": "667a42281d07d5281690cce3c1d987579901679f"
+    },
+    {
+      "path": "scripts/report_tiled_field.py",
+      "git_blob": "c923f91a0d4e702379390517c609a68016361cbe"
+    },
+    {
+      "path": "scripts/report_triangle_scaling.py",
+      "git_blob": "a9fc52674f452b433ddd1008f951f9141155ae5c"
+    },
+    {
+      "path": "scripts/rock_symbol_report.html",
+      "git_blob": "9fec5ef492fe3f12eb9c43c236752062b1b0e642"
+    },
+    {
+      "path": "scripts/run_combined_symbol.py",
+      "git_blob": "6f5ebe7fde7e746c5f42b4a5ee6a9da21a48010e"
+    },
+    {
+      "path": "scripts/run_compiled_rock.py",
+      "git_blob": "87b1049544febe3187205ca5a5d165369154ba00"
+    },
+    {
+      "path": "scripts/run_geometric_field.py",
+      "git_blob": "a0d0c9fd37dcdc5a8c03f558e25e9bcaf107ee11"
+    },
+    {
+      "path": "scripts/run_hierarchical_field.py",
+      "git_blob": "ee5e0bba9811dc723d7fd50c22f373a6ced7241c"
+    },
+    {
+      "path": "scripts/run_pixel_density.py",
+      "git_blob": "22cf9dcaa4ea36ae68e71369c6609ee34b97f33b"
+    },
+    {
+      "path": "scripts/run_rock_symbol.py",
+      "git_blob": "3de2c5aa2d7a3a3c39314961b262e99b4a708cfa"
+    },
+    {
+      "path": "scripts/run_tiled_field.py",
+      "git_blob": "0e3ab21a0755900a6306007b84771996bd8b722b"
+    },
+    {
+      "path": "scripts/triangle_scaling_report.html",
+      "git_blob": "ed5f134c51119d80e85f1a2025293d9d19bba82b"
+    },
+    {
+      "path": "scripts/verify_compressed_views.py",
+      "git_blob": "1f7143ee1ba00b5d54702b9a06d6375cf6952975"
+    },
+    {
+      "path": "scripts/verify_compressed_views_report.mjs",
+      "git_blob": "c04d54f75defefc8e93b17899a6a86e8ddf983db"
+    },
+    {
+      "path": "scripts/verify_geometry_compiler.py",
+      "git_blob": "85e1b357250f16718cad3af5ce341401b661b03b"
+    },
+    {
+      "path": "scripts/verify_gpu_visibility.mjs",
+      "git_blob": "f274524d55cccd3a47913b7a758707e4332c53ba"
+    },
+    {
+      "path": "scripts/verify_physical_report.mjs",
+      "git_blob": "d9f68762825dbe55564efd5c02483500cc06d678"
+    },
+    {
+      "path": "scripts/verify_pixel_density.mjs",
+      "git_blob": "50c2bfcf7851bdd3285d798c7e5cd7170af5110e"
+    },
+    {
+      "path": "scripts/verify_quality_report.mjs",
+      "git_blob": "00c07150eebd7099ce19ccb978695aef593b55c9"
+    },
+    {
+      "path": "scripts/verify_regional_efficiency.mjs",
+      "git_blob": "9a127ba2084c20b47fd1904ec161003c95c9457d"
+    },
+    {
+      "path": "scripts/verify_regional_report.mjs",
+      "git_blob": "fa778ea9dd707664c41f5eb30414750fb79cba1a"
+    },
+    {
+      "path": "scripts/verify_representative_assets.py",
+      "git_blob": "635bf2442504fba94fe47c65f773190ac25d8d43"
+    },
+    {
+      "path": "scripts/verify_representative_report.mjs",
+      "git_blob": "8d472c512941e91c205f5f2c61cbab375ac0cbc0"
+    },
+    {
+      "path": "scripts/verify_rock_symbol.mjs",
+      "git_blob": "57521739544ee451e63591a4eb74b707297a4cb3"
+    },
+    {
+      "path": "scripts/verify_triangle_scaling.mjs",
+      "git_blob": "617b1e6c029b52737b13a144c7954131c3915d73"
+    },
+    {
+      "path": "scripts/verify_views_report.mjs",
+      "git_blob": "0023d1d082a3af73e30889530514710e5a68c025"
+    }
+  ]
+}

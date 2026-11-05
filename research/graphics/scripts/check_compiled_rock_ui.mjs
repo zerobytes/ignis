@@ -1,0 +1,17 @@
+// Execute the shipped report JavaScript against a mock DOM; not native acceptance.
+import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import assert from 'node:assert/strict';
+const root='artifacts/appearance-probe/compiled-rock',html=fs.readFileSync(path.join(root,'index.html'),'utf8');let draws=0,loads=0,interval=null,resize;
+class Element{constructor(){this.value='0';this.children=[];this.textContent='';this.style={}}append(...x){this.children.push(...x)}replaceChildren(...x){this.children=x}getBoundingClientRect(){return{left:0,top:0,width:700,height:450}}getContext(){return{drawImage:(img,...a)=>{draws++;assert.equal(a.length,8);const[x,y,w,h,dx,dy,dw,dh]=a;assert(a.every(Number.isFinite));assert(x>=0&&y>=0&&x+w<=img.width&&y+h<=img.height);assert.deepEqual([w,h,dx,dy,dw,dh],[512,512,0,0,512,512])}}}}
+const ids=Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element()]));ids.algorithm.value='8';ids.scene.value='2';ids.zoom.value='1';let pending=[],defer=false;
+class Image extends Element{set src(file){loads++;const finish=()=>{const p=path.join(root,file);if(!fs.existsSync(p)){this.onerror();return}const b=fs.readFileSync(p);this.width=b.readUInt32BE(16);this.height=b.readUInt32BE(20);this.onload()};if(defer)pending.push(finish);else queueMicrotask(finish)}}
+const window={devicePixelRatio:2,addEventListener:(type,fn)=>{assert.equal(type,'resize');resize=fn}};
+const context=vm.createContext({document:{getElementById:id=>ids[id],createElement:()=>new Element()},Image,window,console,setInterval:fn=>(interval=fn,1),clearInterval:()=>interval=null});vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],context);
+const flush=async()=>{for(let i=0;i<3;i++)await new Promise(r=>setImmediate(r))};await flush();let cases=0;
+for(const res of ['0','1'])for(const d of ['0','1','2'])for(const scene of ['0','1','2'])for(const mode of ['7','8','9','10'])for(let f=0;f<9;f++){
+ ids.resolution.value=res;ids.distance.value=d;ids.scene.value=scene;ids.algorithm.value=mode;ids.frame.value=String(f);ids.algorithm.onchange();await flush();assert.equal(ids.status.textContent,'');assert.equal(ids.overview.children.length,2);assert.equal(ids.crops.children.length,2);assert.equal(ids.timings.children.length,5);assert(ids.quality.textContent.includes('critério experimental'));assert(ids.pose.textContent.includes(`Posição ${f+1}/9`));assert(!/NaN|Infinity/.test(ids.memory.textContent));cases++;
+}
+ids.overview.children[0].children[1].onpointerdown({clientX:699,clientY:449});
+for(const dpr of [1,1.5,2,3])for(const zoom of ['1','2','4']){window.devicePixelRatio=dpr;ids.zoom.value=zoom;resize();for(const f of ids.crops.children)assert.equal(f.children[1].style.width,(512*+zoom/dpr)+'px')}
+ids.frame.value='8';ids.play.onclick();interval();await flush();assert.equal(+ids.frame.value,0);ids.play.onclick();assert.equal(interval,null);
+defer=true;ids.frame.value='1';ids.frame.oninput();ids.frame.value='2';ids.frame.oninput();const old=pending.splice(0,2),fresh=pending.splice(0);fresh.forEach(fn=>fn());await flush();const newest=ids.overview.children[0];old.forEach(fn=>fn());await flush();assert.equal(ids.overview.children[0],newest);assert(ids.pose.textContent.includes('Posição 3/9'));
+const result={cases,loads,draws,dpr_crops_playback_and_stale_load:true,native_browser:false};fs.writeFileSync(path.join(root,'ui-verification.json'),JSON.stringify(result,null,2)+'\n');console.log(result);
