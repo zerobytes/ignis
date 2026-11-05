@@ -1,4 +1,4 @@
-use crate::{characters::*, presentation::Presentation};
+use crate::{characters::*, controls::Controls, presentation::Presentation};
 use anyhow::{Result, ensure};
 use ignis::{
     engine::Command,
@@ -60,6 +60,9 @@ pub struct Session {
     pub invitation: String,
     pub status: Value,
     pub visuals: Presentation,
+    pub controls: Controls,
+    pub clock: f64,
+    pub last_input: ignis::physics::Input,
     elapsed: f32,
     inspect_elapsed: f32,
     _save_lease: Option<SaveLease>,
@@ -352,6 +355,9 @@ impl Front {
             host: None,
             client,
             visuals,
+            controls: Controls::default(),
+            clock: 0.,
+            last_input: Default::default(),
             offline: true,
             _save_lease: Some(lease),
             character: c.id,
@@ -360,6 +366,7 @@ impl Front {
             elapsed: 0.,
             inspect_elapsed: 0.,
         });
+        self.sync_camera()?;
         self.page = Page::Session;
         Ok(())
     }
@@ -382,6 +389,9 @@ impl Front {
         )?;
         self.session = Some(Session {
             visuals,
+            controls: Controls::default(),
+            clock: 0.,
+            last_input: Default::default(),
             host: Some(host),
             client,
             offline: false,
@@ -413,6 +423,9 @@ impl Front {
             host: None,
             client,
             visuals,
+            controls: Controls::default(),
+            clock: 0.,
+            last_input: Default::default(),
             offline: false,
             _save_lease: None,
             character: c.id,
@@ -428,6 +441,10 @@ impl Front {
         let Some(s) = &mut self.session else {
             return Ok(());
         };
+        let dt = dt.clamp(0., 0.25);
+        s.clock += f64::from(dt);
+        let input = s.controls.world_input(input);
+        s.last_input = input;
         s.elapsed = (s.elapsed + dt).min(0.25);
         s.inspect_elapsed += dt;
         if let Some(host) = &mut s.host {
@@ -453,6 +470,14 @@ impl Front {
                 }
             }
         }
+        if s.offline {
+            command(&mut s.client, json!({"op":"set_input","input":input}))?;
+        } else if s.client.remote_client() {
+            let _ = command(
+                &mut s.client,
+                json!({"op":"set_multiplayer_input","input":input}),
+            );
+        }
         while s.elapsed >= 1. / 60. {
             if let Some(host) = &mut s.host {
                 host.advance(1)?;
@@ -462,14 +487,6 @@ impl Front {
             s.elapsed -= 1. / 60.;
         }
         s.client.poll_network()?;
-        if s.offline {
-            command(&mut s.client, json!({"op":"set_input","input":input}))?;
-        } else if s.client.remote_client() {
-            let _ = command(
-                &mut s.client,
-                json!({"op":"set_multiplayer_input","input":input}),
-            );
-        }
         if s.inspect_elapsed >= 0.25 {
             s.inspect_elapsed = 0.;
             if !s.offline {
@@ -513,9 +530,62 @@ impl Front {
             } else {
                 s.status["actor"]["actor"].as_u64()
             };
-            s.visuals.apply(frame, local)?;
+            s.visuals.apply(
+                frame,
+                local,
+                &s.controls,
+                s.last_input.mode,
+                s.clock,
+                !s.offline,
+            )?;
         }
         Ok(())
+    }
+    pub fn sync_camera(&mut self) -> Result<()> {
+        if let Some(s) = &mut self.session
+            && s.offline
+        {
+            command(
+                &mut s.client,
+                json!({"op":"set_player_view","view":s.controls.view}),
+            )?;
+        }
+        Ok(())
+    }
+    pub fn look(&mut self, dx: f64, dy: f64) -> Result<()> {
+        if let Some(s) = &mut self.session {
+            let before = (
+                s.controls.view.yaw_degrees,
+                s.controls.view.pitch_degrees,
+                s.controls.heading_degrees,
+            );
+            if s.controls.motion(dx, dy) && s.offline {
+                let yaw = (s.controls.view.yaw_degrees - before.0 + 180.).rem_euclid(360.) - 180.;
+                let pitch = s.controls.view.pitch_degrees - before.1;
+                if let Err(e) = command(
+                    &mut s.client,
+                    json!({"op":"look_player_view","yaw_delta_degrees":yaw,"pitch_delta_degrees":pitch}),
+                ) {
+                    s.controls.view.yaw_degrees = before.0;
+                    s.controls.view.pitch_degrees = before.1;
+                    s.controls.heading_degrees = before.2;
+                    return Err(e);
+                }
+            }
+        }
+        Ok(())
+    }
+    pub fn zoom_camera(&mut self, steps: f32) -> Result<()> {
+        if let Some(s) = &mut self.session {
+            s.controls.zoom(steps);
+        }
+        self.sync_camera()
+    }
+    pub fn release_controls(&mut self) -> Result<()> {
+        if let Some(s) = &mut self.session {
+            s.controls.release();
+        }
+        self.tick(0., Default::default())
     }
     pub fn service(&self) -> &Service {
         self.session.as_ref().map_or(&self.preview, |s| &s.client)

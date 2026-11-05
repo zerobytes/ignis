@@ -15,10 +15,10 @@ use std::{
 };
 use winit::{
     application::ApplicationHandler,
-    event::{ElementState, WindowEvent},
+    event::{DeviceEvent, DeviceId, ElementState, MouseButton, MouseScrollDelta, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
-    window::{Window, WindowId},
+    window::{CursorGrabMode, Window, WindowId},
 };
 
 pub struct Composition {
@@ -148,10 +148,66 @@ struct App {
     composition: Option<Composition>,
     input: Option<egui_winit::State>,
     keys: BTreeSet<KeyCode>,
+    cursor: Option<[f64; 2]>,
+    captured: bool,
     last: Instant,
     error: Option<String>,
 }
+impl App {
+    fn pointer_blocked(&self) -> bool {
+        let Some([x, y]) = self.cursor else {
+            return true;
+        };
+        let Some(window) = &self.window else {
+            return true;
+        };
+        let Some(g) = &self.composition else {
+            return true;
+        };
+        let scale = window.scale_factor() as f32;
+        let p = egui::pos2(x as f32 / scale, y as f32 / scale);
+        !g.graphics.viewport.is_some_and(|r| r.contains(p)) || g.ui.blocks_pointer(p)
+    }
+    fn capture_cursor(&mut self) {
+        let wanted = self
+            .front
+            .session
+            .as_ref()
+            .is_some_and(|s| s.controls.dragging());
+        if wanted == self.captured {
+            return;
+        }
+        if let Some(window) = &self.window {
+            let result = if wanted {
+                window
+                    .set_cursor_grab(CursorGrabMode::Locked)
+                    .or_else(|_| window.set_cursor_grab(CursorGrabMode::Confined))
+            } else {
+                window.set_cursor_grab(CursorGrabMode::None)
+            };
+            self.captured = wanted && result.is_ok();
+            window.set_cursor_visible(!self.captured);
+        }
+    }
+    fn look(&mut self, dx: f64, dy: f64) {
+        if let Err(e) = self.front.look(dx, dy) {
+            self.front.error = e.to_string();
+        }
+    }
+}
 impl ApplicationHandler for App {
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device: DeviceId,
+        event: DeviceEvent,
+    ) {
+        if self.captured
+            && let DeviceEvent::MouseMotion { delta: (x, y) } = event
+        {
+            self.look(x, y);
+        }
+    }
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_some() {
             return;
@@ -207,12 +263,56 @@ impl ApplicationHandler for App {
             .unwrap()
             .on_window_event(&window, &event);
         match event {
-            WindowEvent::CloseRequested => match self.front.leave() {
-                Ok(()) => event_loop.exit(),
-                Err(e) => self.front.error = e.to_string(),
-            },
+            WindowEvent::CloseRequested => {
+                if let Err(e) = self.front.release_controls() {
+                    self.front.error = e.to_string();
+                }
+                self.capture_cursor();
+                match self.front.leave() {
+                    Ok(()) => event_loop.exit(),
+                    Err(e) => self.front.error = e.to_string(),
+                }
+            }
             WindowEvent::Focused(false) => {
                 self.keys.clear();
+                self.cursor = None;
+                if let Err(e) = self.front.release_controls() {
+                    self.front.error = e.to_string();
+                }
+                self.capture_cursor();
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                if !self.captured
+                    && let Some([x, y]) = self.cursor
+                {
+                    let scale = window.scale_factor();
+                    self.look((position.x - x) / scale, (position.y - y) / scale);
+                }
+                self.cursor = Some([position.x, position.y]);
+            }
+            WindowEvent::CursorLeft { .. } => {
+                if !self.captured {
+                    self.cursor = None;
+                }
+            }
+            WindowEvent::MouseInput { state, button, .. } => {
+                let blocked = self.pointer_blocked();
+                if let Some(s) = &mut self.front.session {
+                    s.controls
+                        .button(button, state == ElementState::Pressed, blocked);
+                }
+                self.capture_cursor();
+            }
+            WindowEvent::MouseWheel { delta, .. } => {
+                if self.front.session.is_some() && !self.pointer_blocked() {
+                    let steps = match delta {
+                        MouseScrollDelta::LineDelta(_, y) => y,
+                        MouseScrollDelta::PixelDelta(p) => p.y as f32 / 40.,
+                    };
+                    if let Err(e) = self.front.zoom_camera(steps) {
+                        self.front.error = e.to_string();
+                    }
+                }
             }
             WindowEvent::KeyboardInput { event, .. } => {
                 if let PhysicalKey::Code(code) = event.physical_key {
@@ -221,7 +321,22 @@ impl ApplicationHandler for App {
                     } else {
                         self.keys.remove(&code);
                     }
-                    if code == KeyCode::Escape && event.state == ElementState::Pressed {
+                    if code == KeyCode::Escape
+                        && event.state == ElementState::Pressed
+                        && !event.repeat
+                    {
+                        if self
+                            .front
+                            .session
+                            .as_ref()
+                            .is_some_and(|s| s.controls.dragging())
+                        {
+                            if let Err(e) = self.front.release_controls() {
+                                self.front.error = e.to_string();
+                            }
+                            self.capture_cursor();
+                            return;
+                        }
                         let action = if self.front.page == Page::Session {
                             Some(Action::Leave)
                         } else if matches!(self.front.page, Page::Create | Page::Cosmetics) {
@@ -258,6 +373,9 @@ impl ApplicationHandler for App {
                     self.last = Instant::now();
                     let g = self.composition.as_mut().unwrap();
                     let wants = g.graphics.context.wants_keyboard_input();
+                    if wants {
+                        self.keys.clear();
+                    }
                     let held = |key| !wants && self.keys.contains(&key);
                     let input = Input {
                         x: i32::from(held(KeyCode::KeyD)) as f32
@@ -304,6 +422,10 @@ impl ApplicationHandler for App {
                 if let Err(e) = result {
                     self.front.error = e.to_string();
                 }
+                if self.front.session.is_none() {
+                    self.keys.clear();
+                }
+                self.capture_cursor();
             }
             _ => {}
         }
@@ -396,6 +518,144 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
             "Character feet do not match the collider base"
         );
     }
+    // The exact native camera/input path: left drag orbits without steering,
+    // right drag steers in place, and UI/focus boundaries reject stale capture.
+    let position_before_look = reopened
+        .session
+        .as_ref()
+        .unwrap()
+        .client
+        .engine
+        .simulation
+        .positions();
+    let camera_before_look = graphics.graphics.custom_frame_mut().unwrap().camera.clone();
+    let heading_before = reopened.session.as_ref().unwrap().controls.heading_degrees;
+    reopened
+        .session
+        .as_mut()
+        .unwrap()
+        .controls
+        .button(MouseButton::Left, true, false);
+    reopened.look(350., 50.)?;
+    graphics.capture(&mut reopened, &out.join("camera-orbit.png"))?;
+    ensure!(
+        reopened
+            .session
+            .as_ref()
+            .unwrap()
+            .client
+            .engine
+            .simulation
+            .positions()
+            == position_before_look,
+        "Left orbit moved the physical character"
+    );
+    ensure!(
+        reopened.session.as_ref().unwrap().visuals.placements[0].yaw_degrees == heading_before,
+        "Left orbit rotated the character"
+    );
+    ensure!(
+        graphics
+            .graphics
+            .custom_frame_mut()
+            .unwrap()
+            .camera
+            .position
+            != camera_before_look.position,
+        "Left orbit did not move the camera"
+    );
+    reopened
+        .session
+        .as_mut()
+        .unwrap()
+        .controls
+        .button(MouseButton::Left, false, false);
+    reopened
+        .session
+        .as_mut()
+        .unwrap()
+        .controls
+        .button(MouseButton::Right, true, false);
+    reopened.look(250., -25.)?;
+    graphics.capture(&mut reopened, &out.join("character-turn.png"))?;
+    {
+        let session = reopened.session.as_ref().unwrap();
+        ensure!(
+            session.client.engine.simulation.positions() == position_before_look,
+            "Right turn displaced the physical character"
+        );
+        ensure!(
+            (session.visuals.placements[0].yaw_degrees - session.controls.view.yaw_degrees).abs()
+                < 0.001,
+            "Right drag did not align the character"
+        );
+        ensure!(
+            graphics
+                .graphics
+                .custom_frame_mut()
+                .unwrap()
+                .camera
+                .position
+                == session.client.engine.player_camera().unwrap().position,
+            "Offline camera bypassed the native physical camera"
+        );
+    }
+    let hud = graphics.ui.hits["leave"].center();
+    ensure!(
+        graphics.ui.blocks_pointer(hud),
+        "HUD does not intercept camera input"
+    );
+    reopened.release_controls()?;
+    ensure!(
+        !reopened.session.as_ref().unwrap().controls.dragging(),
+        "Focus release kept the mouse captured"
+    );
+    reopened.zoom_camera(2.)?;
+    ensure!(
+        reopened
+            .session
+            .as_ref()
+            .unwrap()
+            .controls
+            .view
+            .third_person
+            .distance_meters
+            == 3.,
+        "Wheel did not zoom"
+    );
+    reopened.session.as_mut().unwrap().controls = Default::default();
+    reopened.sync_camera()?;
+    graphics.capture(&mut reopened, &out.join("idle-a.png"))?;
+    let idle_a: Vec<_> = graphics
+        .graphics
+        .custom_frame_mut()
+        .unwrap()
+        .meshes
+        .vertices
+        .iter()
+        .step_by(7)
+        .map(|v| v.position)
+        .collect();
+    for _ in 0..20 {
+        reopened.tick(1. / 60., Input::default())?;
+    }
+    graphics.capture(&mut reopened, &out.join("idle-b.png"))?;
+    ensure!(
+        graphics
+            .graphics
+            .custom_frame_mut()
+            .unwrap()
+            .meshes
+            .vertices
+            .iter()
+            .step_by(7)
+            .zip(idle_a)
+            .any(
+                |(b, a)| glam::Vec3::from_array(b.position).distance(glam::Vec3::from_array(a))
+                    > 0.0001
+            ),
+        "Idle clip did not animate the skeleton"
+    );
     let mut concurrent = Front::new(root.into(), profile.clone())?;
     ensure!(
         concurrent.execute(Action::Offline).is_err(),
@@ -410,7 +670,7 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
         .engine
         .simulation
         .positions();
-    for _ in 0..120 {
+    for step in 0..120 {
         reopened.tick(
             1. / 60.,
             Input {
@@ -419,8 +679,11 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
                 mode: ignis::model::MovementMode::Walk,
             },
         )?;
+        if step % 10 == 0 {
+            graphics.input(&mut reopened, vec![])?;
+        }
     }
-    let after = reopened
+    let mut after = reopened
         .session
         .as_ref()
         .unwrap()
@@ -449,11 +712,79 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
             reopened.session.as_ref().unwrap().visuals.placements[0].center == position,
             "Character did not follow movement"
         );
+        let session = reopened.session.as_ref().unwrap();
         ensure!(
-            (frame.camera.target[0] - position[0]).abs() < 0.00001,
-            "Camera did not follow the character"
+            frame.camera.position == session.client.engine.player_camera().unwrap().position,
+            "Camera did not follow through the native view"
+        );
+        ensure!(
+            session.visuals.placements[0].gait == crate::animation::Gait::Walk,
+            "Walking did not select the walk clip"
+        );
+        ensure!(
+            position[0] > before["player0"][0],
+            "World movement direction changed unexpectedly"
         );
     }
+    let walk_speed = (after["player0"][0] - before["player0"][0]).abs() / 2.;
+    let walk_tick = reopened.session.as_ref().unwrap().visuals.placements[0].clip_tick;
+    let run_start = after["player0"];
+    for step in 0..60 {
+        reopened.tick(
+            1. / 60.,
+            Input {
+                x: 1.,
+                z: 0.,
+                mode: ignis::model::MovementMode::Run,
+            },
+        )?;
+        if step % 10 == 0 {
+            graphics.input(&mut reopened, vec![])?;
+        }
+    }
+    graphics.capture(&mut reopened, &out.join("character-running.png"))?;
+    {
+        let session = reopened.session.as_ref().unwrap();
+        let position = session
+            .client
+            .engine
+            .simulation
+            .position("player0")
+            .unwrap();
+        ensure!(
+            (position[0] - run_start[0]).abs() > walk_speed * 1.35,
+            "Shift did not increase physical speed"
+        );
+        ensure!(
+            session.visuals.placements[0].gait == crate::animation::Gait::Run,
+            "Running did not select the run clip"
+        );
+        ensure!(
+            session.visuals.placements[0].clip_tick != walk_tick,
+            "Locomotion phase did not advance"
+        );
+    }
+    reopened.release_controls()?;
+    for step in 0..30 {
+        reopened.tick(1. / 60., Input::default())?;
+        if step % 5 == 0 {
+            graphics.input(&mut reopened, vec![])?;
+        }
+    }
+    graphics.capture(&mut reopened, &out.join("character-stopped.png"))?;
+    ensure!(
+        reopened.session.as_ref().unwrap().visuals.placements[0].gait
+            == crate::animation::Gait::Idle,
+        "Stopping did not return to idle"
+    );
+    after = reopened
+        .session
+        .as_ref()
+        .unwrap()
+        .client
+        .engine
+        .simulation
+        .positions();
     reopened.leave()?;
     ensure!(
         reopened.selected_save_path().unwrap().is_file(),
@@ -625,7 +956,7 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
     fs::write(
         out.join("verification.json"),
         serde_json::to_vec_pretty(
-            &serde_json::json!({"native_ui_click_flow":true,"cancel_preserves_file":true,"identity_reopen":true,"offline_movement_and_portable_save":true,"concurrent_save_writer_rejected":true,"real_quic_clients":2,"remote_movement_authoritative":true,"logo_original":true,"native_player_model":true,"collider_foot_alignment":true,"model_follows_movement":true,"camera_follows_player":true,"visuals_excluded_from_saves":true,"network_model_lease_binding":true,"human_acceptance":false}),
+            &serde_json::json!({"native_ui_click_flow":true,"cancel_preserves_file":true,"identity_reopen":true,"offline_movement_and_portable_save":true,"concurrent_save_writer_rejected":true,"real_quic_clients":2,"remote_movement_authoritative":true,"logo_original":true,"native_player_model":true,"collider_foot_alignment":true,"model_follows_movement":true,"camera_follows_player":true,"visuals_excluded_from_saves":true,"network_model_lease_binding":true,"native_idle_walk_run":true,"native_rig_rest_shape_preserved":true,"left_orbit_preserves_heading_and_position":true,"right_drag_turns_in_place":true,"native_camera_collision_path":true,"wheel_zoom":true,"shift_increases_physical_speed":true,"focus_releases_controls":true,"ui_blocks_camera":true,"human_acceptance":false}),
         )?,
     )?;
     println!("Native creator, durable characters, offline save and two QUIC clients verified.");
@@ -653,6 +984,8 @@ pub fn main() -> Result<()> {
         composition: None,
         input: None,
         keys: BTreeSet::new(),
+        cursor: None,
+        captured: false,
         last: Instant::now(),
         error: None,
     };

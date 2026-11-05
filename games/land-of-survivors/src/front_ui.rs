@@ -7,6 +7,7 @@ const GOLD: Color32 = Color32::from_rgb(224, 192, 124);
 pub struct Ui {
     pub logo: egui::TextureHandle,
     pub hits: std::collections::BTreeMap<String, egui::Rect>,
+    input_regions: Vec<egui::Rect>,
 }
 impl Ui {
     pub fn new(ctx: &egui::Context) -> anyhow::Result<Self> {
@@ -45,6 +46,7 @@ impl Ui {
                 egui::TextureOptions::LINEAR,
             ),
             hits: Default::default(),
+            input_regions: Vec::new(),
         })
     }
     fn button(
@@ -70,6 +72,9 @@ impl Ui {
         self.hits.insert(id.into(), r.rect);
         r.clicked()
     }
+    pub fn blocks_pointer(&self, position: egui::Pos2) -> bool {
+        self.input_regions.iter().any(|r| r.contains(position))
+    }
     pub fn draw(
         &mut self,
         ctx: &egui::Context,
@@ -77,6 +82,7 @@ impl Ui {
         f: &mut Front,
     ) -> (Option<egui::Rect>, Vec<Action>) {
         self.hits.clear();
+        self.input_regions.clear();
         let mut actions = vec![];
         let pt = f.portuguese;
         let tr = |en: &str, br: &str| if pt { br.to_string() } else { en.to_string() };
@@ -98,7 +104,7 @@ impl Ui {
                 rect
             })
             .inner;
-        egui::Area::new("language".into())
+        let language = egui::Area::new("language".into())
             .anchor(egui::Align2::RIGHT_TOP, [-24., 20.])
             .show(ctx, |ui| {
                 if ui
@@ -108,6 +114,7 @@ impl Ui {
                     actions.push(Action::Language(!pt));
                 }
             });
+        self.input_regions.push(language.response.rect);
         if f.page == Page::Title {
             egui::Area::new("title".into())
                 .anchor(egui::Align2::CENTER_CENTER, [0., -22.])
@@ -230,7 +237,7 @@ impl Ui {
                     }
                 });
         } else {
-            egui::Area::new("session_hud".into())
+            let hud = egui::Area::new("session_hud".into())
                 .fixed_pos([24., 24.])
                 .show(ctx, |ui| {
                     egui::Frame::new()
@@ -266,8 +273,8 @@ impl Ui {
                                 "WASD para mover · Shift para correr",
                             ));
                             ui.small(tr(
-                                "Character in rest pose · art in development",
-                                "Personagem em repouso · arte em desenvolvimento",
+                                "Left drag: camera · Right drag: turn · Wheel: zoom",
+                                "Arraste esquerdo: câmera · direito: direção · roda: zoom",
                             ));
                             if self.button(
                                 ui,
@@ -280,9 +287,10 @@ impl Ui {
                             }
                         });
                 });
+            self.input_regions.push(hud.response.rect);
         }
         if !f.error.is_empty() {
-            egui::Area::new("error".into())
+            let error = egui::Area::new("error".into())
                 .anchor(egui::Align2::CENTER_BOTTOM, [0., -18.])
                 .show(ctx, |ui| {
                     egui::Frame::new()
@@ -293,6 +301,7 @@ impl Ui {
                             ui.colored_label(Color32::LIGHT_RED, &f.error);
                         });
                 });
+            self.input_regions.push(error.response.rect);
         }
         (Some(viewport), actions)
     }

@@ -76,8 +76,8 @@ futuras ainda precisa ser definida.
 ## Sessões offline e multiplayer
 
 O palco permite testar movimento com WASD/Shift usando o modelo nativo do
-personagem selecionado, na pose de repouso e ainda com arte provisória.
-A câmera acompanha esse personagem. `--play` abre diretamente o personagem
+personagem selecionado, com ciclos básicos de parado/caminhada/corrida e arte
+provisória. A câmera de terceira pessoa acompanha esse personagem. `--play` abre diretamente o personagem
 selecionado offline; sem cadastro selecionado, abre a criação. Offline usa o
 mesmo núcleo Ignis e save portátil por personagem. Hospedar inicia um
 host QUIC/TLS real com8slots e conecta o jogador por um cliente separado dentro
@@ -123,10 +123,15 @@ máquinas físicas permanecem separados.
 
 A criação e a sessão compartilham `Front::character_meshes`: povo, base, rosto,
 pele, olhos e orelhas usam a mesma configuração nativa. `presentation.rs` prepara
-os vértices/materiais da pose de repouso uma vez ao entrar; cada frame aplica a
-posição física, escala para a altura do colisor e orientação pelo deslocamento.
-Pés coincidem com a base física. Não foram criadas animações, roupas ou arte nova.
-A câmera segue o ator selecionado e preserva os controles WASD/Shift existentes.
+uma malha derivada de sessão com o rig completo e todos os pesos do corpo.
+Os insertos rígidos dos olhos acompanham o osso da cabeça; cores e materiais de
+cada parte são preservados. Um oráculo da pose de repouso nativa verifica que o
+empacotamento não muda a forma (tolerância de 10 micrômetros).
+`animation.rs` fornece três clipes básicos do jogo, reproduzidos e misturados
+pelo `Frame::append_avatars`/`npc_presentation::Pose` do Ignis. São ciclos iniciais
+funcionais, ainda sem aprovação artística. Roupas e novos modelos continuam fora
+desta unidade. Pés são alinhados à base física após a pose; isso não é IK de
+contato com terreno arbitrário nem certificação de ausência de deslizamento.
 
 O snapshot do Ignis agora expõe `player_primitives` com identidade/vida/índice
 exatos das caixas de Player, tanto offline quanto na réplica recebida. A camada
@@ -148,3 +153,57 @@ alinhamento dos pés, ausência da caixa visual, câmera seguindo, contagem de
 vértices estável, save sem meshes derivados e vínculo correto ao ator recebido
 para dois clientes com configurações diferentes. A aparência remota completa,
 animações e aceite humano permanecem etapas separadas.
+
+
+## Câmera, entrada e locomoção animada
+
+| Entrada | Comportamento |
+| --- | --- |
+| WASD | Movimento relativo à direção do personagem; A/D deslocam lateralmente. |
+| Shift + movimento | Usa o perfil nativo de corrida (padrão 6 m/s, caminhada 4 m/s). |
+| Arrastar esquerdo | Orbita só a câmera; preserva direção e posição do personagem. |
+| Arrastar direito | Alinha o personagem à direção da câmera e orienta ambos. |
+| Roda | Aproxima/afasta a câmera (1..20m neste jogo). |
+| Esc durante arraste | Solta o mouse; outro Esc retorna à lista e salva offline. |
+
+`controls.rs` define os bindings do jogo sobre `player_view::Config`. O movimento
+usa `Config::world_input` com o heading do personagem, separado do yaw da câmera.
+Offline usa `SetPlayerView`, `LookPlayerView` e a resolução física de câmera já
+existentes no Ignis, incluindo varredura de esfera contra colisores. A réplica
+remota usa a mesma projeção geométrica (`unobstructed_camera`) sobre a posição
+pública recebida; colisão remota da câmera ainda não está implementada e não é
+simulada usando o mundo-placeholder do cliente.
+
+O host continua recebendo input escopado por `SetMultiplayerInput`; não são
+enviados comandos administrativos de câmera ou de transformação de atores.
+Heading da própria apresentação é local; a direção dos outros Players é
+estimada pelo deslocamento público. Aparência/orientação completa e identidade
+durável de personagem continuam etapas separadas do protocolo atual.
+
+A janela usa captura relativa do winit (Locked/Confined, como a janela Ignis),
+com arraste absoluto como fallback quando a plataforma não aceita captura.
+HUD/idioma/erros interceptam o início de arraste; soltar botão e perder foco
+liberam a captura. Perda de foco neutraliza o input, e editar texto limpa teclas
+pendentes. Repetição de Esc não atravessa a soltura do mouse para sair da sessão.
+
+A seleção idle/walk/run observa deslocamento real, com tolerância para o intervalo
+entre snapshots remotos. O passo avança por distância percorrida; Shift usa o
+perfil de física existente, não apenas uma animação mais rápida. Transições
+usam blend nativo de 150 ms, sem root motion alterando o KCC. Relógios e estado
+visual pertencem à sessão e não são gravados no PSV.
+
+Verificação adicional: órbita sem mudar posição/heading, giro em repouso, zoom,
+câmera offline igual à resolução física nativa, bloqueio pelo HUD, liberação de
+captura, evolução da pose idle, caminhada/corrida e velocidade física maior com
+Shift, retorno ao idle e preservação do save. Capturas em `artifacts/app/` são
+produção automatizada do mesmo renderizador; gesto físico e qualidade artística
+continuam dependentes de uso humano. Não inferir FPS ou IK avançado.
+
+
+Nesta entrega, build release, dois testes do exemplo e Clippy do exemplo com
+`-D warnings` passaram. O verificador nativo completou todos os casos acima,
+persistência e dois clientes QUIC; capturas idle/walk/run e órbita foram
+inspecionadas. A preparação de projeção/material é mantida no Frame nativo do
+modelo, e a pose local é cacheada por clipe/fase/blend antes da transformação
+física. Isso não constitui medição de FPS. O launcher abriu o personagem do
+cadastro existente; nenhum save do usuário foi usado pelo verificador.

@@ -69,6 +69,21 @@ pub struct Config {
     pub third_person: ThirdPerson,
 }
 impl Config {
+    /// Project a third-person view from received public placement when no local
+    /// authoritative physics snapshot is available. This does not sweep obstacles.
+    /// Offline callers should use Engine::player_camera for physical obstruction.
+    pub fn unobstructed_camera(&self, center: [f32; 3], height: f32) -> Result<Camera> {
+        self.validate()?;
+        if center.iter().any(|v| !v.is_finite()) || !height.is_finite() || height <= self.eye_height
+        {
+            return Err(invalid(
+                "Camera requires finite placement and eyes inside the body",
+            ));
+        }
+        Ok(self
+            .resolve(self.placement(center, height), 1., false)
+            .camera)
+    }
     pub fn validate(&self) -> Result<()> {
         let t = &self.third_person;
         if !self.yaw_degrees.is_finite()

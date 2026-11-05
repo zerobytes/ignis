@@ -1,6 +1,10 @@
 //! Native game entry, separate from the editor and the headless abilities lab.
+#[path = "../games/land-of-survivors/src/animation.rs"]
+mod animation;
 #[path = "../games/land-of-survivors/src/characters.rs"]
 mod characters;
+#[path = "../games/land-of-survivors/src/controls.rs"]
+mod controls;
 #[path = "../games/land-of-survivors/src/front_end.rs"]
 mod front_end;
 #[path = "../games/land-of-survivors/src/front_ui.rs"]
