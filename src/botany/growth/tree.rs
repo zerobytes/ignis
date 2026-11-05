@@ -323,6 +323,7 @@ mod tests {
         assert!(
             !pruned
                 .source
+        wood_details: None,
                 .organs
                 .iter()
                 .any(|o| o.id == "node0" || o.id.starts_with("node0/"))

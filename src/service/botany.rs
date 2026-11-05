@@ -344,6 +344,21 @@ impl Service {
     }
     pub(super) fn botany_command(&mut self, operation: &Op) -> Result<Value> {
         match operation {
+            Op::SetWoodDetails{prefix,details,preview,policy}=>{
+                let mut recipe=self.botanical_recipe(prefix)?;
+                b::wood_details::preserve_losses(recipe.wood_details.as_ref(),details.as_ref())?;
+                recipe.version=recipe.version.max(12);recipe.wood_details=details.clone();
+                if recipe.living.is_none() && recipe.source.development.is_some() && let Some(d)=&recipe.wood_details {recipe.settings.age_years=Some(d.age_years);}
+                if *preview {self.botany_command(&Op::Preview{recipe:Box::new(recipe),policy:*policy})}else{self.botanical_publish(recipe,*policy)}
+            }
+            Op::LoseBranch{prefix,organ,cause,policy}=>{
+                let mut recipe=self.botanical_recipe(prefix)?;b::wood_details::record_loss(&mut recipe,organ,*cause,None)?;
+                if let Some(plant)=&mut recipe.living && plant.production.sites.contains_key(organ) {
+                    plant.production.remove_site(organ).map_err(invalid)?;
+                    recipe.source=plant.recipe()?.source;
+                }
+                self.botanical_publish(recipe,*policy)
+            }
             Op::CreateLiving { definition, born } => {
                 if self
                     .engine
@@ -359,6 +374,7 @@ impl Service {
             }
             Op::Living { prefix, action } => {
                 let old = self.botanical_recipe(prefix)?;
+                let mut details=old.wood_details.clone();
                 let mut plant = old
                     .living
                     .clone()
@@ -408,7 +424,7 @@ impl Service {
                         plant.validate()?;
                     }
                     b::growth::Action::Advance { time } => {
-                        plant.advance(*time)?;
+                        details=b::wood_details::advance(&old,&mut plant,*time)?;
                     }
                     b::growth::Action::Harvest { fruit } => {
                         if plant.production.harvested.len() >= b::growth::MAX_HARVESTED {
@@ -422,10 +438,14 @@ impl Service {
                     b::growth::Action::Prune { site } => {
                         plant.production.remove_site(site).map_err(invalid)?;
                     }
+                        if old.wood_details.is_some() && old.source.organs.iter().any(|o|o.id==*site) {
+                            let mut marked=old.clone();b::wood_details::record_site_loss(&mut marked,site,b::wood_details::Cause::Pruning)?;details=marked.wood_details;
+                        }
                 }
                 let mut next = plant.bound_recipe()?;
                 next.settings = old.settings;
                 next.edits = old.edits;
+                next.wood_details=details;next.version=next.version.max(if next.wood_details.is_some(){12}else{8});
                 next.manual = old.manual;
                 self.botanical_publish(next, Policy::Preserve)
             }
@@ -438,23 +458,25 @@ impl Service {
                     .living
                     .as_ref()
                     .ok_or_else(|| invalid("Recipe is not a living plant"))?;
-                // Authoring evaluation, not a biological rewind. No historical event replay
-                // is possible from tombstones alone. Keep the canonical individual intact.
-                let mut plant =
-                    b::growth::Plant::new(saved.definition.clone(), saved.production.plant.born)?;
-                plant.advance(*time)?;
-                let mut recipe = plant.bound_recipe()?;
-                recipe.settings = old.settings;
+                // Recorded history is causal; future previews simulate the same advance.
+                // Backward comparisons still do not replay arbitrary harvest/sculpt history.
+                let forward=old.wood_details.is_some() && *time>=saved.production.plant.time;
+                let mut plant=if forward {saved.clone()}else{b::growth::Plant::new(saved.definition.clone(),saved.production.plant.born)?};
+                let details=if forward {b::wood_details::advance(&old,&mut plant,*time)?}else{plant.advance(*time)?;old.wood_details.clone()};
+                let mut recipe=plant.bound_recipe()?;recipe.settings=old.settings.clone();recipe.wood_details=details;
+                if recipe.wood_details.is_some(){recipe.version=12;}
+                if forward {recipe.edits=old.edits.clone();recipe.manual=old.manual.clone();recipe=self.botanical_preserve(recipe,Policy::Preserve)?;}
                 recipe.validate()?;
                 let compiled = bake::compile(&recipe)?;
                 let overlay = self.botanical_merge(compiled.document, Policy::Preserve)?;
+                let history_applied=recipe.wood_details.is_some();
                 self.botany.basis = Some(self.botanical_basis(prefix));
                 self.botany.overlay = Some(overlay);
                 self.botany.preview = Some(recipe);
                 self.botany.physics = None;
                 self.botany.revision = Some(self.engine.revision);
                 Ok(
-                    json!({"preview":true,"time":time,"world_changed":false,"interventions_applied":false}),
+                    json!({"preview":true,"time":time,"world_changed":false,"interventions_applied":false,"history_applied":history_applied}),
                 )
             }
             Op::Inspect => Ok(
@@ -541,6 +563,7 @@ impl Service {
                 recipe.settings.age_years = Some(*age_years);
                 if let Some(vigor) = vigor {
                     recipe.settings.vigor = *vigor;
+                if let Some(d)=&mut recipe.wood_details {d.age_years = *age_years;}
                 }
                 if *preview {
                     self.botany_command(&Op::Preview {

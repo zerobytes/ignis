@@ -365,7 +365,7 @@ fn junction_refinement_is_local_versioned_and_transactional() {
     )
     .unwrap();
     let after = service.engine.scene.clone();
-    assert_eq!(after.botany[0].version, 11);
+    assert_eq!(after.botany[0].version, b::VERSION);
     let mut bad = detailed.edits["trunk"].clone();
     bad.junction_refinement = Some(4);
     assert!(

@@ -58,6 +58,7 @@ fn fixture() -> b::Recipe {
         shear: 8e6,
     };
     b::Recipe {
+        wood_details: None,
         version: 1,
         prefix: "plant".into(),
         source: Arc::new(b::Source {

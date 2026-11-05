@@ -18,6 +18,8 @@ pub(super) struct State {
     living_stature: crate::botany::growth::Stature,
     living_continuous: crate::botany::growth::continuous::Profile,
     living_volume: crate::botany::growth::woody_volume::Profile,
+    wood_details: Option<crate::botany::wood_details::Details>,
+    loss_branch: String,
     living_age_years: f64,
     living_observed: Option<(String, u64, u64, Option<u64>)>,
     living_horizon_years: f64,
@@ -41,6 +43,8 @@ impl Default for State {
             living_stature: Default::default(),
             living_continuous: Default::default(),
             living_volume: Default::default(),
+            wood_details: None,
+            loss_branch: String::new(),
             living_age_years: 0.,
             living_observed: None,
             living_horizon_years: 2.,
@@ -169,12 +173,18 @@ pub(super) fn properties(
             state.prefix=Some(recipe.prefix.clone());state.organ=None;
         }
         if state.key!=key{state.draft=Some(recipe.clone());state.key=key;
+            state.wood_details=recipe.wood_details.clone();
             state.living_volume=recipe.living.as_ref().and_then(|p|p.definition.wood_volume.clone()).unwrap_or_default();
             state.living_stature=recipe.living.as_ref().and_then(|p|p.definition.stature.clone()).unwrap_or_default();
             state.living_continuous=recipe.living.as_ref().and_then(|p|p.definition.continuous.clone()).unwrap_or_default();
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
             let system=recipe.source.root_systems.iter().find(|r|r.stem==state.root_stem);state.roots_enabled=system.is_some();state.roots=system.map(|s|s.settings.clone()).unwrap_or_default();
         }
+        let (detail_action,loss)=crate::botany::wood_details::ui::editor(ui,recipe,&mut state.wood_details,&mut state.loss_branch);
+        if let Some(action)=detail_action {use crate::botany::wood_surface::ui::Action;
+            if matches!(action,Action::Cancel){state.wood_details=recipe.wood_details.clone();send(commands,Op::CancelPreview);}else{send(commands,Op::SetWoodDetails{prefix:recipe.prefix.clone(),details:state.wood_details.clone(),preview:matches!(action,Action::Preview),policy:ManualPolicy::Preserve});}
+        }
+        if let Some(cause)=loss {send(commands,Op::LoseBranch{prefix:recipe.prefix.clone(),organ:state.loss_branch.clone(),cause,policy:ManualPolicy::Preserve});}
         if let Some(plant)=&recipe.living {
             ui.separator();ui.heading("Desenvolvimento vivo · experimental");
             ui.label(format!("Dia {} · {} ramos produzidos",plant.production.plant.time,plant.production.sites.len()));
@@ -205,7 +215,7 @@ pub(super) fn properties(
             }
             if let Some(time)=preview_time {
                 ui.label(format!("PRÉVIA: {:.3} anos · a árvore salva permanece com {current_age:.3} anos",time.saturating_sub(born) as f64/365.));
-                ui.label("Comparação de crescimento sem podas, colheitas ou escultura. Não é reprodução do histórico.");
+                if recipe.wood_details.is_some(){ui.label("Inclui marcas e perdas registradas até a idade da prévia; outras podas/colheitas não são reproduzidas.");}else{ui.label("Comparação de crescimento sem podas, colheitas ou escultura. Não é reprodução do histórico.");}
                 if ui.button("Voltar à árvore salva").clicked(){state.living_age_years=current_age;send(commands,Op::CancelPreview);}
                 if time>plant.production.plant.time && ui.button("Confirmar avanço na árvore salva").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Advance{time}});}
                 return;

@@ -35,6 +35,7 @@ pub struct Pose {
     pub wood_surface: Option<Arc<super::wood_surface::Surface>>,
     pub surface_scale: f64,
     pub flutes: Option<Arc<super::root_sections::Flutes>>,
+    pub patches: Vec<super::wood_details::Patch>,
 }
 impl Pose {
     pub fn at(&self, u: f64) -> Frame {
@@ -53,7 +54,7 @@ impl Pose {
     }
     /// Convert a metric collar offset into the actual spline sample parameter.
     /// Control-point parameter speed is generally nonuniform.
-    fn offset(&self, u: f64, distance: f64) -> f64 {
+    pub(super) fn offset(&self, u: f64, distance: f64) -> f64 {
         let mut lengths = Vec::with_capacity(self.samples.len());
         lengths.push(0.);
         for pair in self.samples.windows(2) {
@@ -165,7 +166,9 @@ fn hash(seed: u64, id: &str) -> f64 {
     }
     (value >> 11) as f64 / (1u64 << 53) as f64
 }
-pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
+pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {poses_impl(recipe,true)}
+pub(super) fn history_poses(recipe:&Recipe)->Result<Vec<Pose>>{poses_impl(recipe,false)}
+fn poses_impl(recipe: &Recipe, detailed_surfaces:bool) -> Result<Vec<Pose>> {
     recipe.validate()?;
     let s = &recipe.settings;
     let steps = s.axis_samples as usize;
@@ -178,7 +181,7 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
     let mut lookup: BTreeMap<String, usize> = BTreeMap::new();
     let mut raw: BTreeMap<String, Vec<Frame>> = BTreeMap::new();
     for (source, o) in recipe.source.organs.iter().enumerate() {
-        if recipe.pruned.contains(&o.id)
+        if recipe.pruned.contains(&o.id) || super::wood_details::lost(recipe,&o.id)
             || o.parent.as_ref().is_some_and(|p| !lookup.contains_key(p))
         {
             continue;
@@ -370,6 +373,7 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
                 })
                 .collect();
         }
+        super::wood_details::bend(recipe,o,&mut final_points,transform*(rotation*initial[0].n));
         let steps = edit
             .wood_surface
             .as_ref()
@@ -428,7 +432,7 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
             flare,
             stiffness,
             section,
-            wood_surface: if recipe
+            wood_surface: if !detailed_surfaces {None} else if recipe
                 .living
                 .as_ref()
                 .is_some_and(|p| p.definition.version >= 6)
@@ -458,7 +462,9 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
                 _ => 1.,
             },
             flutes: None,
+            patches: vec![],
         });
+        if detailed_surfaces {super::wood_details::attach(recipe,result.last_mut().unwrap())?;}
     }
     let mut tree = Vec::with_capacity(result.len());
     for (i, p) in result.iter().enumerate() {
@@ -682,6 +688,7 @@ impl Builder {
 }
 fn surface_address(p: &Pose, recipe: &Recipe, u: f64, j: usize) -> String {
     let id = &recipe.source.organs[p.source].id;
+    if let Some(key)=super::wood_details::feature_address(p,id,u,j){return key;}
     if super::root_sections::shaped(p) {
         address(
             &format!("{id}:wall-v1:{}", super::root_sections::sides(p, recipe)),
@@ -1214,14 +1221,21 @@ fn tube(
         .chain(windows.iter().flat_map(|(a, c)| [*a, *c]))
         .map(metric)
         .collect();
+    let detail_coordinates=super::wood_details::coordinates(pose);
     let mut coordinates: Vec<_> = (0..=steps)
         .map(|i| i as f64 / steps as f64)
         .filter(|u| *u >= start && *u <= end && !windows.iter().any(|(a, c)| *u > *a && *u < *c))
         .filter(|u| {
             let s = metric(*u);
-            !boundaries.iter().any(|b| (s - b).abs() < clearance)
+            !boundaries.iter().any(|b| (s - b).abs() < clearance) && !detail_coordinates.iter().any(|b|(s-metric(*b)).abs()<clearance)
         })
         .collect();
+    let mut previous_detail=None;
+    for u in detail_coordinates {
+        if u<=start || u>=end || windows.iter().any(|(a,c)|u>*a && u<*c){continue;}
+        let d=metric(u);if boundaries.iter().any(|b|(d-b).abs()<clearance)||previous_detail.is_some_and(|p:f64|(p-d).abs()<clearance){continue;}
+        coordinates.push(u);previous_detail=Some(d);
+    }
     coordinates.push(start);
     coordinates.push(end);
     for (a, c) in &windows {
@@ -1579,7 +1593,7 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
                     .map_or(recipe.settings.axis_samples as usize, |s| {
                         s.samples as usize
                     })
-                    + 1)
+                    + 1 + p.patches.len()*17)
                     * super::root_sections::sides(p, recipe)
                     + 2
             } else {
@@ -1650,7 +1664,7 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         let geometry = meshes::Geometry {
             positions: b.positions,
             triangles: b.triangles,
-            material_coordinates: if recipe
+            material_coordinates: if recipe.wood_details.is_some() || recipe
                 .living
                 .as_ref()
                 .is_some_and(|p| p.definition.version >= 6)
@@ -1661,11 +1675,13 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
                         .map(|v| {
                             let p = &poses[v.organ];
                             if i == 0 {
-                                [
-                                    (v.local.z.atan2(v.local.y) * p.radius) as f32,
-                                    (v.u * p.length) as f32,
-                                    v.local.z as f32,
-                                ]
+                                let angle=v.local.z.atan2(v.local.y);
+                                if recipe.wood_details.is_some() {
+                                    let a=p.wood_surface.as_ref().map_or(angle,|s|super::wood_details::grain_angle(s,&p.patches,v.u,angle))-super::wood_details::root_profile(recipe,&recipe.source.organs[p.source].id).map_or(0.,|r|r.twist*v.u*p.length/recipe.settings.scale);
+                                    [(a.sin()*p.radius)as f32,(v.u*p.length)as f32,(a.cos()*p.radius)as f32]
+                                } else {
+                                    [(angle*p.radius)as f32,(v.u*p.length)as f32,v.local.z as f32]
+                                }
                             } else {
                                 [(v.u * p.length) as f32, v.local.z as f32, v.local.y as f32]
                             }

@@ -310,6 +310,7 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
         }
     }
     let r = Recipe {
+        wood_details: None,
         version: 8,
         prefix: d.prefix.clone(),
         source: Arc::new(Source {

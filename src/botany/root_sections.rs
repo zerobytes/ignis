@@ -84,7 +84,7 @@ pub fn point(p: &Pose, source: &Source, u: f64, theta: f64) -> DVec3 {
     let f = p.at(u);
     let (a, b) = p.radius_at(source, u);
     if let Some(surface) = &p.wood_surface {
-        surface.point(f, u, theta, p.surface_scale)
+        if p.patches.is_empty() {surface.point(f, u, theta, p.surface_scale)} else {super::wood_details::point(surface,p,u,theta)}
     } else if let Some(section) = &p.section {
         section.point(f, a, theta)
     } else {

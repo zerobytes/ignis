@@ -24,7 +24,8 @@ pub mod root_sections;
 pub mod roots;
 pub mod wood_surface;
 pub mod junction_quality;
-pub const VERSION: u16 = 11;
+pub mod wood_details;
+pub const VERSION: u16 = 12;
 pub const LIVING_SCENE_VERSION: u32 = 121;
 fn one() -> f64 {
     1.
@@ -209,6 +210,8 @@ impl Default for OrganEdit {
 #[serde(deny_unknown_fields)]
 pub struct Recipe {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wood_details: Option<wood_details::Details>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub living: Option<growth::Plant>,
     pub version: u16,
     pub prefix: String,
@@ -235,6 +238,8 @@ pub enum ManualPolicy {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    SetWoodDetails { prefix: String, details: Option<wood_details::Details>, #[serde(default)] preview: bool, #[serde(default)] policy: ManualPolicy },
+    LoseBranch { prefix: String, organ: String, cause: wood_details::Cause, #[serde(default)] policy: ManualPolicy },
     CreateLiving {
         definition: growth::Definition,
         born: u64,
@@ -556,6 +561,7 @@ impl Outline {
 }
 impl Recipe {
     pub fn validate(&self) -> Result<()> {
+        if let Some(details)=&self.wood_details {details.validate(self)?;}
         if let Some(plant) = &self.living {
             if self.version < 8
                 || self.source.version < 8
@@ -669,20 +675,22 @@ impl Recipe {
         }
         let ids: BTreeSet<_> = self.source.organs.iter().map(|o| o.id.as_str()).collect();
         if self.pruned.iter().any(|v| !ids.contains(v.as_str())) {
+        let archived: BTreeSet<&str>=self.wood_details.iter().flat_map(|d|d.scars.iter()).filter(|s|s.year<=wood_details::age(self)).flat_map(|s|s.removed_organs.iter().map(String::as_str)).collect();
+        let woody_ids:BTreeSet<&str>=self.source.organs.iter().filter(|o|matches!(o.shape,Shape::Axis{..})).map(|o|o.id.as_str()).collect();
             return Err(invalid("Unknown pruned botanical organ"));
+            let archived_edit=!ids.contains(id.as_str()) && archived.contains(id.as_str());
+            let woody=woody_ids.contains(id.as_str()) || archived_edit;
         }
         for (id, e) in &self.edits {
             e.deformation.validate()?;
             if let Some(level) = e.junction_refinement
-                && (self.version < 11 || level > 3 || !self.source.organs.iter().any(|o|o.id == *id && matches!(o.shape,Shape::Axis{..}))) {
+                && (self.version < 11 || level > 3 || !woody) {
                 return Err(invalid("Junction refinement requires recipe11, a woody axis and level0..3"));
             }
             if let Some(surface) = &e.wood_surface {
                 if self.version < 10
                     || self.living.is_some()
-                    || !self.source.organs.iter().any(|o| {
-                        o.id == *id && matches!(o.shape, Shape::Axis { .. })
-                    })
+                    || !woody
                 {
                     return Err(invalid(
                         "Wood surface requires recipe10 and a nonliving woody axis",
@@ -690,7 +698,7 @@ impl Recipe {
                 }
                 surface.validate()?;
             }
-            if !ids.contains(id.as_str())
+            if (!ids.contains(id.as_str()) && !archived_edit)
                 || !finite(&e.offset)
                 || !finite(&e.rotation)
                 || !e.radius.is_finite() || e.radius <= 0.
