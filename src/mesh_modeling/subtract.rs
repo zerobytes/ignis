@@ -143,6 +143,27 @@ fn self_intersections(g: &Geometry, m: &TriMesh) -> Result<()> {
 }
 
 pub(super) fn evaluate(source: &Asset, cutter: &[[f32; 3]], limits: Limits) -> Result<Evaluated> {
+    evaluate_mode(source, cutter, limits, false)
+}
+pub(super) fn evaluate_union(
+    source: &Asset,
+    points: &[[f32; 3]],
+    limits: Limits,
+) -> Result<Evaluated> {
+    evaluate_mode(source, points, limits, true).map_err(|mut e| {
+        e.message = e
+            .message
+            .replace("Subtraction", "Union")
+            .replace("removal", "addition");
+        e
+    })
+}
+fn evaluate_mode(
+    source: &Asset,
+    cutter: &[[f32; 3]],
+    limits: Limits,
+    adding: bool,
+) -> Result<Evaluated> {
     let g = &source.geometry;
     if source.rig.is_some() || !source.clips.is_empty() {
         return Err(invalid(
@@ -172,16 +193,22 @@ pub(super) fn evaluate(source: &Asset, cutter: &[[f32; 3]], limits: Limits) -> R
             "Subtraction requires 4..32 finite local cutter points within +/-10000",
         ));
     }
-    let min = g
+    let mut min = g
         .positions
         .iter()
         .map(|p| v(*p))
         .fold(DVec3::splat(f64::INFINITY), DVec3::min);
-    let max = g
+    let mut max = g
         .positions
         .iter()
         .map(|p| v(*p))
         .fold(DVec3::splat(f64::NEG_INFINITY), DVec3::max);
+    if adding {
+        for p in cutter {
+            min = min.min(v(*p));
+            max = max.max(v(*p));
+        }
+    }
     let center = (min + max) * 0.5;
     let scale = (max - min).max_element();
     if scale < 1e-4 {
@@ -251,7 +278,15 @@ pub(super) fn evaluate(source: &Asset, cutter: &[[f32; 3]], limits: Limits) -> R
             m.tol = packing_epsilon;
             Ok::<_, String>(m)
         };
-        compute_boolean(&manifold(&normalized)?, &manifold(&hull)?, OpType::Subtract)
+        compute_boolean(
+            &manifold(&normalized)?,
+            &manifold(&hull)?,
+            if adding {
+                OpType::Add
+            } else {
+                OpType::Subtract
+            },
+        )
     }))
     .map_err(|_| invalid("Subtraction kernel refused an ambiguous intersection"))?
     .map_err(|e| invalid(format!("Subtraction kernel: {e}")))?;
@@ -289,10 +324,19 @@ pub(super) fn evaluate(source: &Asset, cutter: &[[f32; 3]], limits: Limits) -> R
     // of the whole object's volume: small local chips must remain possible.
     let volume_floor =
         64. * f64::EPSILON * (normalized.triangles.len() + out.triangles.len()) as f64;
-    if before - after <= volume_floor || after >= before {
-        return Err(invalid(
-            "Subtraction must remove a measurable positive volume",
-        ));
+    let change = |after: f64| {
+        if adding {
+            after - before
+        } else {
+            before - after
+        }
+    };
+    if change(after) <= volume_floor {
+        return Err(invalid(if adding {
+            "Union must add a measurable positive volume"
+        } else {
+            "Subtraction must remove a measurable positive volume"
+        }));
     }
     // Source vertices survive bit-exactly; only new intersections are denormalized.
     let surviving: BTreeMap<_, _> = normalized
@@ -337,7 +381,7 @@ pub(super) fn evaluate(source: &Asset, cutter: &[[f32; 3]], limits: Limits) -> R
         material_coordinates: None,
     };
     actual.validate()?;
-    if before - volume(&actual) <= volume_floor {
+    if change(volume(&actual)) <= volume_floor {
         return Err(invalid(
             "Subtraction loses measurable removal at publication precision",
         ));
@@ -352,7 +396,7 @@ pub(super) fn evaluate(source: &Asset, cutter: &[[f32; 3]], limits: Limits) -> R
         if hull.triangles.iter().any(|face| {
             let [a, b, c] = face.map(|i| v(hull.positions[i as usize]));
             let hn = (b - a).cross(c - a).normalize();
-            n.dot(hn) < -0.99
+            n.dot(hn) * if adding { 1. } else { -1. } > 0.99
                 && vertices
                     .iter()
                     .all(|p| hn.dot(*p - a).abs() < EPS.max(packing_epsilon) * 4.)

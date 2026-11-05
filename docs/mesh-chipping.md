@@ -207,3 +207,10 @@ strata modality is independent and unchanged.
 Implementation of this low-level tool is complete. The directional/multiscale
 fracture generator, non-destructive native Landform stack, reference fidelity,
 live-world integration and human artistic acceptance remain open in EAF-221.
+
+## Convex additive counterpart
+
+UnionConvex now complements finite subtraction through the same native modeling
+entry points. See weathered-plateau.md for combined-bounds normalization, the
+connected-solid contract and a whole-plateau demonstration. Native Landform1..3
+and the absence of physical erosion/world-streaming integration are unchanged.

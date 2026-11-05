@@ -16,6 +16,12 @@ mod subtract;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    /// Add the finite convex hull of asset-local points to a static solid.
+    UnionConvex {
+        #[serde(deserialize_with = "subtract::decode_points")]
+        #[schemars(length(min = 4, max = 32))]
+        points: Vec<[f32; 3]>,
+    },
     /// Remove the finite convex hull of asset-local points from a static solid.
     SubtractConvex {
         #[serde(deserialize_with = "subtract::decode_points")]
@@ -422,6 +428,7 @@ pub(crate) fn evaluate_limited(
     .validate()?;
     match operation {
         Operation::SubtractConvex { points } => subtract::evaluate(source, points, limits),
+        Operation::UnionConvex { points } => subtract::evaluate_union(source, points, limits),
         Operation::Extrude { faces, offset } => {
             let offset = v(*offset);
             if !offset.is_finite()

@@ -80,3 +80,9 @@ per-frame operation. Input/output/work limits and precision validation are requi
 for integration. Runtime consumes the compiled boundary; this does not imply free
 destruction/regeneration. Existing subtract adapter is a useful numerical/atomicity
 reference, not an already implemented Union API. EAF-221 remains InProgress.
+
+## Native follow-up
+
+UnionConvex is now exposed MCP-first for bounded convex point-cloud additions.
+See weathered-plateau.md. It is not a general two-arbitrary-asset Boolean API,
+and does not claim to import/reproduce the entire Blender sample automatically.

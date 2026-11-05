@@ -193,3 +193,37 @@ fn a_small_corner_chip_is_not_rejected_as_a_fraction_of_the_entire_mass() {
     assert!((8. - volume(&r.asset) - 1e-6).abs() < 1e-10);
     assert!(r.report.numerical_tolerance_meters.unwrap() < 1e-6);
 }
+
+#[test]
+fn convex_union_adds_real_closed_volume_and_supports_repeated_nonconvex_results() {
+    let a = cube();
+    let op = Operation::UnionConvex {
+        points: box_points([0.4, -0.7, 0.4], [1.6, 0.6, 1.3]),
+    };
+    let r = mesh_modeling::evaluate(&a, &op).unwrap();
+    let expected = 8. + 1.2 * 1.3 * 0.9 - 0.6 * 1.3 * 0.6;
+    assert!((volume(&r.asset) - expected).abs() < 2e-5);
+    assert!(!r.report.selected_faces.is_empty());
+    assert_eq!(
+        r.asset.geometry,
+        mesh_modeling::evaluate(&a, &op).unwrap().asset.geometry
+    );
+    let topology = ignis::mesh_topology::Topology::inspect(&r.asset.geometry).unwrap();
+    assert_eq!(topology.boundary_edges, 0);
+    assert_eq!(topology.non_manifold_edges, 0);
+    let r2 = mesh_modeling::evaluate(
+        &r.asset,
+        &Operation::UnionConvex {
+            points: box_points([-1.3, -0.6, 0.3], [-0.4, 0.3, 1.4]),
+        },
+    )
+    .unwrap();
+    assert!(volume(&r2.asset) > volume(&r.asset));
+    for points in [
+        box_points([-0.2; 3], [0.2; 3]),
+        box_points([2.; 3], [3.; 3]),
+        box_points([1.; 3], [2.; 3]),
+    ] {
+        assert!(mesh_modeling::evaluate(&a, &Operation::UnionConvex { points }).is_err());
+    }
+}
