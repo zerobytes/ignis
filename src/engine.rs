@@ -130,6 +130,11 @@ fn default_session_capacity() -> usize {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Animation {
+        operation: Box<crate::animation::Operation>,
+        #[serde(default)]
+        expected_animation_revision: Option<u64>,
+    },
     /// UI authoring has its own revision/history, independent of scene edits.
     Ui {
         operation: Box<crate::game_ui::Operation>,
@@ -1460,7 +1465,10 @@ impl Engine {
         scene.entities.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(scene)
     }
-    pub(crate) fn apply_edits(&mut self, edits: impl ExactSizeIterator<Item = SceneEdit>) -> Result<()> {
+    pub(crate) fn apply_edits(
+        &mut self,
+        edits: impl ExactSizeIterator<Item = SceneEdit>,
+    ) -> Result<()> {
         let scene = self.staged_edits(edits)?;
         self.replace(scene)
     }

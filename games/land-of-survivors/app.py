@@ -20,6 +20,9 @@ def main():
         "--play", action="store_true",
         help="Open the selected character directly in the offline stage",
     )
+    parser.add_argument("--export-animation-scene", metavar="RELATIVE_PATH",
+                        help="Export a native scene for editing clips through the Ignis editor/MCP")
+    parser.add_argument("--animation-preview",action="store_true",help="Open the unsaved animation stage with live clip reload")
     args = parser.parse_args()
     binary = ENGINE / "target/release/examples/land_of_survivors_app"
     out = PROJECT / "artifacts/app"
@@ -41,14 +44,17 @@ def main():
         )
     if not binary.is_file():
         parser.error("Build first: python3 games/land-of-survivors/app.py --build")
+    if args.export_animation_scene:
+        subprocess.run([str(binary), "--export-animation-scene", args.export_animation_scene],cwd=ENGINE,check=True)
+        return
     if args.verify:
         subprocess.run([str(binary), "--verify"], cwd=ENGINE, check=True)
         return
-    if args.build and not (args.open or args.play):
+    if args.build and not (args.open or args.play or args.animation_preview):
         return
     with (out / "window.log").open("w") as log:
         process = subprocess.Popen(
-            [str(binary)] + (["--play"] if args.play else []), cwd=ENGINE,
+            [str(binary)] + (["--animation-preview"] if args.animation_preview else ["--play"] if args.play else []), cwd=ENGINE,
             stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True,
         )
     (out / "launch.json").write_text(json.dumps({

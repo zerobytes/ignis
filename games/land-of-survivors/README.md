@@ -18,6 +18,15 @@ Sem opção, verifica a entrada, as dimensões, save/load e preservação da câ
 
 `scenes/Principal.scene.json` continua sendo a cena do observador planetário. Os launchers de mundo/relevo selecionam essa cena explicitamente, sem depender da nova entrada. A geografia e o laboratório de habilidades continuam independentes do palco de interface.
 
+## Autoria de animação
+
+Clipes, passada e fases de apoio ficam em `assets/animations/locomotion.ignis-motion`,
+com edição/save/load pelo MCP e recarga visual durante a sessão.
+`app.py --animation-preview` abre um palco sem save de personagem.
+Veja [o fluxo de autoria nativo](../../docs/animation-authoring.md) para exportar
+uma cena, editar o rig/clipes e gravar apoios no clipe. Os ciclos iniciais ainda
+são rascunhos; a caminhada natural continua pendente de trabalho e revisão visual.
+
 ## Habilidades funcionais
 
 ```sh

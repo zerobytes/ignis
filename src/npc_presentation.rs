@@ -293,11 +293,11 @@ impl Pose {
         {
             return Err(invalid("Invalid avatar calibration/IK budget/root"));
         }
-        let mut used = 0u32;
+        let mut used = [false; crate::meshes::MAX_BONES];
         for j in &self.joints[..self.joint_count as usize] {
             let q = glam::Quat::from_array(j.rotation);
             if j.bone as usize >= crate::meshes::MAX_BONES
-                || used & (1u32 << j.bone) != 0
+                || used[j.bone as usize]
                 || !q.is_finite()
                 || (q.length_squared() - 1.).abs() > 0.001
                 || j.translation
@@ -306,7 +306,7 @@ impl Pose {
             {
                 return Err(invalid("Invalid avatar joint override"));
             }
-            used |= 1u32 << j.bone;
+            used[j.bone as usize] = true;
         }
         Ok(())
     }

@@ -5,6 +5,7 @@ use crate::{
     render::{RenderFrame, Renderer},
 };
 use serde_json::{Value, json};
+mod animation;
 mod botany;
 mod characters;
 mod materials;
@@ -38,6 +39,7 @@ pub struct Reply {
     pub png: Option<Vec<u8>>,
 }
 pub struct Service {
+    pub animation_library: crate::animation::State,
     pub game_ui: crate::game_ui::State,
     pub wind_panel_open: bool,
     pub botany: crate::botany::State,
@@ -284,6 +286,7 @@ impl Service {
             saved_scene_revision: 0,
             editor_capture: None,
             viewport_performance: Default::default(),
+            animation_library: Default::default(),
             game_ui: Default::default(),
             network_host: None,
             network_client: None,
@@ -547,6 +550,7 @@ impl Service {
         }
         let pause_audio = matches!(&request.command, Command::Pause | Command::Exit);
         let data = match &request.command {
+            Command::Animation {operation,expected_animation_revision} => self.animation_command(operation,*expected_animation_revision)?,
             Command::Ui {
                 operation,
                 expected_ui_revision,

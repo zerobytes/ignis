@@ -247,7 +247,12 @@ impl Ui {
                             ui.set_width(340.);
                             ui.label(RichText::new("LAND OF SURVIVORS").color(GOLD));
                             if let Some(s) = &f.session {
-                                ui.label(if s.offline {
+                                ui.label(if s.status["state"] == "animation preview (unsaved)" {
+                                    tr(
+                                        "Animation preview · no progress saved",
+                                        "Prévia de animação · sem salvar progresso",
+                                    )
+                                } else if s.offline {
                                     tr(
                                         "Offline · progress saved when leaving",
                                         "Offline · progresso salvo ao sair",

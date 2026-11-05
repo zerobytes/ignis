@@ -1,8 +1,5 @@
 //! Game appearance and locomotion use the native rig player over public physical poses.
-use crate::{
-    animation::{self, Gait},
-    controls::Controls,
-};
+use crate::{animation::Gait, controls::Controls};
 use anyhow::{Result, ensure};
 use glam::{Quat, Vec3};
 use ignis::{
@@ -27,6 +24,9 @@ struct Model {
     styles: Vec<Vertex>,
     materials: Vec<Material>,
     height: f32,
+    floor: f32,
+    durations: [u32; 3],
+    strides: [f32; 3],
     evaluated: Frame,
     pose_key: Option<PoseKey>,
 }
@@ -53,7 +53,7 @@ fn pose(actor: u64, life: u64) -> Pose {
     }
 }
 impl Model {
-    fn new(source: Document) -> Result<Self> {
+    fn new(source: Document, library: &ignis::animation::Document) -> Result<Self> {
         source.validate()?;
         let body_instance = source
             .instances
@@ -141,7 +141,7 @@ impl Model {
                 bones: rig.bones.clone(),
                 weights,
             })),
-            clips: animation::clips(rig)?,
+            clips: library.clips_for(rig, &["idle", "walk", "run"])?,
         };
         let document = Document {
             assets: vec![asset],
@@ -168,7 +168,12 @@ impl Model {
                 ),
             "Native character packing changed its rest shape"
         );
+        let durations = std::array::from_fn(|i| document.assets[0].clips[i].duration_ticks);
+        let strides = ["idle", "walk", "run"].map(|n| library.motion(n).unwrap().stride);
         Ok(Self {
+            floor: min_y,
+            durations,
+            strides,
             document,
             styles: original.vertices,
             materials: original.materials,
@@ -213,10 +218,7 @@ impl Model {
         );
         let scale = height / self.height;
         let foot_y = center[1] - height * 0.5;
-        let sole = tail
-            .iter()
-            .map(|v| v.position[1])
-            .fold(f32::INFINITY, f32::min);
+        let sole = self.floor;
         let rotation = Quat::from_rotation_y(-f32::from(p.yaw) * 0.01f32.to_radians());
         let anchor = Vec3::new(center[0], foot_y - sole * scale, center[2]);
         frame
@@ -278,7 +280,14 @@ impl Motion {
             previous: None,
         }
     }
-    fn update(&mut self, center: Vec3, clock: f64, local: Option<(f32, MovementMode)>) -> Pose {
+    fn update(
+        &mut self,
+        center: Vec3,
+        clock: f64,
+        local: Option<(f32, MovementMode)>,
+        durations: [u32; 3],
+        strides: [f32; 3],
+    ) -> Pose {
         let delta = center - self.center;
         let distance = delta.x.hypot(delta.z);
         let dt = clock - self.sampled;
@@ -298,28 +307,31 @@ impl Motion {
             Gait::Walk
         };
         if gait != self.gait {
-            self.previous = Some((self.gait, self.phase as u32, clock));
-            self.phase = self.phase / f64::from(self.gait.duration()) * f64::from(gait.duration());
+            self.previous = Some((
+                self.gait,
+                (self.phase * f64::from(durations[self.gait.index() as usize])) as u32,
+                clock,
+            ));
             self.gait = gait;
         }
         if gait == Gait::Idle {
-            self.phase = (clock * 60.).rem_euclid(f64::from(gait.duration()));
+            self.phase = (clock * 60. / f64::from(durations[gait.index() as usize])).fract();
         } else {
-            self.phase = (self.phase
-                + f64::from(distance / gait.stride()) * f64::from(gait.duration()))
-            .rem_euclid(f64::from(gait.duration()));
+            self.phase =
+                (self.phase + f64::from(distance / strides[gait.index() as usize])).fract();
         }
         self.center = center;
         self.sampled = clock;
         let mut p = pose(1, self.life);
         p.clip = Some(gait.index());
-        p.clip_tick = self.phase as u32;
+        p.clip_tick = (self.phase * f64::from(durations[gait.index() as usize])) as u32;
         p.yaw = (((self.yaw + 180.).rem_euclid(360.) - 180.) * 100.).round() as i16;
         if let Some((before, tick, started)) = self.previous {
             let elapsed = (clock - started).max(0.);
             p.previous_clip = Some(before.index());
-            p.previous_tick =
-                (f64::from(tick) + elapsed * 60.).rem_euclid(f64::from(before.duration())) as u32;
+            p.previous_tick = (f64::from(tick) + elapsed * 60.)
+                .rem_euclid(f64::from(durations[before.index() as usize]))
+                as u32;
             p.blend = (elapsed / 0.15 * 10000.).clamp(0., 10000.) as u16;
             if p.blend == 10000 {
                 self.previous = None;
@@ -336,10 +348,15 @@ pub struct Presentation {
     pub placements: Vec<Placement>,
 }
 impl Presentation {
-    pub fn new(selected: Document, traveler: Option<Document>) -> Result<Self> {
+    pub fn with_library(
+        selected: Document,
+        traveler: Option<Document>,
+        library: &ignis::animation::Document,
+    ) -> Result<Self> {
+        crate::animation::validate_game(library)?;
         Ok(Self {
-            selected: Model::new(selected)?,
-            traveler: traveler.map(Model::new).transpose()?,
+            selected: Model::new(selected, library)?,
+            traveler: traveler.map(|d| Model::new(d, library)).transpose()?,
             motions: BTreeMap::new(),
             placements: Vec::new(),
         })
@@ -401,16 +418,18 @@ impl Presentation {
                 *motion = Motion::new(player.life, center, clock);
             }
             let selected_model = local == Some(player.actor);
-            let mut p = motion.update(
-                center,
-                clock,
-                selected_model.then_some((controls.heading_degrees, mode)),
-            );
-            p.actor = player.actor;
             let (model, offset) = match (self.traveler.as_mut(), selected_model) {
                 (Some(model), false) => (model, traveler_offset),
                 _ => (&mut self.selected, selected_offset),
             };
+            let mut p = motion.update(
+                center,
+                clock,
+                selected_model.then_some((controls.heading_degrees, mode)),
+                model.durations,
+                model.strides.map(|s| s * b.size[1] / model.height),
+            );
+            p.actor = player.actor;
             let foot_y = model.append(frame, b.position, b.size[1], p, offset)?;
             self.placements.push(Placement {
                 actor: player.actor,

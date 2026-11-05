@@ -34,7 +34,30 @@ fn support_tolerance() -> f32 {
 }
 impl Chain {
     pub fn validate(&self, rig: &Rig) -> Result<()> {
+        self.validate_hierarchy(rig, false)
+    }
+    /// Humanoid sources may contain intermediate twist/deformation joints.
+    pub fn validate_ancestry(&self, rig: &Rig) -> Result<()> {
+        self.validate_hierarchy(rig, true)
+    }
+    fn validate_hierarchy(&self, rig: &Rig, ancestors: bool) -> Result<()> {
         let [a, b, c] = self.bones.map(usize::from);
+        let follows = |child: usize, parent: usize| {
+            let mut cursor = rig.bones.get(child).and_then(|b| b.parent);
+            for _ in 0..MAX_BONES {
+                let Some(i) = cursor else {
+                    return false;
+                };
+                if i as usize == parent {
+                    return true;
+                }
+                if !ancestors {
+                    return false;
+                }
+                cursor = rig.bones.get(i as usize).and_then(|b| b.parent);
+            }
+            false
+        };
         let unit = |v: [f32; 3]| {
             let v = Vec3::from(v);
             v.is_finite() && (v.length_squared() - 1.).abs() < 0.001
@@ -44,8 +67,8 @@ impl Chain {
             || a == b
             || b == c
             || a == c
-            || rig.bones[b].parent != Some(a as u8)
-            || rig.bones[c].parent != Some(b as u8)
+            || !follows(b, a)
+            || !follows(c, b)
             || Vec3::from(rig.bones[b].translation).length() < 0.001
             || Vec3::from(rig.bones[c].translation).length() < 0.001
             || !unit(self.pole)
@@ -64,6 +87,118 @@ impl Chain {
         }
         Ok(())
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Target {
+    pub chain: Chain,
+    /// Asset-local coordinates, before the actor placement/scale.
+    pub point: [f32; 3],
+    pub normal: [f32; 3],
+    pub weight: f32,
+}
+
+/// Bone matrices from the same native clip/cross-fade evaluator as rendering.
+/// The asset must have passed the native document validator.
+pub fn pose_joints(
+    asset: &crate::meshes::Asset,
+    pose: &crate::npc_presentation::Pose,
+) -> Result<Vec<[[f32; 4]; 4]>> {
+    pose.validate_asset(asset)?;
+    let rig = asset
+        .rig
+        .as_ref()
+        .ok_or_else(|| invalid("Pose query requires a rig"))?;
+    let local = crate::meshes::avatar_locals(asset, pose);
+    Ok(globals(rig, &local)[..rig.bones.len()]
+        .iter()
+        .map(Mat4::to_cols_array_2d)
+        .collect())
+}
+
+/// Apply explicit contact targets without moving the actor or stretching bones.
+pub fn constrain_pose(
+    asset: &crate::meshes::Asset,
+    pose: &crate::npc_presentation::Pose,
+    targets: &[Target],
+) -> Result<crate::npc_presentation::Pose> {
+    pose.validate_asset(asset)?;
+    let rig = asset
+        .rig
+        .as_ref()
+        .ok_or_else(|| invalid("Contact solve requires rig"))?;
+    if targets.len() > CHAINS {
+        return Err(invalid("Too many contact targets"));
+    }
+    let mut used = [false; MAX_BONES];
+    for t in targets {
+        t.chain.validate_ancestry(rig)?;
+        if !Vec3::from(t.point).is_finite()
+            || Vec3::from(t.point).abs().max_element() > 10000.
+            || !Vec3::from(t.normal).is_finite()
+            || (Vec3::from(t.normal).length_squared() - 1.).abs() > 0.001
+            || !t.weight.is_finite()
+            || !(0.0..=1.).contains(&t.weight)
+        {
+            return Err(invalid("Invalid contact target/normal/weight"));
+        }
+        for b in t.chain.bones {
+            if used[b as usize] {
+                return Err(invalid("Contact chains cannot share joints"));
+            }
+            used[b as usize] = true;
+        }
+    }
+    let mut local = crate::meshes::avatar_locals(asset, pose);
+    let mut out = *pose;
+    for t in targets {
+        if t.weight == 0. {
+            continue;
+        }
+        let before = t.chain.bones.map(|i| local[i as usize]);
+        let global = globals(rig, &local);
+        let end = global[t.chain.bones[2] as usize].transform_point3(Vec3::ZERO);
+        let delta = Vec3::from(t.point) - end;
+        let limited = delta.length() > t.chain.max_correction;
+        let target = end + delta.clamp_length_max(t.chain.max_correction);
+        if limited {
+            out.ik_limited = out.ik_limited.saturating_add(1).min(CHAINS as u8);
+        }
+        if !solve(rig, &mut local, &t.chain, target, t.normal.into()) {
+            out.ik_limited = out.ik_limited.saturating_add(1).min(CHAINS as u8);
+            continue;
+        }
+        let reached = globals(rig, &local)[t.chain.bones[2] as usize].transform_point3(Vec3::ZERO);
+        if !limited && reached.distance(target) > 0.0001 {
+            out.ik_limited = out.ik_limited.saturating_add(1).min(CHAINS as u8);
+        }
+        for (index, &bone) in t.chain.bones.iter().enumerate() {
+            let (_, a, translation) = before[index].to_scale_rotation_translation();
+            let (_, b, _) = local[bone as usize].to_scale_rotation_translation();
+            let rotation = a.slerp(b, t.weight).normalize();
+            local[bone as usize] = Mat4::from_rotation_translation(rotation, translation);
+            let joint = Joint {
+                bone,
+                translation: translation.to_array(),
+                rotation: rotation.to_array(),
+            };
+            if let Some(i) = out.joints[..out.joint_count as usize]
+                .iter()
+                .position(|j| j.bone == bone)
+            {
+                out.joints[i] = joint;
+            } else {
+                if out.joint_count as usize >= JOINTS {
+                    return Err(invalid("Contact pose exceeds joint budget"));
+                }
+                out.joints[out.joint_count as usize] = joint;
+                out.joint_count += 1;
+            }
+        }
+    }
+    out.validate_asset(asset)?;
+    Ok(out)
 }
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]

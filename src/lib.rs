@@ -1,6 +1,7 @@
 pub mod abilities;
 pub mod ability_policy;
 pub mod actor_set;
+pub mod animation;
 pub mod botany;
 mod character_cast;
 pub mod combat_spatial;

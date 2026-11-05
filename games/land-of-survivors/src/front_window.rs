@@ -969,7 +969,15 @@ pub fn main() -> Result<()> {
         return verify(&root, &root.join("games/land-of-survivors/artifacts/app"));
     }
     let mut front = Front::new(root, Store::default_path())?;
-    if args.iter().any(|a| a == "--play") {
+    if let Some(index) = args.iter().position(|a| a == "--export-animation-scene") {
+        let path = args
+            .get(index + 1)
+            .ok_or_else(|| anyhow::anyhow!("--export-animation-scene requires a relative path"))?;
+        return front.export_animation_scene(path);
+    }
+    if args.iter().any(|a| a == "--animation-preview") {
+        front.animation_preview()?;
+    } else if args.iter().any(|a| a == "--play") {
         if front.selected().is_some() {
             front.execute(Action::Offline)?;
         } else {

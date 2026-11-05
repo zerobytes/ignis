@@ -57,6 +57,7 @@ pub struct Session {
     pub client: Service,
     pub offline: bool,
     pub character: String,
+    identity: Draft,
     pub invitation: String,
     pub status: Value,
     pub visuals: Presentation,
@@ -82,6 +83,9 @@ pub struct Front {
     pub source_hash: String,
     pub preview_error: String,
     pub yaw: f32,
+    motion_library: Option<ignis::animation::Document>,
+    motion_stamp: Option<(std::time::SystemTime, u64)>,
+    motion_elapsed: f32,
 }
 impl Front {
     pub fn new(engine_root: PathBuf, path: PathBuf) -> Result<Self> {
@@ -133,7 +137,96 @@ impl Front {
             source_hash,
             preview_error,
             yaw: 0.,
+            motion_library: None,
+            motion_stamp: None,
+            motion_elapsed: 0.,
         })
+    }
+    fn motions(&mut self) -> Result<ignis::animation::Document> {
+        if let Some(d) = &self.motion_library {
+            return Ok(d.clone());
+        }
+        let path = self.preview.root.join(crate::animation::LIBRARY_PATH);
+        let library = if path.exists() {
+            self.read_motions()?
+        } else {
+            let d = crate::animation::seed(&self.character_meshes(&Draft::default())?)?;
+            command(
+                &mut self.preview,
+                json!({"op":"animation","operation":{"kind":"replace","document":d}}),
+            )?;
+            command(
+                &mut self.preview,
+                json!({"op":"animation","operation":{"kind":"save","path":crate::animation::LIBRARY_PATH}}),
+            )?;
+            d
+        };
+        self.motion_stamp = fs::metadata(path)
+            .ok()
+            .and_then(|m| Some((m.modified().ok()?, m.len())));
+        self.motion_library = Some(library.clone());
+        Ok(library)
+    }
+    fn read_motions(&self) -> Result<ignis::animation::Document> {
+        use std::io::Read;
+        let file = fs::File::open(self.preview.root.join(crate::animation::LIBRARY_PATH))?;
+        ensure!(
+            file.metadata()?.is_file(),
+            "Motion library must be a regular file"
+        );
+        let mut bytes = Vec::new();
+        file.take((ignis::animation::MAX_BYTES + 1) as u64)
+            .read_to_end(&mut bytes)?;
+        ensure!(
+            bytes.len() <= ignis::animation::MAX_BYTES,
+            "Motion library too large"
+        );
+        let d = serde_json::from_slice(&bytes)?;
+        crate::animation::validate_game(&d)?;
+        Ok(d)
+    }
+    fn reload_motions(&mut self) -> Result<()> {
+        if self.motion_library.is_none() {
+            return Ok(());
+        }
+        let meta = fs::metadata(self.preview.root.join(crate::animation::LIBRARY_PATH))?;
+        let stamp = Some((meta.modified()?, meta.len()));
+        if stamp == self.motion_stamp {
+            return Ok(());
+        }
+        self.motion_stamp = stamp;
+        let library = self.read_motions()?;
+        let visuals = if let Some(session) = &self.session {
+            Some(Presentation::with_library(
+                self.character_meshes(&session.identity)?,
+                if session.offline {
+                    None
+                } else {
+                    Some(self.character_meshes(&Draft::default())?)
+                },
+                &library,
+            )?)
+        } else {
+            None
+        };
+        if let Some(visuals) = visuals {
+            self.session.as_mut().unwrap().visuals = visuals;
+        }
+        self.motion_library = Some(library);
+        Ok(())
+    }
+    /// A regular native scene for rig/clip authoring with the existing editor/MCP.
+    pub fn export_animation_scene(&mut self, path: &str) -> Result<()> {
+        let library = self.motions()?;
+        let source = self.character_meshes(&Draft::default())?;
+        let scene = crate::animation::authoring_scene(source, &library, self.stage.clone())?;
+        let mut author = Service::new(&self.preview.root, scene)?;
+        command(&mut author, json!({"op":"save_scene","path":path}))?;
+        println!(
+            "Animation scene: {path}\nMotion library: {}",
+            crate::animation::LIBRARY_PATH
+        );
+        Ok(())
     }
     pub fn store_mut(&mut self) -> Result<&mut Store> {
         self.store.as_mut().ok_or_else(||anyhow::anyhow!("Character storage unavailable. Close and repair/reopen the character file before saving."))
@@ -326,6 +419,47 @@ impl Front {
         fs::create_dir_all(root)?;
         Ok(Service::new(root, scene)?)
     }
+    /// Unsaved stage for artists: ordinary game controls and live clip reload.
+    pub fn animation_preview(&mut self) -> Result<()> {
+        let identity = Draft {
+            name: "Animation preview".into(),
+            ..Default::default()
+        };
+        let c = Character {
+            id: "animation_preview".into(),
+            identity: identity.clone(),
+            source_sha256: self.source_hash.clone(),
+            level: 1,
+        };
+        let mut client = self.world(&c, 1)?;
+        command(
+            &mut client,
+            json!({"op":"set_execution_mode","mode":"continuous"}),
+        )?;
+        command(&mut client, json!({"op":"play"}))?;
+        let library = self.motions()?;
+        let visuals =
+            Presentation::with_library(self.character_meshes(&identity)?, None, &library)?;
+        self.session = Some(Session {
+            host: None,
+            client,
+            offline: true,
+            character: c.id,
+            identity,
+            invitation: String::new(),
+            status: json!({"state":"animation preview (unsaved)"}),
+            visuals,
+            controls: Controls::default(),
+            clock: 0.,
+            last_input: Default::default(),
+            elapsed: 0.,
+            inspect_elapsed: 0.,
+            _save_lease: None,
+        });
+        self.sync_camera()?;
+        self.page = Page::Session;
+        Ok(())
+    }
     fn offline(&mut self) -> Result<()> {
         let c = self.identity()?;
         let lease = SaveLease::acquire(self.store.as_ref().unwrap().directory(), &c.id)?;
@@ -350,7 +484,9 @@ impl Front {
             client.engine.scene.meshes.is_empty(),
             "This character stage requires an empty authored mesh layer"
         );
-        let visuals = Presentation::new(self.character_meshes(&c.identity)?, None)?;
+        let library = self.motions()?;
+        let visuals =
+            Presentation::with_library(self.character_meshes(&c.identity)?, None, &library)?;
         self.session = Some(Session {
             host: None,
             client,
@@ -360,6 +496,7 @@ impl Front {
             last_input: Default::default(),
             offline: true,
             _save_lease: Some(lease),
+            identity: c.identity.clone(),
             character: c.id,
             invitation: String::new(),
             status: json!({"state":"offline"}),
@@ -383,9 +520,11 @@ impl Front {
             json!({"op":"start_multiplayer_host","address":self.bind,"capacity":8}),
         )?;
         let client = self.world(&c, 1)?;
-        let visuals = Presentation::new(
+        let library = self.motions()?;
+        let visuals = Presentation::with_library(
             self.character_meshes(&c.identity)?,
             Some(self.character_meshes(&Draft::default())?),
+            &library,
         )?;
         self.session = Some(Session {
             visuals,
@@ -396,6 +535,7 @@ impl Front {
             client,
             offline: false,
             _save_lease: None,
+            identity: c.identity.clone(),
             character: c.id,
             invitation: String::new(),
             status: json!({"state":"starting"}),
@@ -415,9 +555,11 @@ impl Front {
             &mut client,
             json!({"op":"connect_multiplayer","address":invite.address,"certificate_der":invite.certificate_der}),
         )?;
-        let visuals = Presentation::new(
+        let library = self.motions()?;
+        let visuals = Presentation::with_library(
             self.character_meshes(&c.identity)?,
             Some(self.character_meshes(&Draft::default())?),
+            &library,
         )?;
         self.session = Some(Session {
             host: None,
@@ -428,6 +570,7 @@ impl Front {
             last_input: Default::default(),
             offline: false,
             _save_lease: None,
+            identity: c.identity.clone(),
             character: c.id,
             invitation: String::new(),
             status: json!({"state":"connecting"}),
@@ -438,10 +581,17 @@ impl Front {
         Ok(())
     }
     pub fn tick(&mut self, dt: f32, input: ignis::physics::Input) -> Result<()> {
+        let dt = dt.clamp(0., 0.25);
+        self.motion_elapsed += dt;
+        if self.motion_elapsed >= 0.5 {
+            self.motion_elapsed = 0.;
+            if let Err(e) = self.reload_motions() {
+                self.error = format!("Animation reload rejected; keeping previous clips: {e}");
+            }
+        }
         let Some(s) = &mut self.session else {
             return Ok(());
         };
-        let dt = dt.clamp(0., 0.25);
         s.clock += f64::from(dt);
         let input = s.controls.world_input(input);
         s.last_input = input;
@@ -502,6 +652,11 @@ impl Front {
                     &mut s.client,
                     json!({"op":"set_input","input":{"x":0,"z":0}}),
                 )?;
+                if s._save_lease.is_none() {
+                    self.session = None;
+                    self.page = Page::Roster;
+                    return Ok(());
+                }
                 let was_playing = s.client.engine.playing;
                 command(&mut s.client, json!({"op":"pause"}))?;
                 let saved = command(
