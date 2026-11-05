@@ -133,3 +133,12 @@ The still-coarse source limits fine-detail width. See `terrain-chamfer.md`.
 Hover, vertical/fast/precision flight, Scene isolation, persistence boundaries
 and save/reload pixel equality were repeated successfully. Walking grounding
 is not asserted in this steeper variant: the inspection is explicitly noclip.
+
+## Current plateau inspection after human review
+
+The height-only approval and preserved tall mountain recipe are recorded in
+`terrain-chamfer.md`. Current inspection restores the original height8 density
+source, then uses `terrace_lift` (spacing61.5384615384, factor20, phase0) before
+the seeded chamfer. Broad original top relief is no longer multiplied20×;
+only the offsets between bands increase. The previous taller-variant statistics
+above describe that earlier experiment, not acceptance of its composition.

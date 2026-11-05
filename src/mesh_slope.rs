@@ -7,6 +7,36 @@ use crate::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+/// Lift strata without multiplying variation inside each original height band.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct TerraceLift {
+    pub spacing: f64,
+    pub factor: f64,
+    pub phase: f64,
+}
+pub fn lift(g: &Geometry, c: &TerraceLift, origin_y: f64) -> Result<Geometry> {
+    if !c.spacing.is_finite()
+        || c.spacing <= 0.
+        || !c.factor.is_finite()
+        || !(1. ..=1000.).contains(&c.factor)
+        || !c.phase.is_finite()
+    {
+        return Err(invalid(
+            "Terrace lift requires positive spacing, factor1..1000 and finite phase",
+        ));
+    }
+    let mut out = g.clone();
+    for p in &mut out.positions {
+        let y = p[1] as f64 + origin_y;
+        let band = ((y - c.phase) / c.spacing).floor();
+        p[1] = (p[1] as f64 + (c.factor - 1.) * c.spacing * band) as f32;
+    }
+    // Material coordinates describe the new rest surface, not the pre-lift surface.
+    out.material_coordinates = None;
+    out.validate()?;
+    Ok(out)
+}
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Style {
@@ -17,6 +47,8 @@ pub struct Style {
     pub min_up: f32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chamfer: Option<crate::mesh_chamfer::Config>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terrace_lift: Option<TerraceLift>,
     pub walls: crate::materials::Material,
     pub top: crate::materials::Material,
     pub wall_color: [f32; 3],
@@ -57,12 +89,23 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     {
         return Err(invalid("Slope output IDs must be distinct and unused"));
     }
+    if s.terrace_lift.is_some() && (instance.rotation != [0., 0., 0., 1.] || instance.scale != 1.) {
+        return Err(invalid(
+            "Terrace lift requires world-aligned unit-scale instance",
+        ));
+    }
+    let lifted = s
+        .terrace_lift
+        .as_ref()
+        .map(|c| lift(&asset.geometry, c, instance.position[1] as f64))
+        .transpose()?;
+    let source = lifted.as_ref().unwrap_or(&asset.geometry);
     let refined = s
         .chamfer
         .as_ref()
-        .map(|c| crate::mesh_chamfer::apply(&asset.geometry, c))
+        .map(|c| crate::mesh_chamfer::apply(source, c))
         .transpose()?;
-    let g = refined.as_ref().unwrap_or(&asset.geometry);
+    let g = refined.as_ref().unwrap_or(source);
     if g.positions.len() > 1_048_576 || g.triangles.len() > 2_000_000 {
         return Err(invalid(
             "Slope partition exceeds cold-operation budget; partition the source into smaller authored assets",
@@ -178,6 +221,6 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     }
     Ok((
         edits,
-        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":s.chamfer.is_some(),"input_triangles":asset.geometry.triangles.len(),"chamfer":s.chamfer}),
+        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":s.chamfer.is_some() || s.terrace_lift.is_some(),"terrace_lift":s.terrace_lift,"input_triangles":asset.geometry.triangles.len(),"chamfer":s.chamfer}),
     ))
 }

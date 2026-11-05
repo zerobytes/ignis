@@ -47,3 +47,37 @@ on this run; this is generation time, not FPS.24source block borders matched,
 no vertical clipping; range−4335.80..2608.62m. Refined terrain has1244386faces;
 MCP save/reload pixels,600m/s fast and2m/s precision flight passed. Captures were
 inspected; no artistic or universal self-intersection acceptance is inferred.
+
+## Human review: height approved, composition correction
+
+Guilherme approved the height impression of the20× vertical-scale variant on
+2026-11-05. This approves height, not the whole composition or the loss of broad
+plateau tops. Its editable density recipe is preserved independently as
+`examples/volume-terrain-mountain-scale-approved.recipe.json`.
+
+The inspection must start from the preceding plateau density recipe (height8),
+not the stretched mountain variant. `StyleMeshBySlope.terrace_lift` separates
+stratum elevation from within-stratum detail. In world Y, band=floor((Y-phase)/S),
+Y'=Y+(factor-1)*S*band. With S=61.5384615384m and factor20, heights inside the
+same original band retain their differences; neighbouring bands acquire an
+additional1169.23m separation. X/Z and triangle connectivity remain unchanged
+before chamfer. This is an authored discrete band lift of an existing mesh,
+not a continuous density-field deformation or a geological simulation; triangles
+across bands form the taller walls. The same mapping applies to shared border
+vertices. Unit scale/world-aligned instances only; other poses refuse atomically.
+
+Performance review: one cold O(V) position pass and one geometry copy before
+chamfer; no added vertices from lifting and no frame/tick work. Material rest
+coordinates are rebuilt from the new positions. Validation rejects nonfinite
+parameters/output; no global world-area cap is introduced. The existing coarse
+source and chamfer growth remain separate limitations.
+
+Correction validation: original document and all16grids compare exactly with
+commit57110dd;182714raw triangles remain. Seven release integration tests pass,
+including a60m band example:1m local relief stays1m while60m separation becomes
+1200m. Final MCP output1244386faces:360728stone/883658green; pixel reload,
+hover/vertical/600m fast/2m precision and persistence refusal pass. Capture
+review confirms broad green tops again. Strict Clippy was blocked by concurrent
+botany edits (`botany.rs`/`editor_botany_ui.rs` collapsible-if), not changed here.
+The release binary built by the successful test run was used for these MCP
+checks; a redundant subsequent rebuild after parallel source changes was canceled.

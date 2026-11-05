@@ -12,7 +12,7 @@ def timed(call,*args,**kwargs):
     return result,(time.perf_counter()-t)*1000
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--tiles',type=int,default=4);parser.add_argument('--seed',type=int,default=2718);parser.add_argument('--extent',type=float,default=10000.);parser.add_argument('--height-scale',type=float,default=160.);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--tiles',type=int,default=4);parser.add_argument('--seed',type=int,default=2718);parser.add_argument('--extent',type=float,default=10000.);parser.add_argument('--height-scale',type=float,default=8.);args=parser.parse_args()
     if not 1<=args.tiles<=8:raise ValueError('Use1..8 tiles per horizontal axis for this resident experiment')
     if not 1000<=args.extent<=10000 or not 1<=args.height_scale<=200:raise ValueError('This fixture covers1000..10000m and height scale1..200')
     OUT.mkdir(parents=True,exist_ok=True);doc=recipe(args.seed)
