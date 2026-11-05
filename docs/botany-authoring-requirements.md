@@ -113,3 +113,30 @@ Referências internas: [análise inicial da árvore](games/land-of-survivors/arv
 [inspeção do domínio material](mesh-material-domain.md). A presente decisão
 substitui a continuação automática do ensaio visual anterior; os documentos
 históricos continuam como evidência dos respectivos trabalhos.
+
+## Critério transversal: profundidade da casca
+
+A referência de sequoia/General Sherman enviada pelo usuário no refinamento da
+EAF-226 torna obrigatória a revisão de profundidade também nos próximos tipos de
+árvore. A escala deve seguir cada perfil e idade; não aplicar sulcos profundos
+indiscriminadamente a cascas lisas. MAT-02–04 e GEO-06 continuam sendo a base.
+
+- Separar volumes/flutuação do tronco, sulcos intermediários e fibras/microrelevo.
+  Profundidade, largura, espaçamento, continuidade e irregularidade são parâmetros
+  distintos; ampliar a profundidade dos sulcos não deve amplificar junto o ruído
+  de fibras finas, criando pontilhado ou serrilhado; aumentar contraste não substitui aprofundar a altura.
+- Correlacionar altura, bordas, rugosidade e atenuação de cavidade, mantendo
+  rugosidade/oclusão autorais distintas da iluminação real da cena.
+- Avaliar frente e vista rasante na árvore completa, com câmera/luz idênticas
+  antes/depois, incluindo uma versão de albedo cinza uniforme e AO material1.
+  Essa vista deve expor o relevo sem depender de fissuras pintadas de preto.
+- Declarar a técnica: normal/bump altera a resposta à luz; parallax altera a
+  consulta aparente e pode auto-sombrear; geometria é necessária para alterar
+  silhueta, sombra geométrica e colisão. Não apresentar uma como prova da outra.
+- Registrar escala em metros e orçamento de amostragem/custo; validar de perto
+  e à distância. Refinamento material isolado não comprova FPS ou comportamento
+  universal em outras espécies. O aceite artístico continua humano.
+
+A sequoia tem comparação controlada em `artifacts/sequoia-relief/review.html`,
+reproduzida por `scripts/refine_sequoia_bark_depth.py`. Essa evidência é uma
+aplicação material inicial do critério, não conclusão de GEO-06 em todas as cascas.

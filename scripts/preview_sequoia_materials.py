@@ -10,7 +10,7 @@ try:
  c.call('edit_mesh',edit=dict(kind='put_asset',asset=dict(id='bark_preview',geometry=dict(positions=[[-1.2,0,0],[1.2,0,0],[1.2,5,0],[-1.2,5,0]],triangles=[[0,1,2],[0,2,3]]),material={})))
  c.call('edit_mesh',edit=dict(kind='put_instance',instance=dict(id='bark_preview',asset='bark_preview',position=[0,0,0],rotation=[0,0,0,1],scale=1,color=[1,1,1])))
  recipe=json.loads((ROOT/'assets/materials/sequoia/bark.recipe.json').read_text())
- c.call('material',operation=dict(kind='generate',asset='bark_preview',recipe=recipe,execution='runtime'))
+ c.call('material',operation=dict(kind='generate',asset='bark_preview',recipe=recipe,execution=dict(fixed=dict(resolution=512))))
  c.call('set_light',light=dict(direction=[.65,-.18,-1],ambient=.12,direct_intensity=1.2,environment=dict(sky=[.55,.68,.85],horizon=[.6,.65,.66],ground=[.15,.1,.05],axis=[0,1,0],intensity=.35)))
  c.call('set_camera',camera=dict(position=[.3,2.5,7.5],target=[0,2.5,0],fov_degrees=40))
  c.call('capture',path='artifacts/sequoia-realistic/bark-generator-preview.png',width=1100,height=1400)

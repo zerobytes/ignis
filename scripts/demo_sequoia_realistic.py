@@ -29,7 +29,7 @@ def main():
         generated=[]
         for part,name in [('wood','bark'),('leaves','foliage')]:
             recipe=json.loads((ROOT/f'assets/materials/sequoia/{name}.recipe.json').read_text())
-            generated.append(c.call('material',operation=dict(kind='generate',asset=f'sequoia_real_{part}',recipe=recipe,execution='runtime')))
+            generated.append(c.call('material',operation=dict(kind='generate',asset=f'sequoia_real_{part}',recipe=recipe,execution=(dict(fixed=dict(resolution=512)) if part=='wood' else 'runtime'))))
             c.call('material',operation=dict(kind='save',asset=f'sequoia_real_{part}',path=f'assets/materials/sequoia/{name}.ignis-material'))
         ground=dict(seed=8311,unique_instances=False,plane='xz',tile_size=[6,6],height_m=.012,relief='bump',view_steps=8,shadow_steps=0,
             base=dict(color_roughness=[.055,.037,.017,.98],response=[0,.3,1,1],emission=[0,0,0,0]),

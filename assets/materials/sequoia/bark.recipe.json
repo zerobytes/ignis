@@ -6,11 +6,11 @@
     4.8,
     12.8
   ],
-  "height_m": 0.009,
+  "height_m": 0.14,
   "relief": "parallax",
   "normal_filter": "pixel",
-  "view_steps": 24,
-  "shadow_steps": 8,
+  "view_steps": 48,
+  "shadow_steps": 24,
   "base": {
     "color_roughness": [
       0.12,
@@ -20,7 +20,7 @@
     ],
     "response": [
       0,
-      0.08,
+      0.75,
       1,
       0.75
     ],
@@ -92,7 +92,7 @@
         ],
         "response": [
           0,
-          0.3,
+          0.75,
           1,
           1
         ],
@@ -128,45 +128,9 @@
         ],
         "response": [
           0,
-          0.25,
+          0.75,
           1,
           1
-        ],
-        "emission": [
-          0,
-          0,
-          0,
-          0
-        ]
-      }
-    },
-    {
-      "field": "cells",
-      "frequency": [
-        24,
-        8
-      ],
-      "seed": 77,
-      "octaves": 1,
-      "warp": 0.025,
-      "threshold": [
-        0.06,
-        0.22
-      ],
-      "strength": 0.55,
-      "invert": true,
-      "target": {
-        "color_roughness": [
-          0.035,
-          0.012,
-          0.006,
-          0.98
-        ],
-        "response": [
-          0,
-          0.05,
-          1,
-          0.55
         ],
         "emission": [
           0,
@@ -200,9 +164,45 @@
         ],
         "response": [
           0,
-          0.6,
+          0.75,
           1,
           1
+        ],
+        "emission": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "field": "cells",
+      "frequency": [
+        48,
+        3
+      ],
+      "seed": 77,
+      "octaves": 1,
+      "warp": 0.045,
+      "threshold": [
+        0.08,
+        0.38
+      ],
+      "strength": 0.95,
+      "invert": true,
+      "target": {
+        "color_roughness": [
+          0.035,
+          0.012,
+          0.006,
+          0.98
+        ],
+        "response": [
+          0,
+          0.02,
+          1,
+          0.5
         ],
         "emission": [
           0,
