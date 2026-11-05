@@ -17,6 +17,8 @@ use wgpu::util::DeviceExt;
 mod bake;
 #[path = "lighting_bounce/regional.rs"]
 mod regional;
+#[path = "lighting_bounce/response.rs"]
+mod response;
 const W: u32 = 480;
 const H: u32 = 320;
 const NAMES: [&str; 24] = [
@@ -107,6 +109,8 @@ enum Dispatch<'a> {
     Indirect(&'a wgpu::Buffer, u64),
 }
 struct Lab {
+    response_build: wgpu::ComputePipeline,
+    response_combine: wgpu::ComputePipeline,
     geometry: wgpu::Buffer,
     region_full: wgpu::ComputePipeline,
     region_mark: wgpu::ComputePipeline,
@@ -296,7 +300,9 @@ impl Lab {
                     "\n",
                     include_str!("lighting_bounce/bake.wgsl"),
                     "\n",
-                    include_str!("lighting_bounce/regional.wgsl")
+                    include_str!("lighting_bounce/regional.wgsl"),
+                    "\n",
+                    include_str!("lighting_bounce/response.wgsl")
                 )
                 .into(),
             ),
@@ -367,6 +373,8 @@ impl Lab {
         let groups = std::array::from_fn(|i| make_group(i, &dummy));
         let finalize_group = make_group(0, &indirect);
         Self {
+            response_build: pipeline("response_build"),
+            response_combine: pipeline("response_combine"),
             geometry,
             region_full: pipeline("region_full"),
             region_mark: pipeline("region_mark"),
@@ -446,7 +454,8 @@ impl Lab {
     }
     fn run(&self, r: &Renderer, p: &Params, stage: &str) -> Result<(f64, f64)> {
         let t = Instant::now();
-        if stage.starts_with("bake") || stage.starts_with("region") {
+        if stage.starts_with("bake") || stage.starts_with("region") || stage.starts_with("response")
+        {
             self.filtered_output.set(false);
         }
         let reconstruction = (stage == "shade" || stage == "full") && p.dims[3] >= 17;
@@ -461,7 +470,20 @@ impl Lab {
         let mut e = r.device.create_command_encoder(&Default::default());
         let image = || Dispatch::Grid(W.div_ceil(8), H.div_ceil(8), 1);
         let atlas_count = p.dims[2] * 6 * p.counts[0] * p.counts[0];
-        if stage == "region-full" {
+        if stage == "response-build" || stage == "response-combine" {
+            let kernel = if stage == "response-build" {
+                &self.response_build
+            } else {
+                &self.response_combine
+            };
+            self.pass(
+                &mut e,
+                kernel,
+                group,
+                [Some(0), Some(1)],
+                Dispatch::Grid(atlas_count.div_ceil(64), 1, 1),
+            );
+        } else if stage == "region-full" {
             self.pass(
                 &mut e,
                 &self.region_full,
@@ -733,12 +755,14 @@ fn main() -> Result<()> {
                 "--bake-audit",
                 "--bake-validation",
                 "--bake-final",
-                "--regional-audit"
+                "--regional-audit",
+                "--response-audit"
             ]
             .contains(&arg.as_str()),
             "Unknown one-bounce argument: {arg}"
         );
     }
+    let response_audit = std::env::args().any(|s| s == "--response-audit");
     let regional_audit = std::env::args().any(|s| s == "--regional-audit");
     let baking = std::env::args().any(|s| s == "--bake-audit");
     let bake_final = std::env::args().any(|s| s == "--bake-final");
@@ -795,7 +819,24 @@ fn main() -> Result<()> {
             || !(baking || hybrid || validation_a || validation_b || validation_c || validation_d),
         "Choose one regional experiment"
     );
-    let dir = if regional_audit {
+    ensure!(
+        !response_audit
+            || !(regional_audit
+                || baking
+                || hybrid
+                || validation_a
+                || validation_b
+                || validation_c
+                || validation_d),
+        "Choose one response experiment"
+    );
+    let dir = if response_audit {
+        if thin {
+            "artifacts/lighting-response/thin-wall"
+        } else {
+            "artifacts/lighting-response/open"
+        }
+    } else if regional_audit {
         if thin {
             "artifacts/lighting-regional/thin-wall"
         } else {
@@ -983,6 +1024,9 @@ fn main() -> Result<()> {
         counts: [0; 4],
     };
     grid(&mut p, false);
+    if response_audit {
+        return response::run(&mut r, engine, boxes, native, target, p, dir);
+    }
     if regional_audit {
         return regional::run(&mut r, engine, boxes, native, target, p, dir);
     }

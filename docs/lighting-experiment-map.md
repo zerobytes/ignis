@@ -198,3 +198,16 @@ constructors retain the legacy path; candidate is diagnostic-only. Analytical
 zero-contribution eligibility did not establish an execution-time win. Continue
 response coefficients as a separate added-GI-update hypothesis, not a claim
 that the original renderer has become cheaper.
+
+### Scalar color-response checkpoint (2026-11-05)
+
+Implemented the GPU Gems3 ch9 specialization in `docs/lighting-response.md`.
+For40fixed-geometry/sun-direction color/light-scale cases, GPU recombination
+plus publication costs0.02075/0.02678ms versus33.85/40.77ms full4096ray rebakes;
+weights cost1.50/2.53125MiB and59.65/39.97ms initial construction (one-shot cold
+observations). Max linear RGB difference2.38e-5, PNG maxchannel1; independent
+CPU basis/recombination checks pass. This optimizes added-GI updates only, not
+GI-off or steady drawing. Dense storage/max12slots, one diffuse bounce, finite
+reference, synchronous lab and unsupported geometry/sun edits remain explicit
+boundaries. Final release build, scoped Clippy/rustfmt/Python F/diff and the full
+automated40case GPU/CPU audit pass; unrelated parallel work preserved.
