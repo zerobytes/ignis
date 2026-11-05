@@ -12,6 +12,14 @@ of third-party materials, or revoke earlier grants for previously published copi
 | Three.js, website renderer | `website/dist/assets/vendor/` | MIT; copyright and license in `LICENSE`. The website renderer is separate from the Rust engine. |
 | Space Grotesk, website font | `website/dist/assets/space-grotesk.ttf` | SIL Open Font License 1.1; copyright and license in `font-license.txt`. |
 
+Marching Cubes lookup data in `src/volume_terrain/tables.rs` comes from
+[PyMCubes](https://github.com/pmneila/PyMCubes), copyright 2012–2015 P. M. Neila,
+BSD-3-Clause. Its complete license is retained in that source file and
+`licenses/PyMCubes-BSD-3-Clause.txt`. The field,
+extractor, GPU backend and integration are original Ignis code. Density operations
+are based on Ryan Geiss's GPU Gems 3 chapter 1 and the companion `density.h`;
+NVIDIA demo code/textures are not distributed here.
+
 Rust dependencies are recorded in `Cargo.toml` and `Cargo.lock`. They retain
 their upstream licenses; obtain the applicable notices when redistributing
 binaries. The root license is not a blanket license for the dependency graph.

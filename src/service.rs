@@ -1,3 +1,4 @@
+mod volume_terrain;
 use crate::{
     engine::{Command, Engine, Replay, Request},
     model::{Error, Result, Scene, invalid},
@@ -54,6 +55,7 @@ pub struct Service {
     pub(crate) saved_scene_revision: u64,
     editor_capture: Option<crate::editor_ui::Graphics>,
     capture_renderer: Option<Renderer>,
+    volume_gpu: Option<crate::volume_terrain::gpu::Gpu>,
     planet_capture: Option<crate::planet::view::Gpu>,
     network_host: Option<crate::network::host::Host>,
     network_client: Option<crate::network::client::Native>,
@@ -267,6 +269,7 @@ impl Service {
             engine: Engine::new(scene)?,
             root,
             capture_renderer: None,
+            volume_gpu: None,
             planet_capture: None,
             editor: crate::editor::State::default(),
             selected_mesh: None,
@@ -583,6 +586,18 @@ impl Service {
                 file.take((crate::terrain::MAX_BYTES+1) as u64).read_to_end(&mut bytes).map_err(io_error)?;
                 let document = crate::planet::decode(&bytes)?;
                 json!({"document":document,"bytes":bytes.len(),"world_changed":false})
+            }
+            Command::QueryVolumeTerrainGpu{..}|Command::PublishVolumeTerrainGpu{..}=>self.volume_terrain_gpu_command(&request.command)?,
+            Command::SaveVolumeTerrain {path,document} => {
+                if !path.ends_with(".ignis-volume"){return Err(invalid("Density path requires .ignis-volume suffix"));}
+                let bytes=crate::volume_terrain::encode(document)?;
+                json!({"path":self.write(path,&bytes)?,"bytes":bytes.len(),"world_changed":false})
+            }
+            Command::LoadVolumeTerrain {path} => {
+                if !path.ends_with(".ignis-volume"){return Err(invalid("Density path requires .ignis-volume suffix"));}
+                let file=std::fs::File::open(self.resolve(path)?).map_err(io_error)?;
+                let mut bytes=Vec::new();file.take((crate::volume_terrain::MAX_BYTES+1)as u64).read_to_end(&mut bytes).map_err(io_error)?;
+                json!({"document":crate::volume_terrain::decode(&bytes)?,"bytes":bytes.len(),"world_changed":false})
             }
             Command::SaveTerrain { path, document } => {
                 if !path.ends_with(".ignis-terrain") {return Err(invalid("Terrain path requires .ignis-terrain suffix"));}

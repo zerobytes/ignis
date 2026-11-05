@@ -1,0 +1,261 @@
+{
+  "document": {
+    "version": 1,
+    "seed": 2718,
+    "base": {
+      "kind": "plane",
+      "height": 0
+    },
+    "vertical_strength": 1,
+    "octaves": [
+      {
+        "frequency": 0.3264,
+        "amplitude": 2.6624,
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frequency": 0.15488,
+        "amplitude": 5,
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frequency": 0.07952,
+        "amplitude": 10,
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frequency": 0.0418,
+        "amplitude": 18,
+        "rotation_degrees": [
+          19,
+          37,
+          11
+        ]
+      },
+      {
+        "frequency": 0.0186624,
+        "amplitude": 32,
+        "rotation_degrees": [
+          41,
+          17,
+          53
+        ]
+      }
+    ],
+    "warp": {
+      "frequency": 0.0656,
+      "amplitude": 2
+    },
+    "terraces": {
+      "spacing": 7.6923076923,
+      "strength": 4,
+      "overhang": 1.6,
+      "sharpness": 16,
+      "warp": 0.15,
+      "phase": 0
+    },
+    "shelf": null,
+    "floor": {
+      "altitude": -30,
+      "transition": 3,
+      "strength": 40
+    }
+  },
+  "grid": {
+    "origin": [
+      -32,
+      -24,
+      -32
+    ],
+    "cells": [
+      128,
+      96,
+      128
+    ],
+    "spacing": 0.5
+  },
+  "publication": {
+    "document": {
+      "version": 1,
+      "seed": 2718,
+      "base": {
+        "kind": "plane",
+        "height": 0
+      },
+      "vertical_strength": 1,
+      "octaves": [
+        {
+          "frequency": 0.3264,
+          "amplitude": 2.6624,
+          "rotation_degrees": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "frequency": 0.15488,
+          "amplitude": 5,
+          "rotation_degrees": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "frequency": 0.07952,
+          "amplitude": 10,
+          "rotation_degrees": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "frequency": 0.0418,
+          "amplitude": 18,
+          "rotation_degrees": [
+            19,
+            37,
+            11
+          ]
+        },
+        {
+          "frequency": 0.0186624,
+          "amplitude": 32,
+          "rotation_degrees": [
+            41,
+            17,
+            53
+          ]
+        }
+      ],
+      "warp": {
+        "frequency": 0.0656,
+        "amplitude": 2
+      },
+      "terraces": {
+        "spacing": 7.6923076923,
+        "strength": 4,
+        "overhang": 1.6,
+        "sharpness": 16,
+        "warp": 0.15,
+        "phase": 0
+      },
+      "shelf": null,
+      "floor": {
+        "altitude": -30,
+        "transition": 3,
+        "strength": 40
+      }
+    },
+    "grid": {
+      "origin": [
+        -32,
+        -24,
+        -32
+      ],
+      "cells": [
+        128,
+        96,
+        128
+      ],
+      "spacing": 0.5
+    },
+    "asset": "volume",
+    "instance": "volume",
+    "position": [
+      -32,
+      -24,
+      -32
+    ],
+    "color": [
+      0.51,
+      0.48,
+      0.4
+    ],
+    "material": {
+      "pattern": {
+        "kind": "ridged",
+        "frequency": [
+          0.13,
+          0.17,
+          0.13
+        ],
+        "low": [
+          0.68,
+          0.69,
+          0.66
+        ],
+        "high": [
+          1,
+          0.98,
+          0.9
+        ],
+        "bump": 0.025,
+        "warp": 0.35,
+        "octaves": 3,
+        "seed": 47,
+        "contrast": 1.1
+      },
+      "reflectance": {
+        "roughness": 0.95,
+        "f0": 0.02
+      }
+    },
+    "collision": true
+  },
+  "views": {
+    "overview": {
+      "position": [
+        46,
+        34,
+        -55
+      ],
+      "target": [
+        0,
+        -1,
+        0
+      ],
+      "fov_degrees": 50
+    },
+    "ledges": {
+      "position": [
+        17,
+        12,
+        -23
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "fov_degrees": 55
+    },
+    "reverse": {
+      "position": [
+        -47,
+        32.5,
+        45
+      ],
+      "target": [
+        0,
+        -2,
+        0
+      ],
+      "fov_degrees": 52
+    }
+  }
+}

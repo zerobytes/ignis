@@ -181,3 +181,5 @@ pub mod particles;
 pub mod mesh_proxy;
 mod render_particles;
 pub mod surface_field;
+
+pub mod volume_terrain;

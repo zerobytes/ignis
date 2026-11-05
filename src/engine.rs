@@ -237,6 +237,26 @@ pub enum Command {
     PlanWorldRegions {
         query: Box<crate::world_regions::Query>,
     },
+    QueryVolumeTerrainGpu {
+        document: Box<crate::volume_terrain::Document>,
+        grid: crate::volume_terrain::Grid,
+    },
+    PublishVolumeTerrainGpu {
+        publication: Box<crate::volume_terrain::Publication>,
+    },
+    QueryVolumeTerrain {
+        query: Box<crate::volume_terrain::Query>,
+    },
+    PublishVolumeTerrain {
+        publication: Box<crate::volume_terrain::Publication>,
+    },
+    SaveVolumeTerrain {
+        path: String,
+        document: Box<crate::volume_terrain::Document>,
+    },
+    LoadVolumeTerrain {
+        path: String,
+    },
     QueryTerrain {
         query: Box<crate::terrain::Query>,
     },
@@ -3484,6 +3504,33 @@ impl Engine {
             Command::PlanWorldRegions { query } => {
                 let plan = crate::world_regions::plan(*query).map_err(invalid)?;
                 return serde_json::to_value(plan).map_err(|e| invalid(e.to_string()));
+            }
+            Command::QueryVolumeTerrain { query } => return crate::volume_terrain::query(*query),
+            Command::PublishVolumeTerrain { publication } => {
+                if self.playing {
+                    return Err(invalid("Pause before publishing density terrain"));
+                }
+                let collision = publication.collision;
+                let (asset, instance, compiled) = crate::volume_terrain::publication(*publication)?;
+                let id = instance.id.clone();
+                let mut edits = vec![
+                    SceneEdit::Mesh {
+                        edit: crate::meshes::Edit::PutAsset { asset },
+                    },
+                    SceneEdit::Mesh {
+                        edit: crate::meshes::Edit::PutInstance { instance },
+                    },
+                ];
+                if let Some(enabled) = collision {
+                    edits.push(SceneEdit::SetMeshCollision {
+                        instance: id.clone(),
+                        enabled,
+                    });
+                }
+                self.apply_edits(edits.into_iter())?;
+                return Ok(
+                    json!({"revision":self.revision,"terrain":compiled.report,"visual_only":!self.scene.collision_meshes.contains(&id),"source_embedded_in_scene":false}),
+                );
             }
             Command::QueryTerrain { query } => return crate::terrain::query(*query),
             Command::QueryLandform { query } => return crate::landforms::query(*query),
