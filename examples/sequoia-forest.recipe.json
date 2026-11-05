@@ -1,0 +1,179 @@
+{
+  "seed": 9281,
+  "trees": 68,
+  "variants": [
+    {
+      "id": "grove_young",
+      "seed": 173,
+      "years": 180,
+      "nodes": 14,
+      "density": 0.1,
+      "spray_length": 0.7,
+      "spray_width": 0.5
+    },
+    {
+      "id": "grove_mature",
+      "seed": 83,
+      "years": 700,
+      "nodes": 18,
+      "density": 0.1,
+      "spray_length": 0.7,
+      "spray_width": 0.5
+    },
+    {
+      "id": "grove_ancient",
+      "seed": 331,
+      "years": 1600,
+      "nodes": 22,
+      "density": 0.1,
+      "spray_length": 0.7,
+      "spray_width": 0.5
+    }
+  ],
+  "terrain": {
+    "version": 4,
+    "space_version": 1,
+    "id": "sequoia_ground",
+    "revision": 1,
+    "datum": {
+      "cell": [
+        "0",
+        "0",
+        "0"
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ]
+    },
+    "base": {
+      "kind": "constant",
+      "height_meters": 0
+    },
+    "operations": [
+      {
+        "kind": "noise",
+        "seed": 9281,
+        "period_meters": 256,
+        "octaves": 3,
+        "persistence": 0.45,
+        "amplitude_meters": 9,
+        "style": "smooth"
+      },
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "0"
+          ],
+          "offset": [
+            90,
+            0,
+            30
+          ]
+        },
+        "radius_meters": 150,
+        "amount_meters": 10
+      },
+      {
+        "kind": "raise",
+        "center": {
+          "cell": [
+            "-1",
+            "0",
+            "-1"
+          ],
+          "offset": [
+            924,
+            0,
+            944
+          ]
+        },
+        "radius_meters": 120,
+        "amount_meters": 7
+      }
+    ],
+    "water_level_meters": null
+  },
+  "light": {
+    "direction": [
+      0.65,
+      -0.72,
+      -0.38
+    ],
+    "ambient": 0.18,
+    "direct_intensity": 1.35,
+    "direct_color": [
+      1,
+      0.86,
+      0.67
+    ],
+    "environment": {
+      "sky": [
+        0.38,
+        0.53,
+        0.63
+      ],
+      "horizon": [
+        0.57,
+        0.61,
+        0.51
+      ],
+      "ground": [
+        0.14,
+        0.18,
+        0.09
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "intensity": 0.48
+    },
+    "atmosphere": {
+      "density": 0.00065,
+      "reduce_details": false,
+      "color": [
+        0.39,
+        0.49,
+        0.48
+      ],
+      "sun_color": [
+        1,
+        0.89,
+        0.7
+      ],
+      "sun_strength": 0.15,
+      "layers": {
+        "sky_color": [
+          0.47,
+          0.62,
+          0.7
+        ],
+        "mountain_color": [
+          0.33,
+          0.43,
+          0.42
+        ],
+        "detail_start": 500,
+        "detail_end": 1500,
+        "influence": 0
+      }
+    },
+    "shadow": {
+      "center": [
+        0,
+        25,
+        -30
+      ],
+      "extent": 180,
+      "resolution": 2048,
+      "bias": 0.0003,
+      "receiver_plane_bias": true
+    }
+  }
+}
