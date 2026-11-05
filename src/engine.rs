@@ -245,6 +245,9 @@ pub enum Command {
     PlanWorldRegions {
         query: Box<crate::world_regions::Query>,
     },
+    PublishFracturedRock {
+        publication: Box<crate::rock_wall::Publication>,
+    },
     QueryVolumeTerrainGpu {
         document: Box<crate::volume_terrain::Document>,
         grid: crate::volume_terrain::Grid,
@@ -3578,6 +3581,32 @@ impl Engine {
             Command::PlanWorldRegions { query } => {
                 let plan = crate::world_regions::plan(*query).map_err(invalid)?;
                 return serde_json::to_value(plan).map_err(|e| invalid(e.to_string()));
+            }
+            Command::PublishFracturedRock { publication } => {
+                if self.playing {
+                    return Err(invalid("Pause before publishing fractured rock"));
+                }
+                let collision = publication.collision;
+                let (asset, instance, report) = crate::rock_wall::publication(*publication)?;
+                let id = instance.id.clone();
+                let mut edits = vec![
+                    SceneEdit::Mesh {
+                        edit: crate::meshes::Edit::PutAsset { asset },
+                    },
+                    SceneEdit::Mesh {
+                        edit: crate::meshes::Edit::PutInstance { instance },
+                    },
+                ];
+                if let Some(enabled) = collision {
+                    edits.push(SceneEdit::SetMeshCollision {
+                        instance: id.clone(),
+                        enabled,
+                    });
+                }
+                self.apply_edits(edits.into_iter())?;
+                return Ok(
+                    json!({"revision":self.revision,"rock":report,"visual_only":!self.scene.collision_meshes.contains(&id),"source_embedded_in_scene":false}),
+                );
             }
             Command::QueryVolumeTerrain { query } => return crate::volume_terrain::query(*query),
             Command::PublishVolumeTerrain { publication } => {

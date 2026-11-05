@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "seed": 2718,
+    "width_meters": 24,
+    "height_meters": 12,
+    "depth_meters": 3,
+    "layer_meters": 2.2,
+    "block_meters": 3.8,
+    "relief_meters": 2.0,
+    "bedding_slope": 0.14,
+    "joint_shear": 0.23,
+    "bevel_meters": 0.24,
+    "spacing_meters": 0.14
+  },
+  "cameras": {
+    "overview": {"position": [-18, 13, -28], "target": [0, 6, 0], "fov_degrees": 48},
+    "close": {"position": [-4, 6, -10], "target": [0, 5.5, -1], "fov_degrees": 55},
+    "side": {"position": [18, 9, -16], "target": [0, 6, 0], "fov_degrees": 52}
+  }
+}

@@ -183,6 +183,7 @@ pub mod mesh_proxy;
 mod render_particles;
 pub mod surface_field;
 
+pub mod rock_wall;
 pub mod volume_terrain;
 
 pub mod mesh_slope;
