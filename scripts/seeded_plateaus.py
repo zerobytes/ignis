@@ -17,6 +17,8 @@ def controls(world_seed,row,attempt=0):
  seed=derive(world_seed,row['id']);effective=derive(seed,f'candidate:{attempt}');rng=random.Random(effective)
  cfg=dict(id=row['id'],seed=effective,width=rng.uniform(72,158),depth=rng.uniform(52,112),
           height=rng.uniform(24,40),contour_points=rng.choice([20,24,28]),rock_count=1)
+ reference_height=cfg['height']
+ if row.get('full_height'):cfg['height']=row['target_height'];cfg['reference_height']=reference_height
  source=document(cfg);source['version']=2;source['pieces']=source['pieces'][:1];p=source['pieces'][0]
  regional=region(world_seed);x,_,z=regional['bedding'];x+=rng.uniform(-.018,.018);z+=rng.uniform(-.018,.018)
  yaw=2*math.atan2(row['rotation'][1],row['rotation'][3]);co,si=math.cos(yaw),math.sin(yaw)
@@ -24,7 +26,7 @@ def controls(world_seed,row,attempt=0):
  # Inclined section range extends past both eventual horizontal truncation planes.
  pad=cfg['width']*.7*abs(axis[0])+cfg['depth']*.7*abs(axis[2])+12
  start=-pad/axis[1];end=(cfg['height']+pad)/axis[1]
- count=rng.randint(9,13);weights=[rng.uniform(3,10) for _ in range(count)];span=end-start
+ seed_count=rng.randint(9,13);base_count=round(seed_count*(end-start)/((reference_height+2*pad)/axis[1])) if row.get('full_height') else seed_count;density=row.get('lateral_frequency_multiplier',1.0);count=round(base_count*density);weights=[rng.uniform(3,10) for _ in range(count)];span=end-start
  thicknesses=[v/sum(weights)*span for v in weights]
  phase=rng.uniform(-math.pi,math.pi);exposure=regional['exposure_axis']+yaw+rng.uniform(-.6,.6)
  scar_center=rng.uniform(-math.pi,math.pi);scar_h=rng.uniform(0,cfg['height']);scar_width=rng.uniform(.4,.9)
@@ -40,9 +42,9 @@ def controls(world_seed,row,attempt=0):
     mask=min(1,bell(a,exposure+.5*math.sin(k*.8+phase),patch)+.65*bell(a,exposure+2.7+.4*math.cos(k*.65),patch*1.3))
     scar=scars[0]*bell(a,scar_center+.007*h,scar_width)*math.exp(-((h-scar_h)/15)**2)
     scar+=scars[1]*bell(a,scar_center+2.1-.004*h,.65)*math.exp(-((h-cfg['height']*.8)/11)**2)
-    factors.append(1+preserved-(erosion if t else 0)*mask**3-scar)
+    factors.append(1+preserved-(erosion if t else 0)*row.get('lateral_relief_multiplier',1.0)*mask**3-scar)
    rows.append(dict(at=h,scale=1,offset=[1.1*math.sin(h*.03+phase),.7*math.sin(h*.055-phase)],radial_scales=factors))
   at+=thickness
  rows.append(dict(at=end,scale=1,offset=[0,0],radial_scales=[1]*n));p['sections']=rows
  return dict(version=VERSION,requested_seed=seed,effective_seed=effective,attempt=attempt,parameters=cfg,
-             regional=regional,source=source,joint_count=rng.randint(4,7),spall_count=rng.randint(4,7),chip_count=rng.randint(2,4))
+             regional=regional,source=source,base_lateral_layers=base_count,lateral_layers=count,lateral_frequency_multiplier=density,lateral_relief_multiplier=row.get('lateral_relief_multiplier',1.0),joint_count=rng.randint(4,7),spall_count=rng.randint(4,7),chip_count=rng.randint(2,4))

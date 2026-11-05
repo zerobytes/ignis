@@ -98,3 +98,10 @@ Current editable scene, PNGs, replay and verification are in that same artifact
 folder; generation replaces them, not a scene/build history. Prior approved object
 and cloned-composition artifacts untouched. No window opened, no push. EAF-221
 remains InProgress for artistic acceptance and broader integration.
+
+## Connected-layer composition
+
+The user subsequently requested overlap and a common formation rather than ground
+gaps. Optional --overlapping uses a shared basal volume, full-height seeded outcrops
+and density/relief1.10. Default controls/source documents are preserved. Current
+scope, intersection proofs and limitations: [overlapping-plateaus.md](overlapping-plateaus.md).
