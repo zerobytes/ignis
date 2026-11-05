@@ -24,8 +24,9 @@ pub mod root_sections;
 pub mod roots;
 pub mod wood_surface;
 pub mod junction_quality;
+pub mod junction_flow;
 pub mod wood_details;
-pub const VERSION: u16 = 12;
+pub const VERSION: u16 = 13;
 pub const LIVING_SCENE_VERSION: u32 = 121;
 fn one() -> f64 {
     1.
@@ -191,6 +192,9 @@ pub struct OrganEdit {
     /// Local interior refinement for junctions incident to this woody organ.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub junction_refinement: Option<u8>,
+    /// Opt-in implicit woody fusion; omitted keeps the legacy collar mesh.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub junction_flow: Option<f64>,
 }
 impl Default for OrganEdit {
     fn default() -> Self {
@@ -203,6 +207,7 @@ impl Default for OrganEdit {
             deformation: Default::default(),
             wood_surface: None,
             junction_refinement: None,
+            junction_flow: None,
         }
     }
 }
@@ -683,6 +688,10 @@ impl Recipe {
             let archived_edit=!ids.contains(id.as_str()) && archived.contains(id.as_str());
             let woody=woody_ids.contains(id.as_str()) || archived_edit;
             e.deformation.validate()?;
+            if let Some(flow) = e.junction_flow
+                && (self.version < 13 || !woody || !flow.is_finite() || !(0. ..=1.).contains(&flow)) {
+                return Err(invalid("Woody junction flow requires recipe13 and strength0..1"));
+            }
             if let Some(level) = e.junction_refinement
                 && (self.version < 11 || level > 3 || !woody) {
                 return Err(invalid("Junction refinement requires recipe11, a woody axis and level0..3"));

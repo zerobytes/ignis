@@ -123,6 +123,9 @@ pub fn center(p: &Pose, source: &Source, u: f64) -> DVec3 {
 /// Dirichlet displacement extension: collars exact, connectivity unchanged.
 /// Homotopy steps refuse collapsed/reversed local faces; no global CSG claim.
 pub fn deform(mesh: &mut crate::mesh_organic::MultiJunction, targets: &[Vec<DVec3>]) -> Result<()> {
+    deform_cuffs(mesh, targets, &[])
+}
+pub(super) fn deform_cuffs(mesh: &mut crate::mesh_organic::MultiJunction, targets: &[Vec<DVec3>], cuffs: &[(usize, DVec3)]) -> Result<()> {
     if targets.len() != mesh.boundaries.len() || targets.iter().flatten().any(|p| !p.is_finite()) {
         return Err(invalid(
             "Buttress junction requires finite targets for every collar",
@@ -135,6 +138,14 @@ pub fn deform(mesh: &mut crate::mesh_organic::MultiJunction, targets: &[Vec<DVec
         .map(|p| DVec3::from_array(p.map(f64::from)))
         .collect();
     let mut displacement = vec![DVec3::ZERO; old.len()];
+    let mut fixed = vec![false; old.len()];
+    for &(i, target) in cuffs {
+        if i < mesh.collar_vertices || i >= old.len() || !target.is_finite() {
+            return Err(invalid("Invalid woody transition cuff"));
+        }
+        fixed[i] = true;
+        displacement[i] = target-old[i];
+    }
     for (boundary, target) in mesh.boundaries.iter().zip(targets) {
         if boundary.vertices.len() != target.len() {
             return Err(invalid("Root collar sample mismatch"));
@@ -153,6 +164,7 @@ pub fn deform(mesh: &mut crate::mesh_organic::MultiJunction, targets: &[Vec<DVec
     let mut next = displacement.clone();
     for _ in 0..160 {
         for i in mesh.collar_vertices..old.len() {
+            if fixed[i] { continue; }
             next[i] = adjacent[i].iter().map(|&j| displacement[j]).sum::<DVec3>()
                 / adjacent[i].len() as f64;
         }

@@ -23,13 +23,13 @@ def integrity(scene,prefix):
 def bark_recipe():
  def sample(color,height):return dict(color_roughness=color+[.96],response=[0,height,1,1],emission=[0,0,0,0])
  layers=[]
- for seed,field,freq,color,height,strength in [(12,'noise',[8,4],[.23,.205,.17],.25,.8),(33,'ridged',[32,5],[.40,.36,.29],.75,.85),(51,'noise',[64,16],[.5,.46,.38],.6,.28)]:
+ for seed,field,freq,color,height,strength in [(12,'noise',[6,2],[.23,.205,.17],.25,.8),(33,'ridged',[6,1],[.40,.36,.29],.75,.85),(51,'noise',[48,8],[.5,.46,.38],.6,.18)]:
   layers.append(dict(field=field,frequency=freq,seed=seed,octaves=4,warp=.35,threshold=[.2,.85],strength=strength,invert=False,target=sample(color,height)))
- return dict(seed=912,unique_instances=False,plane='xy',tile_size=[4,12],base=sample([.12,.105,.085],.15),layers=layers,height_m=.008,relief='bump',normal_filter='pixel',view_steps=16,shadow_steps=8)
+ return dict(seed=912,unique_instances=False,plane='xy',tile_size=[4,12],base=sample([.12,.105,.085],.15),layers=layers,height_m=.045,relief='bump',normal_filter='pixel',view_steps=16,shadow_steps=8)
 
 def review():
  cards=''.join(f'<section><h2>{name}</h2><div><figure><img src="{name}-structure.png"><figcaption>Native geometry, no leaves or bark material</figcaption></figure><figure><img src="{name}-full.png"><figcaption>Same scaffold with individual closed leaves</figcaption></figure></div></section>' for name in ['front','side','back','top','base','arms'])
- (OUT/'review.html').write_text('''<!doctype html><meta charset="utf-8"><title>Ancestral tree study</title><style>body{background:#20252b;color:#eee;font:16px system-ui;max-width:1600px;margin:24px auto;padding:20px}img{width:100%;height:auto}div{display:flex;gap:16px}figure{margin:0;flex:1;min-width:0}figcaption{padding:12px}a{color:#abd9ff}section{margin:40px 0}@media(max-width:800px){div{display:block}}</style><h1>Ancestral tree · native Ignis study</h1><p>Editable seeded graph, native geometry, material and renderer. Authorial mature snapshot at 180 years; no live growth grammar or performance claim. Review study, not an accepted or installed game asset.</p><img src="hero.png"><p>Large junctions remain angular, roots need stronger structural relief, and canopy continuity still differs from the reference. Sheath-connected auxiliary arms are closed overlapping components, not a welded union. Bark is bump material, not geometric fibres.</p><p><a href="ancestral-study.ignis-botany">Editable source</a> · <a href="current.scene.json">Complete scene</a> · <a href="bark.ignis-material">Native bark material</a> · <a href="bark.recipe.json">Material recipe</a> · <a href="full-verification.json">Validation</a></p><h2>Approved concept reference</h2><img src="../../games/land-of-survivors/references/ancient-white-elven-tree.png"><p>The concept image above is a reference, not an Ignis render. The captures below are actual native renders.</p>'''+cards)
+ (OUT/'review.html').write_text('''<!doctype html><meta charset="utf-8"><title>Ancestral tree study</title><style>body{background:#20252b;color:#eee;font:16px system-ui;max-width:1600px;margin:24px auto;padding:20px}img{width:100%;height:auto}div{display:flex;gap:16px}figure{margin:0;flex:1;min-width:0}figcaption{padding:12px}a{color:#abd9ff}section{margin:40px 0}@media(max-width:800px){div{display:block}}</style><h1>Ancestral tree · native Ignis study</h1><p>Editable seeded graph, native geometry, material and renderer. Authorial mature snapshot at 180 years; no live growth grammar or performance claim. Review study, not an accepted or installed game asset.</p><img src="hero.png"><p>Major arms now use connected forks, with implicit fusion on the central three joints. Geometry includes broad cords and inward historical sockets; the bark follows those cords. Remaining collar bands and the simplified central mass still differ from the reference. This is not a global botanical-plausibility guarantee.</p><p><a href="ancestral-study.ignis-botany">Editable source</a> · <a href="current.scene.json">Complete scene</a> · <a href="bark.ignis-material">Native bark material</a> · <a href="bark.recipe.json">Material recipe</a> · <a href="organic-study.json">Current native observations</a></p><h2>Approved concept reference</h2><img src="../../games/land-of-survivors/references/ancient-white-elven-tree.png"><p>The concept image above is a reference, not an Ignis render. The captures below are actual native renders.</p>'''+cards)
 
 def graph(cfg,foliage):
  x=Builder('Árvore ancestral branca · estudo revisado',cfg['seed']);x.axis_samples=24;edits={}
@@ -51,11 +51,13 @@ def graph(cfg,foliage):
    sections.append(dict(id=f's{k}',u=u,angle=.25*u,offset=[.03*strength*row['radius']*math.sin(u*math.pi),-.025*strength*row['radius']*math.sin(u*math.pi)],radii=[(r*(1+.09*math.cos(3*a+phase+.5*u)+.04*math.sin(5*a-phase))*strength+row['radius']*(row['tip']+(1-row['tip'])*(1-u)**1.1)*(1-strength)) for a in [math.tau*j/16 for j in range(16)]]))
   relief=[]
   for j in range(7 if index==0 else 4):
-   a=j*math.tau/(7 if index==0 else 4)+phase
-   relief.append(dict(id=f'cord{j}',enabled=True,path=[dict(u=u,angle=a+.65*u+.17*math.sin(6*u+j)) for u in [0,.2,.45,.75,1]],width=row['radius']*.26,height=row['cord_height']*strength,end_fade=.1,follow_taper=True))
+   jitter=b.uniform(x.seed,row['id'],f'cord{j}')
+   a=j*math.tau/(7 if index==0 else 4)+phase+.3*(jitter-.5)
+   relief.append(dict(id=f'cord{j}',enabled=True,path=[dict(u=u,angle=a+.65*u+.17*math.sin(6*u+j)) for u in [0,.2,.45,.75,1]],width=row['radius']*(.20+.15*jitter),height=row['cord_height']*strength*(.75+.5*jitter),end_fade=row.get('cord_fade',.1),follow_taper=True))
   if index==0:
-   for j in range(4):relief.append(dict(id=f'valley{j}',enabled=True,path=[dict(u=u,angle=j*1.55+.45+.65*u) for u in [0,.4,.7,1]],width=.62,height=-.40*strength,end_fade=.12,follow_taper=True))
-  edits[row['id']]=dict(wood_surface=dict(sections=sections,relief=relief,sides=32 if index<7 else 24,samples=96 if index==0 else 48),junction_refinement=2)
+   for j in range(4):relief.append(dict(id=f'valley{j}',enabled=True,path=[dict(u=u,angle=j*1.55+.45+.65*u) for u in [0,.4,.7,1]],width=.62,height=-row.get('valley_depth',.40)*strength,end_fade=row.get('cord_fade',.12),follow_taper=True))
+  edits[row['id']]=dict(wood_surface=dict(sections=sections,relief=relief,sides=32 if index<7 else 24,samples=128 if index==0 else 64),junction_refinement=row.get('junction_refinement',2))
+  if row.get('junction_flow') is not None:edits[row['id']]['junction_flow']=row['junction_flow']
   if not row.get('surface',True):edits[row['id']].pop('wood_surface')
  tips=[]
  def grow(parent,points,depth=0):
@@ -84,7 +86,7 @@ def graph(cfg,foliage):
    direction=b.unit(b.add(direction,(0,.2-.25*b.uniform(x.seed,f'{shoot}/{k}','tilt'),0)))
    size=.75+.5*b.uniform(x.seed,f'{shoot}/{k}','leaf_size');length=cfg['leaf_length_m']*size
    normal=b.normal_to(direction,b.add(b.UP,b.mul(sf.t,.3)))
-   x.organs.append(dict(id=f'{shoot}/l{k}',parent=shoot,insertion=t,path=[sf.p,b.add(sf.p,b.mul(direction,length))],normal=normal,shape=dict(kind='blade',width=cfg['leaf_width_m']*size,thickness=.00025,fold=.05,cup=.06,outline=dict(kind='strip',base_power=.7,tip_power=1.1)),birth=0,duration=1,density=850,young=2e7,shear=8e6))
+   x.organs.append(dict(id=f'{shoot}/l{k}',parent=shoot,insertion=t,path=[sf.p,b.add(sf.p,b.mul(direction,length))],normal=normal,shape=dict(kind='blade',width=cfg['leaf_width_m']*size,thickness=.00025,fold=.05,cup=.06,outline=dict(kind='strip',base_power=cfg.get('leaf_base_power',.7),tip_power=cfg.get('leaf_tip_power',1.1))),birth=0,duration=1,density=850,young=2e7,shear=8e6))
  # Terminal shoots keep a complete native branch hierarchy.
  for parent in tips:
   phase=math.tau*b.uniform(x.seed,parent,'shoot_phase')
@@ -111,7 +113,7 @@ def graph(cfg,foliage):
    if foliage and cfg['interior_leaves']:foliate(ident,cfg['interior_leaves'],a)
  r=x.recipe(cfg['prefix'],bark_color=[.37,.37,.37],leaf_color=[.86,.88,.83])
  r=chronological(r,'figueira',cfg['age_years']);r['source']['development'].update(reference_age_years=cfg['age_years'],height_time_years=30,crown_time_years=40,radial_time_years=70,basal_flare=0,senescent_foliage_loss=0)
- r.update(version=12,edits=edits);r['source']['version']=9;r['settings'].update(axis_samples=12,sides=12,blade_samples=4)
+ r.update(version=13,edits=edits);r['source']['version']=9;r['settings'].update(axis_samples=12,sides=12,blade_samples=cfg.get('blade_samples',4))
  return r
 
 def main():
@@ -138,11 +140,11 @@ def main():
   report['build']=setup(c)
   report['scaffold']=bot(kind='load',path='artifacts/ancestral-regeneration/candidate.ignis-botany',publish=True)
   report['roots']=bot(kind='set_roots',prefix=cfg['prefix'],stem='trunk',settings=cfg['roots'])
-  report['details']=bot(kind='set_wood_details',prefix=cfg['prefix'],details=dict(seed=911,age_years=cfg['age_years'],healing_years=30,roots=dict(bulges=7,swelling=.24,flattening=.14,bend=.16,twist=.1,grain=.06),scars=[]))
+  report['details']=bot(kind='set_wood_details',prefix=cfg['prefix'],details=cfg.get('wood_details',dict(seed=911,age_years=cfg['age_years'],healing_years=30,roots=dict(bulges=7,swelling=.24,flattening=.14,bend=.16,twist=.1,grain=.06),scars=[])))
   c.call('set_light',light=dict(direction=[-.45,-.78,-.38],ambient=.30,direct_intensity=1.3,environment=dict(sky=[.54,.56,.58],horizon=[.5]*3,ground=[.22]*3,axis=[0,1,0],intensity=.35),shadow=dict(center=[0,9,0],extent=42,resolution=2048,bias=.0008)))
   ground=dict(id='ancestral_ground',geometry=dict(positions=[[-100,.035,-100],[100,.035,-100],[-100,.035,100],[100,.035,100]],triangles=[[0,2,1],[1,2,3]]))
   c.call('edit_scene',edits=[dict(op='mesh',edit=dict(kind='put_asset',asset=ground)),dict(op='mesh',edit=dict(kind='put_instance',instance=dict(id='ancestral_ground',asset='ancestral_ground',position=[0,0,0],rotation=[0,0,0,1],scale=1,color=[.22,.23,.21])))])
-  views=dict(front=([3,14,70],[0,13,0],40),side=([70,17,3],[0,13,0],42),back=([-3,14,-70],[0,13,0],42),top=([2,76,4],[0,5,0],43),base=([15,6,20],[0,3,0],43),arms=([8,13,24],[0,8,0],45))
+  views=dict(front=([3,17,76],[0,16,0],42),side=([76,17,3],[0,16,0],42),back=([-3,17,-76],[0,16,0],42),top=([2,80,4],[0,10,0],44),base=([12,9,26],[0,7,0],45),arms=([8,14,12],[3,13,0],40))
   suffix='structure' if args.structure else 'full'
   for name,argsview in views.items():capture(f'{name}-{suffix}',*argsview)
   bot(kind='save',prefix=cfg['prefix'],path=f'artifacts/ancestral-regeneration/{suffix}.ignis-botany')
@@ -161,7 +163,7 @@ def main():
    bot(kind='save',prefix=cfg['prefix'],path='artifacts/ancestral-regeneration/ancestral-study.ignis-botany')
    c.call('set_light',light=dict(direction=[-.55,-.72,-.42],ambient=.20,direct_intensity=1.1,direct_color=[1,.95,.84],environment=dict(sky=[.48,.6,.77],horizon=[.56,.6,.63],ground=[.16,.20,.11],axis=[0,1,0],intensity=.45),atmosphere=dict(density=.0005,reduce_details=False,color=[.35,.47,.62],sun_color=[1,.92,.78],sun_strength=.1),shadow=dict(center=[0,10,0],extent=42,resolution=2048,bias=.0008)))
    c.call('edit_scene',edits=[dict(op='mesh',edit=dict(kind='put_instance',instance=dict(id='ancestral_ground',asset='ancestral_ground',position=[0,0,0],rotation=[0,0,0,1],scale=1,color=[.12,.16,.08])))])
-   c.call('set_camera',camera=dict(position=[7,12,65],target=[0,13,0],fov_degrees=42))
+   c.call('set_camera',camera=dict(position=[3,17,76],target=[0,16,0],fov_degrees=42))
    c.call('capture',path='artifacts/ancestral-regeneration/hero.png',width=2048,height=1365)
    c.call('save_scene',path='artifacts/ancestral-regeneration/current.scene.json')
    c.call('load_scene',path='artifacts/ancestral-regeneration/current.scene.json')

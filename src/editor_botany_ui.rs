@@ -348,7 +348,7 @@ pub(super) fn properties(
                 && let Some(action)=crate::botany::wood_surface::ui::editor(ui,&mut state.edit,*radius,*tip_ratio) {
                 use crate::botany::wood_surface::ui::Action;
                 if matches!(action,Action::Cancel){state.edit=recipe.edits.get(id).cloned().unwrap_or_default();send(commands,Op::CancelPreview);}else {
-                    let mut r=recipe.clone();r.version=r.version.max(10);r.edits.insert(id.clone(),state.edit.clone());
+                    let mut r=recipe.clone();r.version=r.version.max(if state.edit.junction_flow.is_some(){13}else{10});r.edits.insert(id.clone(),state.edit.clone());
                     send(commands,match action {Action::Preview=>Op::Preview{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Apply=>Op::Publish{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Cancel=>unreachable!()});
                 }
             }
@@ -356,7 +356,7 @@ pub(super) fn properties(
                 && let Some(action)=crate::botany::junction_quality::editor(ui,&mut state.edit) {
                     use crate::botany::wood_surface::ui::Action;
                     if matches!(action,Action::Cancel){state.edit=recipe.edits.get(id).cloned().unwrap_or_default();send(commands,Op::CancelPreview);}else{
-                        let mut r=recipe.clone();r.version=r.version.max(11);r.edits.insert(id.clone(),state.edit.clone());
+                        let mut r=recipe.clone();r.version=r.version.max(if state.edit.junction_flow.is_some(){13}else{11});r.edits.insert(id.clone(),state.edit.clone());
                         send(commands,match action{Action::Preview=>Op::Preview{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Apply=>Op::Publish{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Cancel=>unreachable!()});
                     }
             }

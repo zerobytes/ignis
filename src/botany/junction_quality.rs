@@ -17,11 +17,12 @@ pub fn editor(ui: &mut egui::Ui, edit: &mut OrganEdit) -> Option<wood_surface::u
     use wood_surface::ui::Action;
     let mut action = None;
     ui.collapsing("Resolução local das junções",|ui|{
+        super::junction_flow::editor(ui, edit);
         let mut enabled=edit.junction_refinement.is_some();
         if ui.checkbox(&mut enabled,"Sobrescrever resolução nas junções deste órgão").changed(){edit.junction_refinement=enabled.then_some(2);}
         if let Some(level)=&mut edit.junction_refinement {ui.add(egui::Slider::new(level,0..=3).text("Subdivisões interiores"));}
         ui.label("Vizinhos com ajustes usam o maior nível. Cada nível subdivide faces interiores; a copa fora das junções conserva sua resolução.");
-        ui.label("Isso não reduz colares nem corrige tangência ou continuidade de veios. O orçamento final continua obrigatório.");
+        ui.label("Subdivisão sozinha não corrige encaixes. A fusão opcional usa faixas da superfície dos braços e interpola as coordenadas da casca; o orçamento final continua obrigatório.");
         ui.horizontal(|ui|{
             if ui.button("Prévia das junções").clicked(){action=Some(Action::Preview);}
             if ui.button("Aplicar junções").clicked(){action=Some(Action::Apply);}

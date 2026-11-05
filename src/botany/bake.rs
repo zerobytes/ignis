@@ -435,7 +435,7 @@ fn poses_impl(recipe: &Recipe, detailed_surfaces:bool) -> Result<Vec<Pose>> {
             wood_surface: if !detailed_surfaces {None} else if recipe
                 .living
                 .as_ref()
-                .is_some_and(|p| p.definition.version >= 6)
+                .is_some_and(|p| (6..=8).contains(&p.definition.version))
                 && o.id == "stem"
             {
                 let r = match o.shape {
@@ -625,6 +625,7 @@ struct Builder {
     vertices: Vec<Vertex>,
     owners: Vec<usize>,
     keys: BTreeMap<String, u32>,
+    flow_coordinates: BTreeMap<u32, [f32; 3]>,
 }
 impl Builder {
     fn new() -> Self {
@@ -634,6 +635,7 @@ impl Builder {
             vertices: vec![],
             owners: vec![],
             keys: BTreeMap::new(),
+            flow_coordinates: BTreeMap::new(),
         }
     }
     fn vertex(
@@ -816,13 +818,15 @@ fn junctions(poses: &[Pose], recipe: &Recipe) -> Result<Vec<Joint>> {
             if !reason.is_empty() {
                 break;
             }
-            match crate::mesh_organic::junction(
+            match super::junction_flow::build(
                 &collars,
                 crate::mesh_organic::Options {
                     refinement_levels: super::junction_quality::level(recipe,[parent_pose.source,p.source],1),
                     relaxation_steps: 2,
                     ..Default::default()
                 },
+                parent_pose.at(p.insertion).p,
+                super::junction_flow::strength(recipe, [parent_pose.source, p.source]),
             ) {
                 Ok(mesh) => {
                     accepted = Some(Joint {
@@ -909,13 +913,15 @@ fn junctions(poses: &[Pose], recipe: &Recipe) -> Result<Vec<Joint>> {
                     if !circular {
                         return Err(invalid("Terminal forks require circular woody sections"));
                     }
-                    match crate::mesh_organic::junction(
+                    match super::junction_flow::build(
                         &collars,
                         crate::mesh_organic::Options {
                             refinement_levels: super::junction_quality::level(recipe,[parent_pose.source,poses[child].source,poses[other].source],1),
                             relaxation_steps: 2,
                             ..Default::default()
                         },
+                        parent_pose.at(1.).p,
+                        super::junction_flow::strength(recipe, [parent_pose.source, poses[child].source, poses[other].source]),
                     ) {
                         Ok(m) => mesh = Some(m.into()),
                         Err(e) => {
@@ -1117,7 +1123,8 @@ fn junctions(poses: &[Pose], recipe: &Recipe) -> Result<Vec<Joint>> {
 }
 fn shape_joint(joint: &mut Joint, poses: &[Pose], recipe: &Recipe) -> Result<f64> {
     let ports = joint_ports(joint);
-    if !ports
+    let fused = joint.mesh.as_ref().is_some_and(|m| m.report.field.is_some());
+    if !fused && !ports
         .iter()
         .any(|(i, _)| super::root_sections::shaped(&poses[*i]))
     {
@@ -1151,7 +1158,29 @@ fn shape_joint(joint: &mut Joint, poses: &[Pose], recipe: &Recipe) -> Result<f64
                     .collect()
             })
             .collect();
-        super::root_sections::deform(mesh, &targets)?;
+        let mut cuffs = vec![];
+        if fused {
+            let n = mesh.collar_vertices;
+            for (k, boundary) in mesh.boundaries.iter().enumerate() {
+                let (i, u) = ports[k];
+                let pose = &poses[i];
+                let count = boundary.vertices.len();
+                for (slot, &vertex) in boundary.vertices.iter().enumerate() {
+                    let outer = DVec3::from_array(mesh.geometry.positions[vertex as usize].map(f64::from));
+                    let inner_index = n + vertex as usize;
+                    let inner = DVec3::from_array(mesh.geometry.positions[inner_index].map(f64::from));
+                    let guard = outer.distance(inner);
+                    let inner_u = pose.offset(u, if k == 0 { guard } else { -guard });
+                    let angular = if k == 0 { (count-slot)%count } else { slot };
+                    cuffs.push((inner_index, super::root_sections::point(pose, &recipe.source, inner_u, TAU * angular as f64/count as f64)));
+                }
+            }
+        }
+        super::root_sections::deform_cuffs(mesh, &targets, &cuffs)?;
+        if fused {
+            let ends: Vec<_> = ports.iter().map(|(i, _)| if *i == joint.parent { if joint.terminal { 1. } else { poses[joint.child].insertion } } else { 0. }).collect();
+            super::junction_flow::wood_mass(mesh, poses, &ports, &ends, recipe)?;
+        }
         if let Some(seed) = seed {
             return super::root_crown::refine(mesh, &seed, poses, &ports, recipe);
         }
@@ -1269,6 +1298,13 @@ fn tube(
         }
         for j in 0..sides {
             let k = (j + 1) % sides;
+            if recipe.version >= 13 {
+                let a = DVec3::from_array(b.positions[rings[i][j] as usize].map(f64::from));
+                let c = DVec3::from_array(b.positions[rings[i + 1][j] as usize].map(f64::from));
+                if (c-a).dot(pose.at(mid).t) <= 0. {
+                    return Err(invalid(format!("Woody sweep folds back at {}: smooth the axis bend or use a junction volume", source.organs[pose.source].id)));
+                }
+            }
             b.face(rings[i][j], rings[i][k], rings[i + 1][k], index)?;
             b.face(rings[i][j], rings[i + 1][k], rings[i + 1][j], index)?;
         }
@@ -1436,7 +1472,8 @@ fn stitch(b: &mut Builder, j: &Joint, poses: &[Pose], recipe: &Recipe) -> Result
             j.start.to_bits()
         )
     };
-    let domain = if joint_ports(j)
+    let flow = super::junction_flow::strength(recipe, joint_ports(j).iter().map(|(i, _)| poses[*i].source)).is_some();
+    let domain = if flow || joint_ports(j)
         .iter()
         .any(|(i, _)| super::root_sections::shaped(&poses[*i]))
     {
@@ -1455,7 +1492,7 @@ fn stitch(b: &mut Builder, j: &Joint, poses: &[Pose], recipe: &Recipe) -> Result
             .iter()
             .map(|b| format!("{b:02x}"))
             .collect::<String>();
-        format!("{domain}:wall-v1:{}:{topology}", recipe.settings.sides)
+        format!("{domain}:{}:{}:{topology}", if flow { "flow-v1" } else { "wall-v1" }, recipe.settings.sides)
     } else {
         domain
     };
@@ -1484,7 +1521,44 @@ fn stitch(b: &mut Builder, j: &Joint, poses: &[Pose], recipe: &Recipe) -> Result
     for &[a, c, d] in &mesh.geometry.triangles {
         b.face(map[a as usize], map[c as usize], map[d as usize], j.parent)?;
     }
+    if flow {
+        let mut coordinates = vec![DVec3::ZERO; mesh.geometry.positions.len()];
+        for boundary in &mesh.boundaries {
+            for &i in &boundary.vertices {
+                coordinates[i as usize] = DVec3::from_array(wood_coordinate(&b.vertices[map[i as usize] as usize], poses, recipe).map(f64::from));
+            }
+        }
+        let mut adjacent = vec![BTreeSet::new(); coordinates.len()];
+        for &[a, c, d] in &mesh.geometry.triangles {
+            for (i, k) in [(a,c),(c,d),(d,a)] {
+                adjacent[i as usize].insert(k as usize); adjacent[k as usize].insert(i as usize);
+            }
+        }
+        let mut next = coordinates.clone();
+        for _ in 0..160 {
+            for i in mesh.collar_vertices..coordinates.len() {
+                next[i] = adjacent[i].iter().map(|&k| coordinates[k]).sum::<DVec3>() / adjacent[i].len() as f64;
+            }
+            std::mem::swap(&mut coordinates, &mut next);
+        }
+        for (i, q) in coordinates.iter().enumerate().skip(mesh.collar_vertices) {
+            b.flow_coordinates.insert(map[i], q.as_vec3().to_array());
+        }
+    }
     Ok(())
+}
+fn wood_coordinate(v: &Vertex, poses: &[Pose], recipe: &Recipe) -> [f32; 3] {
+    let p = &poses[v.organ];
+    let angle = v.local.z.atan2(v.local.y);
+    if recipe.wood_details.is_some() {
+        let a = p.wood_surface.as_ref().map_or(angle, |s| {
+            let a = super::wood_details::grain_angle(s, &p.patches, v.u, angle);
+            if recipe.version >= 13 { super::junction_flow::grain_angle(s, v.u, a) } else { a }
+        }) - super::wood_details::root_profile(recipe, &recipe.source.organs[p.source].id).map_or(0., |r| r.twist * v.u * p.length / recipe.settings.scale);
+        [(a.sin() * p.radius) as f32, (v.u * p.length) as f32, (a.cos() * p.radius) as f32]
+    } else {
+        [(angle * p.radius) as f32, (v.u * p.length) as f32, v.local.z as f32]
+    }
 }
 fn lamina(b: &mut Builder, pose: &Pose, index: usize, recipe: &Recipe) -> Result<()> {
     let organ = &recipe.source.organs[pose.source];
@@ -1501,7 +1575,12 @@ fn lamina(b: &mut Builder, pose: &Pose, index: usize, recipe: &Recipe) -> Result
     for side in 0..2 {
         let mut grid = vec![];
         for i in 0..=nu {
-            let u = i as f64 / nu as f64;
+            let raw = i as f64 / nu as f64;
+            // A rounded beta tip has high curvature near its endpoints. Spend
+            // the existing sample budget there instead of leaving a long spike.
+            let u = if recipe.version >= 13 && matches!(outline, Outline::Strip { tip_power, .. } if *tip_power <= 0.5) {
+                (1. - (std::f64::consts::PI * raw).cos()) * 0.5
+            } else { raw };
             let mut row = vec![];
             for j in 0..=nv {
                 let v = if i == 0 || (i == nu && !matches!(outline, Outline::Palmate { .. })) {
@@ -1664,24 +1743,19 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         let geometry = meshes::Geometry {
             positions: b.positions,
             triangles: b.triangles,
-            material_coordinates: if recipe.wood_details.is_some() || recipe
+            material_coordinates: if !b.flow_coordinates.is_empty() || recipe.wood_details.is_some() || recipe
                 .living
                 .as_ref()
-                .is_some_and(|p| p.definition.version >= 6)
+                .is_some_and(|p| (6..=8).contains(&p.definition.version))
             {
                 Some(
                     b.vertices
                         .iter()
-                        .map(|v| {
+                        .enumerate()
+                        .map(|(index, v)| {
                             let p = &poses[v.organ];
                             if i == 0 {
-                                let angle=v.local.z.atan2(v.local.y);
-                                if recipe.wood_details.is_some() {
-                                    let a=p.wood_surface.as_ref().map_or(angle,|s|super::wood_details::grain_angle(s,&p.patches,v.u,angle))-super::wood_details::root_profile(recipe,&recipe.source.organs[p.source].id).map_or(0.,|r|r.twist*v.u*p.length/recipe.settings.scale);
-                                    [(a.sin()*p.radius)as f32,(v.u*p.length)as f32,(a.cos()*p.radius)as f32]
-                                } else {
-                                    [(angle*p.radius)as f32,(v.u*p.length)as f32,v.local.z as f32]
-                                }
+                                b.flow_coordinates.get(&(index as u32)).copied().unwrap_or_else(|| wood_coordinate(v, &poses, recipe))
                             } else {
                                 [(v.u * p.length) as f32, v.local.z as f32, v.local.y as f32]
                             }

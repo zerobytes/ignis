@@ -445,7 +445,7 @@ impl Service {
                 let mut next = plant.bound_recipe()?;
                 next.settings = old.settings;
                 next.edits = old.edits;
-                next.wood_details=details;next.version=next.version.max(if next.wood_details.is_some(){12}else{8});
+                next.wood_details=details;next.version=next.version.max(old.version).max(if next.wood_details.is_some(){12}else{8});
                 next.manual = old.manual;
                 self.botanical_publish(next, Policy::Preserve)
             }
@@ -464,7 +464,7 @@ impl Service {
                 let mut plant=if forward {saved.clone()}else{b::growth::Plant::new(saved.definition.clone(),saved.production.plant.born)?};
                 let details=if forward {b::wood_details::advance(&old,&mut plant,*time)?}else{plant.advance(*time)?;old.wood_details.clone()};
                 let mut recipe=plant.bound_recipe()?;recipe.settings=old.settings.clone();recipe.wood_details=details;
-                if recipe.wood_details.is_some(){recipe.version=12;}
+                if recipe.wood_details.is_some(){recipe.version=recipe.version.max(old.version).max(12);}
                 if forward {recipe.edits=old.edits.clone();recipe.manual=old.manual.clone();recipe=self.botanical_preserve(recipe,Policy::Preserve)?;}
                 recipe.validate()?;
                 let compiled = bake::compile(&recipe)?;
@@ -581,6 +581,7 @@ impl Service {
             } => {
                 let mut recipe = self.botanical_recipe(prefix)?;
                 if edit.junction_refinement.is_some() { recipe.version = recipe.version.max(11); }
+                if edit.junction_flow.is_some() { recipe.version = recipe.version.max(13); }
                 if edit.wood_surface.is_some() {
                     recipe.version = recipe.version.max(10);
                 }

@@ -595,7 +595,7 @@ fn bound(old: &Recipe, plant: &growth::Plant, details: &Details) -> Result<Recip
     let mut r = plant.bound_recipe()?;
     r.settings = old.settings.clone();
     r.edits = old.edits.clone();
-    r.version = 12;
+    r.version = old.version.max(12);
     r.wood_details = Some(details.clone());
     Ok(r)
 }

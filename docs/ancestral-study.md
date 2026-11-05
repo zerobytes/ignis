@@ -1,97 +1,93 @@
-# Regenerated ancestral-tree study
+# Ancestral-tree authoring study
 
-The user explicitly requested another complete tree generation after the wood
-authoring increments. This study uses the approved white ancestral-tree concept
-as a visual target, while preserving the separate game experiment and gameplay
-scene. EAF-227 and LOS-21 remain in progress; this is a reviewable generation,
-not artistic acceptance of the ancestral tree or completion of its toolset.
+The current revision addresses the user's feedback about pasted branches,
+straight-looking transitions, missing large cords/sockets and pointed leaves.
+It remains a review study for EAF-227/LOS-21, not an accepted ancestral-tree
+asset or a completed botanical-plausibility system.
 
-## Reproduce and inspect
+## Current construction
+
+`examples/ancestral-study.recipe.json` is the editable seeded authoring input;
+`graph()` in `scripts/regenerate_ancestral_study.py` emits the native source.
+Rust owns meshing, joints, shaped wood, root morphology, sockets, materials and
+rendering. The concept image is never applied to the mesh or bark.
+
+The major scaffold now consists of connected forks. The four auxiliary arms
+that overlapped the trunk were removed. Eight attraction clouds,48 sites each,
+feed recursive branch partitions;768 terminal shoots carry30,720 individually
+closed rounded white leaves. The source's gentler primary axes avoid tight
+zigzags inside very thick wood. The nominal trunk radius3.7m is an artistic
+choice, not an upper bound imposed on the engine.
+
+Recipe13 native junction flow is enabled on the central three junctions, with
+local refinement3. It uses actual swept transition cuffs, implicit volume
+fitting and interpolated bark coordinates. Distal branches retain the existing
+connected shaped-junction constructor. Large cords and valleys have seeded
+irregular spacing/width/height; the material follows their angular drift.
+Three historical inward sockets use the existing editable wood-history tools.
+The rounded-root system remains the existing native basal construction.
+See [junction flow](botany-junction-flow.md) for the mathematical scope, UI/API,
+compatibility, local fold guard and resource costs.
+
+Leaf tip exponent0.5 and eight longitudinal samples replace the earlier
+pointed contour. Recipe13 redistributes those samples near the endpoints;
+no extra leaf vertices are created by the redistribution itself. Increasing the
+study's explicit sample budget from4 to8 does increase this full-resolution
+specimen's cost.
+
+The source age180years is an authorial mature snapshot. It is not empirical
+species calibration, historical simulation or a new persistent living grammar.
+
+## Review files and native editing
+
+Stable local outputs in `artifacts/ancestral-regeneration` include:
+
+- `review.html`: concept reference, six paired neutral/full native views and
+  closeups of bark, a socket and the rounded leaves.
+- `hero.png`: native presentation,2048x1365.
+- `ancestral-study.ignis-botany`: complete editable native source.
+- `structure.ignis-botany`, `full.ignis-botany`: neutral inspection sources.
+- `bark.recipe.json`, `bark.ignis-material`: procedural recipe/native material.
+- `current.scene.json`: complete scene with embedded geometry/material.
+- `organic-study.json`: current build, native compiler counts, settings and
+  direct observation notes; this is not an automated test report.
+
+Open the saved scene in the native editor with:
 
 ```sh
-python3 scripts/regenerate_ancestral_study.py --structure
-python3 scripts/regenerate_ancestral_study.py
 python3 scripts/regenerate_ancestral_study.py --open
 ```
 
-The first two commands run the existing release binary headlessly through MCP.
-The last optionally opens the resulting scene in the native **editor**, with
-Vegetation and the trunk selected. No existing human window is closed.
-The editable configuration is `examples/ancestral-study.recipe.json`.
-All generated outputs replace stable paths in `artifacts/ancestral-regeneration`:
+Vegetation exposes the source, organs, shape fields, junction flow and history.
+Load/save use the existing native tools. The Python recipe is a reusable
+numerical authoring input; the delivered native source is editable without it.
+The older generator entry retains its pre-existing verification code. That code
+was neither expanded nor executed as a regression battery during this increment,
+in accordance with the user's zero-new-tests instruction. Files named
+`*-verification.json` from the previous study are historical, not evidence for
+these revised images.
 
-- `review.html`: reference and six paired neutral/foliage views.
-- `hero.png`: native material/light presentation, 2048 × 1365.
-- `ancestral-study.ignis-botany`: complete editable native source.
-- `structure.ignis-botany` and `full.ignis-botany`: neutral inspection sources.
-- `bark.recipe.json` and `bark.ignis-material`: procedural recipe and native bake.
-- `current.scene.json`: standalone scene with geometry and material embedded.
-- `structure-verification.json` and `full-verification.json`: actual compiler
-  counts, bounds, build identity and validation results.
+The directly inspected full specimen has32,273organs,2,628,558vertices and
+5,134,232triangles; its native source is21,741,480bytes. It is a full-resolution
+review asset; population and LOD budgets are not tuned, and no FPS is claimed.
 
-Run structure first whenever changing the recipe; the paired gallery assumes
-both passes use the same configuration. Generated study assets stay in the
-review directory. This does not install a tree in the game, publish to the
-independent asset catalog, or add another executable/build copy.
+## Observations and remaining work
 
-## Construction
+The revised scaffold no longer has the four pasted auxiliary branch ends, and
+rounded leaf tips and a recessed branch socket are visible in the native closeups.
+There are still visible collar bands and broad/artificial regions. The central
+mass and roots remain much simpler than the reference's deeply braided wood;
+material-coordinate interpolation is not a global vascular-fibre solution.
+Bump material does not replace geometric silhouette cords, tunnels or deep
+structural recesses. The existing socket model makes blind radial cavities,
+not arbitrary through-holes or internal rot networks.
 
-The scaffold opens near the base and bends into broad asymmetric arms. Four
-auxiliary arms occupy front/back space rather than projecting every major arm
-into one plane. Twelve seeded attraction clouds drive recursive spatial
-partitioning into finer branches. Terminal shoots carry individual native
-closed leaf blades, rather than leaf cards or a photographed canopy.
+Native face/sweep admission protects local geometry; it does not prove global
+nonintersection or guarantee that every artistic configuration can exist in
+nature. Additional central-volume/collar design and artistic review remain
+necessary. Compilation and direct native inspection are distinct from acceptance.
+No new automated tests, cases, verification harnesses or CI changes were made.
 
-The Python script authors the existing native graph and editable fields; Rust
-performs meshing, junction fitting, woody-surface evaluation, root generation,
-root morphology, material generation and rendering. The study reuses Recipe12,
-Source9, woody contours/cords, local junction refinement and seeded root details.
-Root proportions were adjusted after a native collar-space rejection; admission
-guards were preserved. The trunk's optional surface override is disabled in
-this recipe because its interaction with this root crown produced a conspicuous
-basal ring. Arm surfaces still use the native authoring fields.
-
-The nominal source trunk radius is 3.7 m. Actual trunk contours and overall root
-spread are different measurements; inspect the source and compiled bounds rather
-than interpreting whole-tree bounds as trunk diameter. These are chosen artistic
-dimensions, not new limits on the general tools.
-
-The bark uses warped anisotropic noise/ridged fields with native material
-coordinates and bump shading. It does not use the concept image as a texture.
-The neutral captures precede material application, preserving visibility of
-structural defects.
-
-## Validation and limits
-
-Both passes check wood edge incidence of two, opposing edge orientation,
-positive signed volume and nonzero triangle areas. This establishes a closed,
-oriented mesh of potentially multiple components; it does not prove global
-absence of self-intersection. Auxiliary arms use closed `sheath` components
-overlapping the trunk, while the main scaffold uses native connected forks.
-These attachments are not anastomosis or a boolean union.
-
-Save/load of the complete scene must reproduce the PNG bytes exactly. The
-presentation also reloads its native botanical source, recompiles it while
-retaining the material and requires the same PNG. Large sources use native
-file loading rather than exceeding the smaller MCP command envelope. The
-verification files record actual costs; there is no FPS or forest-density claim.
-
-The reviewed generation contains 1,549 woody organs and 30,720 leaves:
-1,383,810 vertices and 2,644,720 triangles in total. Its native source is
-21,659,051 bytes. This is a full-resolution review specimen; population/LOD
-budgets have not been tuned. Neutral and presented wood geometry hashes match
-exactly, independently of the added leaves, material and lighting.
-
-The age of 180 years is an authorial mature snapshot with developmental
-parameters. It does not establish an empirical species age, simulate historical
-growth or turn this custom scaffold into a persistent living grammar.
-
-Visible shortcomings remain: large fork patches are broad/angular, wood cords
-do not flow smoothly through every junction, the base lacks the reference's
-braided mass and recesses, root silhouette remains simpler, and the canopy has
-more separated clumps. Bump material is not geometric bark fibre. Increased
-polygon counts and valid persistence do not resolve these artistic differences.
-
-No engine source, game scene, catalog release, global save format or renderer
-behavior is changed by this study. Its scripts and recipe are the tracked
-reproduction inputs; native outputs are local review artifacts.
+The game scene, other tree experiments and independent catalog are preserved;
+this study is not installed into gameplay or published. One existing release
+output is updated in place; no additional executable/build history is created.
