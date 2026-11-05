@@ -185,3 +185,4 @@ pub mod surface_field;
 pub mod volume_terrain;
 
 pub mod mesh_slope;
+pub mod mesh_chamfer;

@@ -15,6 +15,8 @@ pub struct Style {
     pub top_asset: String,
     pub top_instance: String,
     pub min_up: f32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chamfer: Option<crate::mesh_chamfer::Config>,
     pub walls: crate::materials::Material,
     pub top: crate::materials::Material,
     pub wall_color: [f32; 3],
@@ -55,7 +57,12 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     {
         return Err(invalid("Slope output IDs must be distinct and unused"));
     }
-    let g = &asset.geometry;
+    let refined = s
+        .chamfer
+        .as_ref()
+        .map(|c| crate::mesh_chamfer::apply(&asset.geometry, c))
+        .transpose()?;
+    let g = refined.as_ref().unwrap_or(&asset.geometry);
     if g.positions.len() > 1_048_576 || g.triangles.len() > 2_000_000 {
         return Err(invalid(
             "Slope partition exceeds cold-operation budget; partition the source into smaller authored assets",
@@ -171,6 +178,6 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     }
     Ok((
         edits,
-        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":false}),
+        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":s.chamfer.is_some(),"input_triangles":asset.geometry.triangles.len(),"chamfer":s.chamfer}),
     ))
 }

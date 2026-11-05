@@ -96,9 +96,9 @@ Stable artifacts and launch metadata:
 `artifacts/volumetric-terrain-inspection/`. The app bundle entry is a symlink to
 the single current `target/release/ignis`, not another copied executable.
 The underlying landscape is still the coarse overview mesh (50m horizontal,
-8m vertical), not completed near-player LOD or an erosion/vegetation system.
+160m vertical in the taller variant), not completed near-player LOD or an erosion/vegetation system.
 
-## Validation
+## Initial validation (before chamfer)
 
 28 release integration tests passed across `inspection_flight`, `mesh_slope`,
 `player_view` and `character_controller`. Release binary build, focused strict
@@ -115,3 +115,21 @@ macOS window inventory confirmed an onscreen1100×792window with an advancing
 PLAY tick and active VOO controls. The first short startup sample can precede
 window presentation; do not treat that empty sample as measured FPS or acceptance.
 Human artistic acceptance and near-player LOD remain separate work.
+
+## Taller chamfered variant
+
+The current fixture uses height scale160 (20× the previous8), with a measured
+range−4335.80..2608.62m across the unchanged10×10km footprint. The raw source
+retains182714triangles and24 matching block borders. The sampled vertical
+window is narrowed to60cells without clipping the surface or enlarging sample
+budgets; CPU/GPU source scale conventions remain shared.
+
+The optional native `chamfer` parameter is applied before slope materials.
+Current recipe: fraction0.16, variation0.75, seed2718. Refined output:
+1244386triangles,1199972stone/44414green. This changes geometry and cost;
+the initial disjoint partition's shape-preservation result does not apply.
+The still-coarse source limits fine-detail width. See `terrain-chamfer.md`.
+
+Hover, vertical/fast/precision flight, Scene isolation, persistence boundaries
+and save/reload pixel equality were repeated successfully. Walking grounding
+is not asserted in this steeper variant: the inspection is explicitly noclip.

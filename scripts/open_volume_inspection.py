@@ -25,10 +25,12 @@ def prepare():
         original=c.call('inspect_meshes');rows=copy.deepcopy(original['instances']);reports=[]
         for row in rows:
             name=row['id']
-            style=dict(instance=name,wall_asset=f'{name}_rock',top_asset=f'{name}_green',top_instance=f'{name}_green',min_up=.97,
+            style=dict(instance=name,wall_asset=f'{name}_rock',top_asset=f'{name}_green',top_instance=f'{name}_green',min_up=.94,
+                chamfer=dict(fraction=.16,variation=.75,seed=2718),
                 walls=rock,top=green,wall_color=[1,1,1],top_color=[1,1,1])
             result=c.call('style_mesh_by_slope',style=style);reports.append(result['partition'])
-        assert sum(r['source_triangles'] for r in reports)==sum(r['wall_triangles']+r['top_triangles'] for r in reports)==182714
+        assert sum(r['input_triangles'] for r in reports)==182714
+        assert sum(r['source_triangles'] for r in reports)==sum(r['wall_triangles']+r['top_triangles'] for r in reports)
         assert len(c.call('inspect_meshes')['instances'])==32
         before=c.call('inspect')['revision'];bad=copy.deepcopy(style);bad['min_up']=-1
         c.call('style_mesh_by_slope',style=bad,expected_error=True);assert c.call('inspect')['revision']==before
@@ -53,7 +55,7 @@ def prepare():
         scene=c.call('inspect')['scene'];player=copy.deepcopy(next(e for e in scene['entities'] if e['id']=='player'))
         player['transform']['position']=spawn;player['footsteps']=None
         c.call('edit_scene',edits=[dict(op='upsert',entity=player)])
-        c.call('set_camera',camera=dict(position=[1400,550,-1900],target=[0,-30,0],fov_degrees=55))
+        c.call('set_camera',camera=dict(position=[8200,7200,-8900],target=[0,-500,0],fov_degrees=55))
         c.call('save_scene',path=SCENE)
         c.call('capture',path=f'{PREFIX}/landscape.png',width=1600,height=1000,clip=dict(near=20,far=30000,reverse_z=False))
         c.call('load_scene',path=SCENE)
@@ -78,9 +80,9 @@ def prepare():
         c.call('set_player_view',view={**VIEW,'mode':'first_person'})
         c.call('capture',path=f'{PREFIX}/first-person.png',width=1600,height=1000)
         c.call('set_inspection_flight',config=None);assert not c.call('inspect_inspection_flight')['active']
-        report=dict(catalog_id=entry['id'],source_sha256=sha,material_overrides={'recipe.tile_size':[8,8]},partitions=reports,triangles=182714,
+        report=dict(catalog_id=entry['id'],source_sha256=sha,material_overrides={'recipe.tile_size':[8,8]},partitions=reports,triangles=sum(r['source_triangles'] for r in reports),input_triangles=182714,
             walls=sum(r['wall_triangles'] for r in reports),tops=sum(r['top_triangles'] for r in reports),
-            no_overlap=True,shape_preserved=True,scene_reload_pixels_equal=True,hover=True,vertical_movement=True,
+            no_overlap=True,shape_preserved=False,chamfer=dict(fraction=.16,variation=.75,seed=2718),scene_reload_pixels_equal=True,hover=True,vertical_movement=True,
             fast_flight_distance=math.dist(p,moved),precision_flight_distance=precision_distance,neutral_input_stops=True,scene_unchanged_by_flight=True,persistence_rejected=True,
             native_window=False,human_acceptance=False,spawn=spawn,inspection_wall=dict(center=center,normal=normal),view=VIEW,flight=FLIGHT)
         (OUT/'verification.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='partitions'}))

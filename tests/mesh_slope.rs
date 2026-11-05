@@ -52,6 +52,7 @@ fn disjoint_partition_preserves_triangles_and_undo() {
         top_asset: "tops".into(),
         top_instance: "tops".into(),
         min_up: 0.8,
+        chamfer: None,
         walls: Default::default(),
         top: Default::default(),
         wall_color: [1.; 3],
