@@ -3,13 +3,29 @@ use super::*;
 use crate::model::DirectionalShadow;
 use glam::Vec3;
 
+const PANEL_OPEN: &str = "ignis-lighting-panel-open";
+const PANEL_WINDOW: &str = "ignis-lighting-panel-window";
+
 pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<Command>) {
     let button = ui
         .button("Iluminação")
-        .on_hover_text("Luz e sombras da viewport");
-    egui::Popup::from_toggle_button_response(&button)
-        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
-        .show(|ui| {
+        .on_hover_text("Configurar luz da cena e da viewport");
+    let ctx = ui.ctx().clone();
+    let state = egui::Id::new(PANEL_OPEN);
+    let mut open = ctx.data(|d| d.get_temp::<bool>(state)).unwrap_or(false);
+    if button.clicked() {
+        open = !open;
+    }
+    // The color picker owns egui's single memory-popup slot. The enclosing
+    // settings must not compete for that same slot or both disappear.
+    egui::Window::new("Iluminação")
+        .id(egui::Id::new(PANEL_WINDOW))
+        .open(&mut open)
+        .collapsible(false)
+        .resizable(false)
+        .default_pos(button.rect.left_bottom()+egui::vec2(0.,8.))
+        .default_width(360.)
+        .show(&ctx, |ui| {
             ui.set_width(360.);
             let height = (ui.ctx().content_rect().height() - 140.).max(200.);
             egui::ScrollArea::vertical()
@@ -17,9 +33,8 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                 .show(ui, |ui| {
                     ui.heading("Luz da cena");
                     ui.small("Iluminação salva com a cena e usada no jogo. Cores em RGB linear.");
-                    if service.editor.work_light.is_some() {
-                        ui.small("A luz de trabalho está ativa na viewport. Selecione Luz da cena abaixo para visualizar estes ajustes.");
-                    }
+                    ui.small("Ao ajustar a luz da cena, a viewport passa a usá-la.");
+                    ui.label(if service.editor.work_light.is_some(){"Prévia: luz de trabalho"}else{"Prévia: luz da cena"});
                     let mut scene_light = service.engine.scene.light.clone();
                     let source_changed = source_controls(ui, &mut scene_light);
                     ui.separator();
@@ -92,19 +107,23 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                     if atmosphere_changed || source_changed {
                         scene_light.atmosphere = atmosphere_enabled.then_some(atmosphere);
                         commands.push(Command::SetLight { light: scene_light });
+                        ui.ctx().request_repaint();
                     }
                     ui.separator();
                     ui.heading("Iluminação da viewport");
                     ui.small("Ajuste o relevo sem alterar a luz do jogo.");
                     ui.add_space(12.);
-                    let mut enabled = service.editor.work_light.is_some();
+                    let preview_scene = source_changed && service.editor.work_light.is_some();
+                    let mut enabled = service.editor.work_light.is_some() && !preview_scene;
                     let mut light = service
                         .editor
                         .work_light
                         .clone()
                         .unwrap_or_else(|| service.engine.scene.light.clone());
                     let mut changed = ui.checkbox(&mut enabled, "Usar luz de trabalho").changed();
+                    changed |= preview_scene;
                     ui.add_space(8.);
+                    let before_controls = changed;
                     ui.add_enabled_ui(enabled, |ui| {
                         let source = -Vec3::from(light.direction).normalize_or_zero();
                         let mut azimuth = source.x.atan2(source.z).to_degrees();
@@ -196,6 +215,8 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                             });
                         }
                     });
+                    // Disabled sliders may clamp a local draft; that is not an edit.
+                    if !enabled { changed = before_controls; }
                     ui.add_space(12.);
                     ui.separator();
                     ui.horizontal(|ui| {
@@ -217,6 +238,7 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                         }
                     });
                     if changed {
+                        ui.ctx().request_repaint();
                         edit(
                             commands,
                             Action::Lighting {
@@ -226,7 +248,12 @@ pub(super) fn controls(ui: &mut egui::Ui, service: &Service, commands: &mut Vec<
                     }
                 });
         });
+    ctx.data_mut(|d| d.insert_temp(state, open));
 }
+
+#[cfg(test)]
+#[path = "editor_lighting_ui_tests.rs"]
+mod tests;
 
 /// Edits the existing MCP Light value; no parallel editor-only lighting model.
 fn source_controls(ui: &mut egui::Ui, light: &mut crate::model::Light) -> bool {

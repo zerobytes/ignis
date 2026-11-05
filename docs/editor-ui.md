@@ -20,7 +20,7 @@ framework, fonte ou serviço externo para realizar o refinamento.
 | Estado observado | Alteração | Efeito esperado |
 |---|---|---|
 | Ferramentas, restauração e instruções em uma linha contínua | Grupos de modo, pincel e parâmetros; ajuda/restauração no menu contextual | Encontrar o controle sem percorrer uma frase |
-| Sliders da iluminação sem trilho no menu | Popover de ajustes com controles de formulário e colunas consistentes | Ler direção, valor e faixa visualmente |
+| Sliders da iluminação sem trilho no menu | Janela de ajustes com controles de formulário e colunas consistentes | Ler direção, valor e faixa visualmente |
 | Propriedades sem seções, ações repetidas empilhadas | Transformação, aparência, geometria e instância; ação aplicar destacada | Separar editar valores de executar operações |
 | Cabeçalhos/seleções todos alaranjados e cinzas muito próximos | Abas neutras, hierarquia de superfícies/textos e seleção contida | A cena e a ferramenta ativa mantêm prioridade |
 | Linha de projeto vazia ocupa espaço permanente | Contexto de projeto compacto junto às áreas de trabalho | Recuperar altura útil sem esconder criar/abrir |
@@ -63,8 +63,11 @@ A hierarquia mantém seleção em toda a largura e também filtra malhas pelo id
 O projeto ocupa um menu de contexto junto às áreas de trabalho, além do menu
 Arquivo e painel Projeto. Criar/abrir continua usando o navegador de pastas.
 
-A iluminação usa Popup de formulário, sem o estilo de menu de ações que removia
-o trilho dos sliders. Campos de luz/sombra ficam alinhados e ajustes avançados
+A iluminação usa uma janela de formulário independente do pop-up de cor, sem
+o estilo de menu de ações que removia o trilho dos sliders. A janela fecha pelo
+X ou pelo botão Iluminação; clicar fora fecha apenas o seletor de cor. Alterar
+a luz da cena ativa sua prévia automaticamente. Campos de luz/sombra ficam
+alinhados e ajustes avançados
 são recolhíveis; altura limitada com scroll. Pincéis, raio/força e modo permanecem
 na barra contextual; restauração/ajuda estão em Opções e tooltips. Parâmetros
 mantêm unidades reais e percentuais do contrato anterior.
@@ -229,3 +232,17 @@ EAF-130 acrescenta Extrudar/Inset/Bevel contextuais no inspetor de Editar e pré
 com arraste/confirmar/cancelar. Contagens legíveis, abas de componentes sem quebrar
 nomes em painéis estreitos e mesmos scrub/flags de oclusão/raio X. Contratos,
 limites e gates em [editor-modeling.md](editor-modeling.md).
+
+
+### Correção do painel de iluminação (2026-11-05)
+
+A janela tem estado próprio, sem disputar o único slot de pop-up da memória
+do egui com o color picker. Controles da cena publicam SetLight e uma única
+mudança de prévia quando necessário; a luz de trabalho não mascara o resultado.
+Controles de trabalho desabilitados não publicam mudanças por clamp de drafts
+locais. Abrir o painel não altera a cena nem gera revisões continuamente.
+
+Regressões em `editor_lighting_ui_tests.rs` usam eventos reais de ponteiro:
+slider→comando→frame→pixels GPU, edição RGB com ambos os painéis mantidos,
+fechamento apenas do picker ao clicar fora, luz de trabalho separada da cena
+e ausência de edições em idle com luz vertical. Sem mudança de shader ou formato.

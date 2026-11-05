@@ -50,10 +50,15 @@ sombreamento, subdividir, duplicar instância e excluir. Instâncias do mesmo
 asset compartilham escultura/material. Malhas visuais não geram colisão
 implicitamente. Este recorte trabalha na base estática; rig, animação,
 attachments e fontes paramétricas/conexões exigem suas ferramentas próprias.
-Na barra da viewport, **Iluminação** configura direção/altura da luz, ambiente,
-sombras, alcance e resolução. O padrão **Escultura contrastada** usa ambiente
-baixo e sombras; **Luz da cena** volta à iluminação autoral. Centro e bias da
-sombra ficam em ajustes avançados. A luz de trabalho afeta somente a viewport.
+Na barra da viewport, **Iluminação** abre uma janela com a luz da cena e a
+luz de trabalho. A janela permanece aberta ao editar cores; feche pelo X ou
+pelo próprio botão. Ajustar direção, intensidade, cor, ambiente/IBL ou sombras
+da cena ativa automaticamente sua prévia na viewport, sem a sobreposição da
+luz de trabalho. A prévia ativa aparece no topo. A luz da cena é salva com a
+cena e usada no jogo; os controles de trabalho afetam somente a viewport.
+**Restaurar contraste** ativa a luz de trabalho com ambiente baixo e sombras;
+**Luz da cena** volta à iluminação autoral. Centro e bias da sombra ficam em
+ajustes avançados.
 **Arquivo → Salvar layout** guarda também pincel, raio, forças e luz;
 carregar o layout restaura esses valores. Layouts antigos recebem os padrões.
 
