@@ -370,20 +370,41 @@ impl Service {
                             json!({"plant":plant,"attached":plant.production.attached(&plant.definition.schedule,b::growth::MAX_ATTACHED).map_err(invalid)?}),
                         );
                     }
-                    b::growth::Action::SetContinuous { profile } => {
-                        if plant.definition.version<2 {return Err(invalid("Independent growth requires a broadleaf tree"));}
+                    b::growth::Action::SetWoodVolume { profile } => {
+                        if !(6..=7).contains(&plant.definition.version) {
+                            return Err(invalid("This volume binding requires sequoia grammar6/7"));
+                        }
                         profile.validate()?;
-                        if plant.definition.version < 5 {plant.definition.version=4;}plant.definition.stature=None;
-                        plant.definition.continuous=Some(profile.clone());
-                        plant.definition.foliage.get_or_insert_with(Default::default);
+                        plant.definition.version = 7;
+                        plant.definition.wood_volume = Some(profile.clone());
+                        plant.validate()?;
+                    }
+                    b::growth::Action::SetContinuous { profile } => {
+                        if plant.definition.version < 2 {
+                            return Err(invalid("Independent growth requires a broadleaf tree"));
+                        }
+                        profile.validate()?;
+                        if plant.definition.version < 5 {
+                            plant.definition.version = 4;
+                        }
+                        plant.definition.stature = None;
+                        plant.definition.continuous = Some(profile.clone());
+                        plant
+                            .definition
+                            .foliage
+                            .get_or_insert_with(Default::default);
                         plant.validate()?;
                     }
                     b::growth::Action::SetStature { stature } => {
-                        if plant.definition.version>=4 {return Err(invalid("Use independent growth controls for grammar4"));}
-                        if plant.definition.version<2 {return Err(invalid("Stature applies to broadleaf grammars2/3"));}
+                        if plant.definition.version >= 4 {
+                            return Err(invalid("Use independent growth controls for grammar4"));
+                        }
+                        if plant.definition.version < 2 {
+                            return Err(invalid("Stature applies to broadleaf grammars2/3"));
+                        }
                         stature.validate()?;
-                        plant.definition.version=3;
-                        plant.definition.stature=Some(stature.clone());
+                        plant.definition.version = 3;
+                        plant.definition.stature = Some(stature.clone());
                         plant.validate()?;
                     }
                     b::growth::Action::Advance { time } => {
@@ -579,7 +600,11 @@ impl Service {
                 }
             }
             Op::Physics { prefix, action } => {
-                if self.botanical_recipe(prefix)?.living.is_some() { return Err(invalid("Living reproductive geometry is not supported by the authoring physics session")); }
+                if self.botanical_recipe(prefix)?.living.is_some() {
+                    return Err(invalid(
+                        "Living reproductive geometry is not supported by the authoring physics session",
+                    ));
+                }
                 use b::dynamics::Action as A;
                 if self.remote_client() || self.network_host.is_some() {
                     return Err(invalid("Botanical simulation is a local authoring session"));

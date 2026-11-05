@@ -1,12 +1,13 @@
 //! Small native growth grammar. Evaluates new organs from persistent individual time.
 //! Scene ownership and automatic gameplay ticking remain separate integration work.
 use super::{lifecycle::Schedule, production::Production, *};
-mod tree;
-pub mod sequoia;
-pub mod sequoia_realistic;
 pub mod continuous;
 pub mod foliage;
+pub mod sequoia;
+pub mod sequoia_realistic;
 mod stature;
+mod tree;
+pub mod woody_volume;
 pub use stature::Stature;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -26,6 +27,8 @@ pub struct Definition {
     pub foliage: Option<foliage::Profile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stature: Option<Stature>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wood_volume: Option<woody_volume::Profile>,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -45,6 +48,7 @@ pub enum Action {
     Inspect,
     SetStature { stature: Stature },
     SetContinuous { profile: continuous::Profile },
+    SetWoodVolume { profile: woody_volume::Profile },
     Advance { time: u64 },
     Harvest { fruit: production::FruitId },
     Prune { site: String },
@@ -56,6 +60,7 @@ impl Default for Definition {
             foliage: None,
             continuous: None,
             stature: None,
+            wood_volume: None,
             prefix: "living".into(),
             seed: 42,
             interval: 10,
@@ -75,20 +80,48 @@ impl Default for Definition {
 impl Definition {
     pub fn validate(&self) -> Result<()> {
         self.schedule.validate().map_err(invalid)?;
-        if (self.version>=4)!=self.continuous.is_some() {return Err(invalid("Independent growth requires grammar4"));}
-        if let Some(p)=&self.continuous {
-            p.validate()?;
-            if self.foliage.as_ref().is_none_or(|f|p.leaf_turnover_days<f.expansion_days) {return Err(invalid("Independent growth requires foliage with expansion no longer than turnover"));}
+        if (self.version == 7) != self.wood_volume.is_some() {
+            return Err(invalid("Woody volumes require explicit grammar7"));
         }
-        if self.version >= 5 && (self.schedule.flower_duration != 0 || self.schedule.fruit_duration != 0 || self.schedule.ripe_duration != 0) { return Err(invalid("Sequoia cones are not implemented; disable angiosperm reproduction")); }
+        if let Some(p) = &self.wood_volume {
+            p.validate()?;
+        }
+        if (self.version >= 4) != self.continuous.is_some() {
+            return Err(invalid("Independent growth requires grammar4"));
+        }
+        if let Some(p) = &self.continuous {
+            p.validate()?;
+            if self
+                .foliage
+                .as_ref()
+                .is_none_or(|f| p.leaf_turnover_days < f.expansion_days)
+            {
+                return Err(invalid(
+                    "Independent growth requires foliage with expansion no longer than turnover",
+                ));
+            }
+        }
+        if self.version >= 5
+            && (self.schedule.flower_duration != 0
+                || self.schedule.fruit_duration != 0
+                || self.schedule.ripe_duration != 0)
+        {
+            return Err(invalid(
+                "Sequoia cones are not implemented; disable angiosperm reproduction",
+            ));
+        }
         if let Some(profile) = &self.foliage {
             if self.version < 2 {
                 return Err(invalid("Early foliage requires a broadleaf grammar"));
             }
             profile.validate()?;
         }
-        if (self.version==3)!=self.stature.is_some() {return Err(invalid("Stature requires explicit growth grammar3"));}
-        if let Some(stature)=&self.stature {stature.validate()?;}
+        if (self.version == 3) != self.stature.is_some() {
+            return Err(invalid("Stature requires explicit growth grammar3"));
+        }
+        if let Some(stature) = &self.stature {
+            stature.validate()?;
+        }
         if self
             .interval
             .checked_mul(self.maximum_nodes as u64)
@@ -106,7 +139,7 @@ impl Definition {
         {
             return Err(invalid("Living time/profile budget exceeded"));
         }
-        if !(1..=6).contains(&self.version)
+        if !(1..=7).contains(&self.version)
             || !identifier(&self.prefix)
             || self.prefix.len() > 20
             || self.interval == 0
@@ -221,13 +254,22 @@ impl Plant {
     }
     pub fn recipe(&self) -> Result<Recipe> {
         self.validate()?;
-        if self.definition.version == 6 { return sequoia_realistic::recipe(self); }
-        if self.definition.version == 5 { return sequoia::recipe(self); }
+        if self.definition.version == 6 || self.definition.version == 7 {
+            return sequoia_realistic::recipe(self);
+        }
+        if self.definition.version == 5 {
+            return sequoia::recipe(self);
+        }
         if self.definition.version >= 2 {
-            let mut recipe=tree::recipe(self)?;
-            if let Some(profile)=&self.definition.continuous {profile.apply(&mut recipe,self)?;}
-            if let Some(stature)=&self.definition.stature {
-                stature.apply(&mut recipe,self.production.plant.time-self.production.plant.born)?;
+            let mut recipe = tree::recipe(self)?;
+            if let Some(profile) = &self.definition.continuous {
+                profile.apply(&mut recipe, self)?;
+            }
+            if let Some(stature) = &self.definition.stature {
+                stature.apply(
+                    &mut recipe,
+                    self.production.plant.time - self.production.plant.born,
+                )?;
             }
             return Ok(recipe);
         }
@@ -357,6 +399,7 @@ mod tests {
                 foliage: None,
                 continuous: None,
                 stature: None,
+                wood_volume: None,
                 prefix: "living".into(),
                 seed: 42,
                 interval: 10,

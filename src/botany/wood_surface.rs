@@ -83,7 +83,7 @@ impl Surface {
     pub fn validate(&self) -> Result<()> {
         if !(2..=32).contains(&self.sections.len())
             || self.relief.len() > 32
-            || !(12..=32).contains(&self.sides)
+            || !(12..=96).contains(&self.sides)
             || !(8..=128).contains(&self.samples)
         {
             return Err(invalid("Wood surface: section/relief/resolution budget"));
@@ -145,7 +145,8 @@ impl Surface {
                 let u = i as f64 / (self.samples as f64 * 2.);
                 let a = TAU * j as f64 / (self.sides as f64 * 2.);
                 let radius = self.radius(u, a);
-                if !radius.is_finite() || radius < 0.02 {
+                // Constant 2cm contours can round one ulp down during interpolation.
+                if !radius.is_finite() || radius < 0.02 * (1. - 16. * f64::EPSILON) {
                     return Err(invalid(
                         "Wood relief overflows or collapses below0.02m; revise contour/relief",
                     ));

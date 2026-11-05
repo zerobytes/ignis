@@ -17,6 +17,7 @@ pub(super) struct State {
     living_definition: crate::botany::growth::Definition,
     living_stature: crate::botany::growth::Stature,
     living_continuous: crate::botany::growth::continuous::Profile,
+    living_volume: crate::botany::growth::woody_volume::Profile,
     living_age_years: f64,
     living_observed: Option<(String, u64, u64, Option<u64>)>,
     living_horizon_years: f64,
@@ -39,6 +40,7 @@ impl Default for State {
             living_definition: Default::default(),
             living_stature: Default::default(),
             living_continuous: Default::default(),
+            living_volume: Default::default(),
             living_age_years: 0.,
             living_observed: None,
             living_horizon_years: 2.,
@@ -50,19 +52,58 @@ fn send(commands: &mut Vec<Command>, op: Op) {
         operation: Box::new(op),
     });
 }
-fn stature_controls(ui:&mut egui::Ui,stature:&mut crate::botany::growth::Stature) {
+fn stature_controls(ui: &mut egui::Ui, stature: &mut crate::botany::growth::Stature) {
     ui.label("O diâmetro adulto define o porte proporcional desta gramática.");
-    for (label,value) in [("Diâmetro adulto (m) ",&mut stature.adult_diameter_m),("Diâmetro inicial da muda (m) ",&mut stature.seedling_diameter_m),("Idade de maturidade (anos) ",&mut stature.maturity_years)] {
-        ui.add(egui::DragValue::new(value).range(f64::MIN_POSITIVE..=f64::MAX).speed(0.01).prefix(label));
+    for (label, value) in [
+        ("Diâmetro adulto (m) ", &mut stature.adult_diameter_m),
+        (
+            "Diâmetro inicial da muda (m) ",
+            &mut stature.seedling_diameter_m,
+        ),
+        ("Idade de maturidade (anos) ", &mut stature.maturity_years),
+    ] {
+        ui.add(
+            egui::DragValue::new(value)
+                .range(f64::MIN_POSITIVE..=f64::MAX)
+                .speed(0.01)
+                .prefix(label),
+        );
     }
 }
-fn continuous_controls(ui:&mut egui::Ui,p:&mut crate::botany::growth::continuous::Profile) {
+fn continuous_controls(ui: &mut egui::Ui, p: &mut crate::botany::growth::continuous::Profile) {
     ui.label("Altura e diâmetro independentes. Referência = 95% do incremento até o limite.");
-    for (label,value) in [("Altura inicial (m) ",&mut p.seedling_height_m),("Limite suave de altura (m) ",&mut p.height_limit_m),("Referência de altura (anos) ",&mut p.height_reference_years),("Diâmetro inicial (m) ",&mut p.seedling_diameter_m),("Limite suave de diâmetro (m) ",&mut p.diameter_limit_m),("Referência de diâmetro (anos) ",&mut p.diameter_reference_years),("Distância entre nós (m) ",&mut p.internode_m)] {
-        ui.add(egui::DragValue::new(value).range(f64::MIN_POSITIVE..=f64::MAX).speed(0.01).prefix(label));
+    for (label, value) in [
+        ("Altura inicial (m) ", &mut p.seedling_height_m),
+        ("Limite suave de altura (m) ", &mut p.height_limit_m),
+        (
+            "Referência de altura (anos) ",
+            &mut p.height_reference_years,
+        ),
+        ("Diâmetro inicial (m) ", &mut p.seedling_diameter_m),
+        ("Limite suave de diâmetro (m) ", &mut p.diameter_limit_m),
+        (
+            "Referência de diâmetro (anos) ",
+            &mut p.diameter_reference_years,
+        ),
+        ("Distância entre nós (m) ", &mut p.internode_m),
+    ] {
+        ui.add(
+            egui::DragValue::new(value)
+                .range(f64::MIN_POSITIVE..=f64::MAX)
+                .speed(0.01)
+                .prefix(label),
+        );
     }
-    for (label,value) in [("Dias por nó foliar ",&mut p.internode_days),("Expansão do broto (dias) ",&mut p.shoot_expansion_days),("Renovação de folhas (dias) ",&mut p.leaf_turnover_days)] {
-        ui.add(egui::DragValue::new(value).range(1..=crate::botany::growth::MAX_TIME).prefix(label));
+    for (label, value) in [
+        ("Dias por nó foliar ", &mut p.internode_days),
+        ("Expansão do broto (dias) ", &mut p.shoot_expansion_days),
+        ("Renovação de folhas (dias) ", &mut p.leaf_turnover_days),
+    ] {
+        ui.add(
+            egui::DragValue::new(value)
+                .range(1..=crate::botany::growth::MAX_TIME)
+                .prefix(label),
+        );
     }
 }
 pub(super) fn properties(
@@ -128,6 +169,7 @@ pub(super) fn properties(
             state.prefix=Some(recipe.prefix.clone());state.organ=None;
         }
         if state.key!=key{state.draft=Some(recipe.clone());state.key=key;
+            state.living_volume=recipe.living.as_ref().and_then(|p|p.definition.wood_volume.clone()).unwrap_or_default();
             state.living_stature=recipe.living.as_ref().and_then(|p|p.definition.stature.clone()).unwrap_or_default();
             state.living_continuous=recipe.living.as_ref().and_then(|p|p.definition.continuous.clone()).unwrap_or_default();
             if !recipe.source.organs.iter().any(|o|o.id==state.root_stem&&o.parent.is_none()){state.root_stem=recipe.source.organs.iter().find(|o|o.parent.is_none()).map(|o|o.id.clone()).unwrap_or_default();}
@@ -178,6 +220,17 @@ pub(super) fn properties(
             ui.collapsing("Poda persistente",|ui|{for site in plant.production.sites.keys().filter(|s|!plant.production.removed_sites.contains(*s)){
                 if ui.button(format!("Podar {site}")).clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Prune{site:site.clone()}});}
             }});
+            if (6..=7).contains(&plant.definition.version) {ui.collapsing("Volumes reais do tronco",|ui|{
+                let p=&mut state.living_volume;
+                for (label,v) in [("Saliências / raio",&mut p.bulge_ratio),("Altura dos cordões / raio",&mut p.cord_height_ratio),("Profundidade dos vales / raio",&mut p.valley_depth_ratio)] {ui.add(egui::Slider::new(v,0. ..=0.45).text(label));}
+                ui.add(egui::Slider::new(&mut p.bulge_count,0..=8).text("Saliências locais"));
+                ui.add(egui::Slider::new(&mut p.cord_count,3..=9).text("Cordões"));
+                ui.add(egui::Slider::new(&mut p.cord_width_ratio,0.15..=0.5).text("Largura / raio"));
+                ui.add(egui::Slider::new(&mut p.valley_width_ratio,0.1..=0.45).text("Largura dos vales / raio"));
+                ui.add(egui::Slider::new(&mut p.meander,0. ..=0.8).text("Desvio angular"));
+                ui.add(egui::Slider::new(&mut p.extent,0.3..=0.7).text("Alcance no tronco"));
+                if ui.button("Aplicar volumes ao mesh").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::SetWoodVolume{profile:p.clone()}});}
+            });}
             if (2..=4).contains(&plant.definition.version) {ui.collapsing("Crescimento contínuo e nós foliares",|ui|{
                 continuous_controls(ui,&mut state.living_continuous);
                 if ui.button("Aplicar matemática contínua").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::SetContinuous{profile:state.living_continuous.clone()}});}

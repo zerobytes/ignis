@@ -38,6 +38,7 @@ pub fn definition(prefix: String, seed: u64) -> Definition {
             ..Default::default()
         }),
         stature: None,
+        wood_volume: None,
     }
 }
 /// Cubic rational area growth avoids giving a seedling a metre-wide trunk.

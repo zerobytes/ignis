@@ -79,9 +79,10 @@ remaining faceting and collar/tangent transitions for review.
 
 ## Resolution, integrity and limits
 
-Resolution is local to the shaped organ: 12–32 angular samples and8–128
-longitudinal samples. The32-side ceiling respects the existing organic collar
-kernel; this increment does not raise that kernel's quota. A section edit does
+Resolution is local to the shaped organ: the manual panel retains 12–32 angular
+samples and8–128 longitudinal samples. The shared surface accepts up to96 sides
+for the optional living sequoia stem volume profile, which uses separate sheath
+connections. This does not raise the organic graft collar kernel's quota. A section edit does
 not force all other organs to use that resolution. Body preflight includes the
 local sample count; the existing final3Mvertex/6Mtriangle budgets still apply.
 The panel's estimate is the body tube only, explicitly before junctions.

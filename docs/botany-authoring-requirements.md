@@ -140,3 +140,7 @@ indiscriminadamente a cascas lisas. MAT-02–04 e GEO-06 continuam sendo a base.
 A sequoia tem comparação controlada em `artifacts/sequoia-relief/review.html`,
 reproduzida por `scripts/refine_sequoia_bark_depth.py`. Essa evidência é uma
 aplicação material inicial do critério, não conclusão de GEO-06 em todas as cascas.
+
+### Volumes da casca no mesh
+
+Quando a referência apresentar saliências, cordões e vales grandes, revisar também a silhueta e a sombra com albedo cinza uniforme e sem paralaxe. Normal/height map não substitui esse volume. O perfil deve ser opcional por exemplar/espécie e conservar crescimento e identidade procedural. A primeira aplicação viva, com controles no painel Vegetação, está documentada em [botany-sequoia-volume.md](botany-sequoia-volume.md); outras espécies ainda precisam de ligação explícita.

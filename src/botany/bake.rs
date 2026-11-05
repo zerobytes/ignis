@@ -370,7 +370,10 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
                 })
                 .collect();
         }
-        let steps = edit.wood_surface.as_ref().map_or(steps, |s| s.samples as usize);
+        let steps = edit
+            .wood_surface
+            .as_ref()
+            .map_or(steps, |s| s.samples as usize);
         let samples = frames(
             &final_points,
             transform * (rotation * initial[0].n),
@@ -425,7 +428,31 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
             flare,
             stiffness,
             section,
-            wood_surface: if recipe.living.as_ref().is_some_and(|p|p.definition.version==6) && o.id=="stem" { Some(Arc::new(super::growth::sequoia_realistic::bole(match o.shape {Shape::Axis{radius,..}=>radius,_=>unreachable!()},recipe.source.seed))) } else {edit.wood_surface.clone().map(Arc::new)},
+            wood_surface: if recipe
+                .living
+                .as_ref()
+                .is_some_and(|p| p.definition.version >= 6)
+                && o.id == "stem"
+            {
+                let r = match o.shape {
+                    Shape::Axis { radius, .. } => radius,
+                    _ => unreachable!(),
+                };
+                let base = super::growth::sequoia_realistic::bole(r, recipe.source.seed);
+                Some(Arc::new(
+                    if let Some(profile) = recipe
+                        .living
+                        .as_ref()
+                        .and_then(|p| p.definition.wood_volume.as_ref())
+                    {
+                        profile.apply(&base, r, recipe.source.seed)?
+                    } else {
+                        base
+                    },
+                ))
+            } else {
+                edit.wood_surface.clone().map(Arc::new)
+            },
             surface_scale: match o.shape {
                 Shape::Axis { radius: r, .. } => radius / r,
                 _ => 1.,
@@ -1147,7 +1174,12 @@ fn tube(
 ) -> Result<()> {
     let source = &recipe.source;
     let sides = super::root_sections::sides(pose, recipe);
-    let steps = pose.wood_surface.as_ref().map_or(recipe.settings.axis_samples as usize, |s| s.samples as usize);
+    let steps = pose
+        .wood_surface
+        .as_ref()
+        .map_or(recipe.settings.axis_samples as usize, |s| {
+            s.samples as usize
+        });
     let start = joints.iter().find_map(|j| j.incoming(index)).unwrap_or(0.);
     let end = joints
         .iter()
@@ -1542,7 +1574,12 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         .iter()
         .map(|p| {
             if p.width == 0. {
-                (p.wood_surface.as_ref().map_or(recipe.settings.axis_samples as usize, |s| s.samples as usize) + 1)
+                (p.wood_surface
+                    .as_ref()
+                    .map_or(recipe.settings.axis_samples as usize, |s| {
+                        s.samples as usize
+                    })
+                    + 1)
                     * super::root_sections::sides(p, recipe)
                     + 2
             } else {
@@ -1613,11 +1650,31 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         let geometry = meshes::Geometry {
             positions: b.positions,
             triangles: b.triangles,
-            material_coordinates: if recipe.living.as_ref().is_some_and(|p|p.definition.version==6) {
-                Some(b.vertices.iter().map(|v| {let p=&poses[v.organ];
-                    if i==0 {[(v.local.z.atan2(v.local.y)*p.radius) as f32,(v.u*p.length) as f32,v.local.z as f32]}else{[(v.u*p.length) as f32,v.local.z as f32,v.local.y as f32]}
-                }).collect())
-            }else{None},
+            material_coordinates: if recipe
+                .living
+                .as_ref()
+                .is_some_and(|p| p.definition.version >= 6)
+            {
+                Some(
+                    b.vertices
+                        .iter()
+                        .map(|v| {
+                            let p = &poses[v.organ];
+                            if i == 0 {
+                                [
+                                    (v.local.z.atan2(v.local.y) * p.radius) as f32,
+                                    (v.u * p.length) as f32,
+                                    v.local.z as f32,
+                                ]
+                            } else {
+                                [(v.u * p.length) as f32, v.local.z as f32, v.local.y as f32]
+                            }
+                        })
+                        .collect(),
+                )
+            } else {
+                None
+            },
         };
         // Empty foliage remains a tiny hidden placeholder so source ownership stays stable.
         let geometry = if geometry.positions.is_empty() {
@@ -1673,7 +1730,11 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         vertices[i] = b.vertices;
         owners[i] = b.owners;
     }
-    if recipe.living.as_ref().is_some_and(|p| p.definition.version == 5) {
+    if recipe
+        .living
+        .as_ref()
+        .is_some_and(|p| p.definition.version == 5)
+    {
         let mut bark = crate::materials::library::Preset::Wood.recipe();
         bark.seed = recipe.source.seed as u32;
         bark.tile_size = [4., 60.];
@@ -1683,7 +1744,9 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         bark.layers[0].target.color_roughness = [0.9, 0.58, 0.33, 0.88];
         bark.layers[1].target.color_roughness = [0.5, 0.29, 0.16, 0.95];
         document.assets[0].material = crate::materials::library::material(
-            bark, crate::materials::library::Execution::Runtime)?;
+            bark,
+            crate::materials::library::Execution::Runtime,
+        )?;
     }
     super::reproduction::append(recipe, &poses, &mut document)?;
     document.validate()?;
