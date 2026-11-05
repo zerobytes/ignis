@@ -32,6 +32,21 @@ and include only assets that may be redistributed.
 
 ## Validation and versions
 
+### Temporary policy: no new automated tests
+
+Effective November 5, 2026, by explicit user decision, do not create any new
+automated tests for Ignis or the games in this checkout. Do not extend existing
+tests or add test harnesses, regression scripts, or renamed substitutes for
+automated tests. This applies across all project chats until the user explicitly
+revokes the policy.
+
+Prioritize implementation, compilation/static analysis, and direct use of the
+application or MCP with inspection of the results. Automated suites are not a
+routine delivery gate during this phase. Preserve existing tests and CI; their
+deletion or modification is not authorized by this policy. Keep production input
+validation and integrity guards. This policy overrides older instructions to
+create tests or new verification scripts.
+
 Follow [CONTRIBUTING.md](../CONTRIBUTING.md) and the
 [quickstart](quickstart.md#verification) for validation. CI runs on public pushes
 and pull requests. Use public commits and tags for releases; do not create a
