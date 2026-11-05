@@ -436,11 +436,11 @@ impl Service {
                             .map_err(invalid)?;
                     }
                     b::growth::Action::Prune { site } => {
-                        plant.production.remove_site(site).map_err(invalid)?;
-                    }
                         if old.wood_details.is_some() && old.source.organs.iter().any(|o|o.id==*site) {
                             let mut marked=old.clone();b::wood_details::record_site_loss(&mut marked,site,b::wood_details::Cause::Pruning)?;details=marked.wood_details;
                         }
+                        plant.production.remove_site(site).map_err(invalid)?;
+                    }
                 }
                 let mut next = plant.bound_recipe()?;
                 next.settings = old.settings;

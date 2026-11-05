@@ -675,13 +675,13 @@ impl Recipe {
         }
         let ids: BTreeSet<_> = self.source.organs.iter().map(|o| o.id.as_str()).collect();
         if self.pruned.iter().any(|v| !ids.contains(v.as_str())) {
+            return Err(invalid("Unknown pruned botanical organ"));
+        }
         let archived: BTreeSet<&str>=self.wood_details.iter().flat_map(|d|d.scars.iter()).filter(|s|s.year<=wood_details::age(self)).flat_map(|s|s.removed_organs.iter().map(String::as_str)).collect();
         let woody_ids:BTreeSet<&str>=self.source.organs.iter().filter(|o|matches!(o.shape,Shape::Axis{..})).map(|o|o.id.as_str()).collect();
-            return Err(invalid("Unknown pruned botanical organ"));
+        for (id, e) in &self.edits {
             let archived_edit=!ids.contains(id.as_str()) && archived.contains(id.as_str());
             let woody=woody_ids.contains(id.as_str()) || archived_edit;
-        }
-        for (id, e) in &self.edits {
             e.deformation.validate()?;
             if let Some(level) = e.junction_refinement
                 && (self.version < 11 || level > 3 || !woody) {
