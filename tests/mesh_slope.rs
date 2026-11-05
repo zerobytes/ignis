@@ -54,6 +54,7 @@ fn disjoint_partition_preserves_triangles_and_undo() {
         min_up: 0.8,
         chamfer: None,
         terrace_lift: None,
+        wall_rock: None,
         walls: Default::default(),
         top: Default::default(),
         wall_color: [1.; 3],
@@ -99,6 +100,7 @@ fn lifting_changes_band_separation_without_stretching_local_relief() {
         spacing: 60.,
         factor: 20.,
         phase: 0.,
+        random_heights: None,
     };
     let out = ignis::mesh_slope::lift(&g, &c, 0.).unwrap();
     assert_eq!(out.positions[1][1] - out.positions[0][1], 1.);
@@ -107,4 +109,74 @@ fn lifting_changes_band_separation_without_stretching_local_relief() {
     for (a, b) in out.positions.iter().zip(&g.positions) {
         assert_eq!((a[0], a[2]), (b[0], b[2]));
     }
+}
+
+#[test]
+fn random_levels_are_bounded_seeded_and_continuous_at_band_boundaries() {
+    use ignis::mesh_slope::{RandomHeights, TerraceLift, lift};
+    let g = Geometry {
+        positions: (-4..=4)
+            .map(|i| [0., i as f32 * 60., 0.])
+            .chain([[1., 0., 0.]])
+            .collect(),
+        triangles: vec![[0, 1, 9]],
+        material_coordinates: None,
+    };
+    let mut c = TerraceLift {
+        spacing: 60.,
+        factor: 1.,
+        phase: 0.,
+        random_heights: Some(RandomHeights {
+            min: 3.,
+            max: 15.,
+            seed: 2718,
+        }),
+    };
+    let a = lift(&g, &c, 0.).unwrap();
+    let b = lift(&g, &c, 0.).unwrap();
+    assert_eq!(a.positions, b.positions);
+    for p in a.positions[..9].windows(2) {
+        let d = p[1][1] - p[0][1];
+        assert!((3. - 0.00001..=15. + 0.00001).contains(&d));
+    }
+    c.random_heights.as_mut().unwrap().seed = 42;
+    assert_ne!(a.positions, lift(&g, &c, 0.).unwrap().positions);
+    c.random_heights.as_mut().unwrap().min = 16.;
+    assert!(lift(&g, &c, 0.).is_err());
+}
+#[test]
+fn wall_relief_moves_interior_geometry_and_keeps_open_borders() {
+    let positions = (0..3)
+        .flat_map(|y| (0..3).map(move |x| [x as f32, y as f32, 0.]))
+        .collect();
+    let mut triangles = vec![];
+    for y in 0..2 {
+        for x in 0..2 {
+            let a = y * 3 + x;
+            triangles.extend([[a, a + 1, a + 4], [a, a + 4, a + 3]]);
+        }
+    }
+    let g = Geometry {
+        positions,
+        triangles,
+        material_coordinates: None,
+    };
+    let c = ignis::mesh_wall_rock::Config {
+        amplitude: 0.65,
+        stratum_height: 0.9,
+        joint_width: 24.,
+        seed: 2718,
+    };
+    let a = ignis::mesh_wall_rock::apply(&g, &g, &c, [0.; 3]).unwrap();
+    assert_ne!(a.positions[4], g.positions[4]);
+    for i in [0, 1, 2, 3, 5, 6, 7, 8] {
+        assert_eq!(a.positions[i], g.positions[i]);
+    }
+    assert_eq!(a.triangles, g.triangles);
+    assert_eq!(
+        a.positions,
+        ignis::mesh_wall_rock::apply(&g, &g, &c, [0.; 3])
+            .unwrap()
+            .positions
+    );
 }

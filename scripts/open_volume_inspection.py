@@ -18,7 +18,7 @@ def prepare():
     catalog=json.loads((ROOT/'website/dist/catalog/data/catalog.json').read_text())
     entry=next(a for a in catalog['assets'] if a['id']=='ignis.material.rock.fractured')
     sha=hashlib.sha256(rock_path.read_bytes()).hexdigest();assert entry['files'][0]['sha256']==sha
-    rock['procedural']['recipe']['tile_size']=[8,8]  # Application scale; catalog source bytes stay unchanged.
+    rock['procedural']['recipe']['tile_size']=[2,2]  # Application scale; catalog source bytes stay unchanged.
     c=Client(ROOT/'target/release/ignis',log_path=OUT/'prepare.log')
     try:
         init(c);c.call('load_scene',path='artifacts/volumetric-terrain-landscape/world.scene.json')
@@ -27,9 +27,20 @@ def prepare():
             name=row['id']
             style=dict(instance=name,wall_asset=f'{name}_rock',top_asset=f'{name}_green',top_instance=f'{name}_green',min_up=.94,
                 chamfer=dict(fraction=.16,variation=.75,seed=2718),
-                terrace_lift=dict(spacing=7.6923076923*8,factor=20,phase=0),
+                terrace_lift=dict(spacing=7.6923076923*8,factor=1,phase=0,random_heights=dict(min=3,max=15,seed=2718)),
+                wall_rock=dict(amplitude=.65,stratum_height=.9,joint_width=24,seed=2718),
                 walls=rock,top=green,wall_color=[1,1,1],top_color=[1,1,1])
+            if not reports:
+                plain=copy.deepcopy(style);plain['wall_rock']['amplitude']=0
+                c.call('style_mesh_by_slope',style=plain)
+                baseline=c.call('inspect_mesh',asset=style['wall_asset'])['asset']['geometry']
+                c.call('undo')
             result=c.call('style_mesh_by_slope',style=style);reports.append(result['partition'])
+            if len(reports)==1:
+                sculpted=c.call('inspect_mesh',asset=style['wall_asset'])['asset']['geometry']
+                wall_geometry_differs=baseline!=sculpted
+                assert wall_geometry_differs,'Rock relief did not change actual wall geometry'
+
         assert sum(r['input_triangles'] for r in reports)==182714
         assert sum(r['source_triangles'] for r in reports)==sum(r['wall_triangles']+r['top_triangles'] for r in reports)
         assert len(c.call('inspect_meshes')['instances'])==32
@@ -44,15 +55,16 @@ def prepare():
                 pts=[[g['positions'][v][i]+offset[i] for i in range(3)] for v in face]
                 a=[pts[1][i]-pts[0][i] for i in range(3)];b=[pts[2][i]-pts[0][i] for i in range(3)]
                 n=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];length=math.sqrt(sum(v*v for v in n))
-                if length<10:continue
+                if length<10 or max(p[1] for p in pts)-min(p[1] for p in pts)<.8:continue
                 n=[v/length for v in n]
                 if n[2]>-.8 or abs(n[1])>.35 or sum(n[i]*[-.5,.78,-.36][i] for i in range(3))<.2:continue
-                center=[sum(q[i] for q in pts)/3 for i in range(3)];score=center[0]**2+center[2]**2
+                center=[sum(q[i] for q in pts)/3 for i in range(3)];score=-(max(p[1] for p in pts)-min(p[1] for p in pts))+(center[0]**2+center[2]**2)*1e-12
                 if candidate is None or score<candidate[0]:candidate=(score,center,n)
         assert candidate is not None,'No suitable inspection wall in the central blocks'
         _,center,normal=candidate
-        spawn=[center[i]+normal[i]*18+(2 if i==1 else 0) for i in range(3)]
-        VIEW['yaw_degrees']=math.degrees(math.atan2(-normal[0],normal[2]));VIEW['pitch_degrees']=-8
+        horizontal=math.hypot(normal[0],normal[2])
+        spawn=[center[0]+normal[0]/horizontal*6,center[1],center[2]+normal[2]/horizontal*6]
+        VIEW['yaw_degrees']=math.degrees(math.atan2(-normal[0],normal[2]));VIEW['pitch_degrees']=0
         scene=c.call('inspect')['scene'];player=copy.deepcopy(next(e for e in scene['entities'] if e['id']=='player'))
         player['transform']['position']=spawn;player['footsteps']=None
         c.call('edit_scene',edits=[dict(op='upsert',entity=player)])
@@ -81,9 +93,9 @@ def prepare():
         c.call('set_player_view',view={**VIEW,'mode':'first_person'})
         c.call('capture',path=f'{PREFIX}/first-person.png',width=1600,height=1000)
         c.call('set_inspection_flight',config=None);assert not c.call('inspect_inspection_flight')['active']
-        report=dict(catalog_id=entry['id'],source_sha256=sha,material_overrides={'recipe.tile_size':[8,8]},partitions=reports,triangles=sum(r['source_triangles'] for r in reports),input_triangles=182714,
+        report=dict(catalog_id=entry['id'],source_sha256=sha,material_overrides={'recipe.tile_size':[2,2]},partitions=reports,triangles=sum(r['source_triangles'] for r in reports),input_triangles=182714,
             walls=sum(r['wall_triangles'] for r in reports),tops=sum(r['top_triangles'] for r in reports),
-            no_overlap=True,shape_preserved=False,terrace_lift=dict(spacing=7.6923076923*8,factor=20,phase=0),chamfer=dict(fraction=.16,variation=.75,seed=2718),scene_reload_pixels_equal=True,hover=True,vertical_movement=True,
+            no_overlap=True,wall_geometry_differs_from_zero_relief=wall_geometry_differs,shape_preserved=False,terrace_lift=dict(spacing=7.6923076923*8,factor=1,phase=0,random_heights=dict(min=3,max=15,seed=2718)),chamfer=dict(fraction=.16,variation=.75,seed=2718),scene_reload_pixels_equal=True,hover=True,vertical_movement=True,
             fast_flight_distance=math.dist(p,moved),precision_flight_distance=precision_distance,neutral_input_stops=True,scene_unchanged_by_flight=True,persistence_rejected=True,
             native_window=False,human_acceptance=False,spawn=spawn,inspection_wall=dict(center=center,normal=normal),view=VIEW,flight=FLIGHT)
         (OUT/'verification.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='partitions'}))

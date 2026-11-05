@@ -81,3 +81,45 @@ review confirms broad green tops again. Strict Clippy was blocked by concurrent
 botany edits (`botany.rs`/`editor_botany_ui.rs` collapsible-if), not changed here.
 The release binary built by the successful test run was used for these MCP
 checks; a redundant subsequent rebuild after parallel source changes was canceled.
+
+## Plateau scale correction: seeded3–15m strata
+
+Latest human feedback: corners improved and approved; plateau walls remained too
+high. The large-height preset remains useful for large mountains, not this
+plateau demo. `TerraceLift.random_heights` now accepts min/max/seed. This fixture
+uses3/15/2718. Each global stratum interval receives a deterministic bounded
+height; a prefix profile anchored at datum0 maps the original coordinate into
+that interval. Different bands vary, while connected pieces of the same stratum
+share a height (not independently randomized instances). Within-band coordinates
+are proportionally compressed, not given kilometre offsets. This is a target
+height per stratum interval, not a universal bound on an entire mountain.
+
+`StyleMeshBySlope.wall_rock` is seeded native geometric relief, applied before
+the approved chamfer. It adds asymmetric stratum/joint teeth along wall normals,
+with controls for amplitude, stratum height, joint width and seed. Top-contact
+vertices and open boundary fans stay fixed. No detached rock objects or shader-
+only substitution; collision and visual geometry still publish together. This
+first relief follows the available source vertices; no claim of geological
+fracture simulation or fine near-player tessellation.
+
+Static performance review: random band heights precomputed once (at most4096
+bands each side of datum per operation), then O(V) mapping. Wall relief is
+O(T+V) accumulation plus a position pass, no adjacency hash or added triangles.
+Normals and oriented boundary sums are dense scratch arrays, never per-frame.
+Chamfer keeps its existing output cost. Source material recipes and input source
+geometry stay editable; the optional operators preserve prior defaults.
+Relief displacement is reduced globally by halves (up to8reductions) if any
+source face would reverse its normal; unresolved inversion refuses publication.
+This prevents local normal inversion, not all possible global self-intersections.
+Each vertex's displacement budget is also limited by20% of its shortest incident
+edge, so tiny extraction triangles do not receive metre-scale deformation.
+
+Current validation:9release tests passed (slope/profile/relief4, chamfer2,
+flight3), focused strict release Clippy and formatting/Python/diff checks passed.
+The full MCP recipe compared a stone output against amplitude0 and confirmed
+actual geometry differs. Output remains1244386triangles (149382walls,
+1095004tops), so relief added no further triangles. Scene save/load pixels,
+hover,600m fast and2m precision per second and persistence guards passed.
+Captures inspected; small surface resolution limits remain explicit. Inspection
+starts nearer the wall, with a horizontal offset and eye near wall mid-height,
+rather than carrying the high-altitude spawn offset from the giant-wall demo.

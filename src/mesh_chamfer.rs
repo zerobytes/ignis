@@ -15,7 +15,7 @@ pub struct Config {
     pub variation: f32,
     pub seed: u64,
 }
-fn random(mut x: u64) -> f32 {
+pub(crate) fn random(mut x: u64) -> f32 {
     x = x.wrapping_add(0x9e3779b97f4a7c15);
     x = (x ^ (x >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
     x = (x ^ (x >> 27)).wrapping_mul(0x94d049bb133111eb);

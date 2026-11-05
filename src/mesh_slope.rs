@@ -10,10 +10,19 @@ use std::sync::Arc;
 /// Lift strata without multiplying variation inside each original height band.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct RandomHeights {
+    pub min: f64,
+    pub max: f64,
+    pub seed: u64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct TerraceLift {
     pub spacing: f64,
     pub factor: f64,
     pub phase: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub random_heights: Option<RandomHeights>,
 }
 pub fn lift(g: &Geometry, c: &TerraceLift, origin_y: f64) -> Result<Geometry> {
     if !c.spacing.is_finite()
@@ -26,11 +35,48 @@ pub fn lift(g: &Geometry, c: &TerraceLift, origin_y: f64) -> Result<Geometry> {
             "Terrace lift requires positive spacing, factor1..1000 and finite phase",
         ));
     }
+    let profile = if let Some(r) = &c.random_heights {
+        if !r.min.is_finite() || !r.max.is_finite() || r.min <= 0. || r.max < r.min {
+            return Err(invalid("Random terrace heights require0<min<=max"));
+        }
+        let mut lo = 0i64;
+        let mut hi = 0i64;
+        for p in &g.positions {
+            let b = ((p[1] as f64 + origin_y - c.phase) / c.spacing).floor();
+            if !b.is_finite() || b.abs() > 4096. {
+                return Err(invalid(
+                    "Random height authoring window exceeds4096bands from datum",
+                ));
+            }
+            lo = lo.min(b as i64);
+            hi = hi.max(b as i64 + 1);
+        }
+        let mut levels = vec![0.; (hi - lo + 1) as usize];
+        for b in lo..hi {
+            let h =
+                r.min + (r.max - r.min) * crate::mesh_chamfer::random(r.seed ^ (b as u64)) as f64;
+            let i = (b - lo) as usize;
+            levels[i + 1] = levels[i] + h;
+        }
+        let datum = levels[(-lo) as usize];
+        for v in &mut levels {
+            *v -= datum;
+        }
+        Some((lo, levels))
+    } else {
+        None
+    };
     let mut out = g.clone();
     for p in &mut out.positions {
         let y = p[1] as f64 + origin_y;
         let band = ((y - c.phase) / c.spacing).floor();
-        p[1] = (p[1] as f64 + (c.factor - 1.) * c.spacing * band) as f32;
+        p[1] = if let Some((lo, levels)) = &profile {
+            let i = (band as i64 - lo) as usize;
+            let fraction = (y - c.phase) / c.spacing - band;
+            (c.phase + levels[i] + fraction * (levels[i + 1] - levels[i]) - origin_y) as f32
+        } else {
+            (p[1] as f64 + (c.factor - 1.) * c.spacing * band) as f32
+        };
     }
     // Material coordinates describe the new rest surface, not the pre-lift surface.
     out.material_coordinates = None;
@@ -49,6 +95,8 @@ pub struct Style {
     pub chamfer: Option<crate::mesh_chamfer::Config>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terrace_lift: Option<TerraceLift>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wall_rock: Option<crate::mesh_wall_rock::Config>,
     pub walls: crate::materials::Material,
     pub top: crate::materials::Material,
     pub wall_color: [f32; 3],
@@ -89,9 +137,11 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     {
         return Err(invalid("Slope output IDs must be distinct and unused"));
     }
-    if s.terrace_lift.is_some() && (instance.rotation != [0., 0., 0., 1.] || instance.scale != 1.) {
+    if (s.terrace_lift.is_some() || s.wall_rock.is_some())
+        && (instance.rotation != [0., 0., 0., 1.] || instance.scale != 1.)
+    {
         return Err(invalid(
-            "Terrace lift requires world-aligned unit-scale instance",
+            "Terrace/rock authoring requires world-aligned unit-scale instance",
         ));
     }
     let lifted = s
@@ -100,6 +150,12 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
         .map(|c| lift(&asset.geometry, c, instance.position[1] as f64))
         .transpose()?;
     let source = lifted.as_ref().unwrap_or(&asset.geometry);
+    let rock = s
+        .wall_rock
+        .as_ref()
+        .map(|c| crate::mesh_wall_rock::apply(source, &asset.geometry, c, instance.position))
+        .transpose()?;
+    let source = rock.as_ref().unwrap_or(source);
     let refined = s
         .chamfer
         .as_ref()
@@ -221,6 +277,6 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     }
     Ok((
         edits,
-        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":s.chamfer.is_some() || s.terrace_lift.is_some(),"terrace_lift":s.terrace_lift,"input_triangles":asset.geometry.triangles.len(),"chamfer":s.chamfer}),
+        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":s.chamfer.is_some() || s.terrace_lift.is_some() || s.wall_rock.is_some(),"terrace_lift":s.terrace_lift,"wall_rock":s.wall_rock,"input_triangles":asset.geometry.triangles.len(),"chamfer":s.chamfer}),
     ))
 }

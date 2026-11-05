@@ -142,3 +142,13 @@ source, then uses `terrace_lift` (spacing61.5384615384, factor20, phase0) before
 the seeded chamfer. Broad original top relief is no longer multiplied20×;
 only the offsets between bands increase. The previous taller-variant statistics
 above describe that earlier experiment, not acceptance of its composition.
+
+## Current compact strata and rock relief
+
+Latest request supersedes the very high plateau offsets: random stratum heights
+now3..15m with seed2718, still based on the original plateau density document.
+The larger-height preset remains available for other terrain. Chamfer remains
+0.16/0.75/2718. Native `wall_rock` adds geometric stratum/joint relief before the
+chamfer: amplitude0.65m, stratum height0.9m, joint width24m, seed2718, subject
+to local-edge and normal-inversion guards. The Fractured content file is unchanged;
+its application tile override is now2m to suit the smaller walls.
