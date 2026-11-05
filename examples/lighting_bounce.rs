@@ -19,6 +19,8 @@ mod bake;
 mod regional;
 #[path = "lighting_bounce/response.rs"]
 mod response;
+#[path = "lighting_bounce/response_budget.rs"]
+mod response_budget;
 const W: u32 = 480;
 const H: u32 = 320;
 const NAMES: [&str; 24] = [
@@ -109,6 +111,11 @@ enum Dispatch<'a> {
     Indirect(&'a wgpu::Buffer, u64),
 }
 struct Lab {
+    response_seeds: wgpu::ComputePipeline,
+    response_boundary: wgpu::ComputePipeline,
+    response_region_full: wgpu::ComputePipeline,
+    response_region_mark: wgpu::ComputePipeline,
+    response_region_repair: wgpu::ComputePipeline,
     response_build: wgpu::ComputePipeline,
     response_combine: wgpu::ComputePipeline,
     geometry: wgpu::Buffer,
@@ -120,6 +127,7 @@ struct Lab {
     atlas_build: wgpu::ComputePipeline,
     atlas_query: wgpu::ComputePipeline,
     uniform: wgpu::Buffer,
+    uniform_upload: wgpu::Buffer,
     receivers: wgpu::Buffer,
     values: wgpu::Buffer,
     filtered: wgpu::Buffer,
@@ -137,6 +145,7 @@ struct Lab {
     sample_low: wgpu::ComputePipeline,
     sample_high: wgpu::ComputePipeline,
     groups: [wgpu::BindGroup; 2],
+    compute_groups: [wgpu::BindGroup; 2],
     primary: wgpu::ComputePipeline,
     build: wgpu::ComputePipeline,
     guide: wgpu::ComputePipeline,
@@ -164,12 +173,30 @@ impl Lab {
         target: &wgpu::TextureView,
         atlas_bytes: u64,
     ) -> Self {
+        Self::new_sized_with_scratch(r, p, boxes, native, target, atlas_bytes, 0)
+    }
+    fn new_sized_with_scratch(
+        r: &Renderer,
+        p: &Params,
+        boxes: &[BoxData],
+        native: &wgpu::TextureView,
+        target: &wgpu::TextureView,
+        atlas_bytes: u64,
+        scratch_bytes: u64,
+    ) -> Self {
         let uniform = r
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("bounce parameters"),
                 contents: bytemuck::bytes_of(p),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+        let uniform_upload = r
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("persistent response interval upload"),
+                contents: bytemuck::bytes_of(p),
+                usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             });
         let geometry = r
             .device
@@ -204,8 +231,10 @@ impl Lab {
         let filtered = buffer(
             r,
             "spatial RGB reconstruction",
-            bytes,
-            wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            bytes.max(scratch_bytes),
+            wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
         );
         let guides = buffer(
             r,
@@ -302,7 +331,9 @@ impl Lab {
                     "\n",
                     include_str!("lighting_bounce/regional.wgsl"),
                     "\n",
-                    include_str!("lighting_bounce/response.wgsl")
+                    include_str!("lighting_bounce/response.wgsl"),
+                    "\n",
+                    include_str!("lighting_bounce/response_regional.wgsl")
                 )
                 .into(),
             ),
@@ -318,7 +349,30 @@ impl Lab {
                     cache: None,
                 })
         };
-        let make_group = |i: usize, args: &wgpu::Buffer| {
+        let dummy_texture = |format, usage| {
+            r.device
+                .create_texture(&wgpu::TextureDescriptor {
+                    label: Some("compute-only image placeholder"),
+                    size: wgpu::Extent3d {
+                        width: 1,
+                        height: 1,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format,
+                    usage,
+                    view_formats: &[],
+                })
+                .create_view(&Default::default())
+        };
+        let compute_native = dummy_texture(r.format, wgpu::TextureUsages::TEXTURE_BINDING);
+        let compute_target = dummy_texture(
+            wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureUsages::STORAGE_BINDING,
+        );
+        let make_group = |i: usize, args: &wgpu::Buffer, compute: bool| {
             r.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
                 layout: &layout,
@@ -337,11 +391,19 @@ impl Lab {
                     },
                     wgpu::BindGroupEntry {
                         binding: 3,
-                        resource: wgpu::BindingResource::TextureView(native),
+                        resource: wgpu::BindingResource::TextureView(if compute {
+                            &compute_native
+                        } else {
+                            native
+                        }),
                     },
                     wgpu::BindGroupEntry {
                         binding: 4,
-                        resource: wgpu::BindingResource::TextureView(target),
+                        resource: wgpu::BindingResource::TextureView(if compute {
+                            &compute_target
+                        } else {
+                            target
+                        }),
                     },
                     wgpu::BindGroupEntry {
                         binding: 5,
@@ -370,9 +432,15 @@ impl Lab {
                 ],
             })
         };
-        let groups = std::array::from_fn(|i| make_group(i, &dummy));
-        let finalize_group = make_group(0, &indirect);
+        let groups = std::array::from_fn(|i| make_group(i, &dummy, false));
+        let compute_groups = std::array::from_fn(|i| make_group(i, &dummy, true));
+        let finalize_group = make_group(0, &indirect, false);
         Self {
+            response_seeds: pipeline("response_seeds"),
+            response_boundary: pipeline("response_boundary"),
+            response_region_full: pipeline("response_region_full"),
+            response_region_mark: pipeline("response_region_mark"),
+            response_region_repair: pipeline("response_region_repair"),
             response_build: pipeline("response_build"),
             response_combine: pipeline("response_combine"),
             geometry,
@@ -393,6 +461,7 @@ impl Lab {
             sample_low: pipeline("sample_low"),
             sample_high: pipeline("sample_high"),
             uniform,
+            uniform_upload,
             receivers,
             values,
             filtered,
@@ -401,6 +470,7 @@ impl Lab {
             staging,
             probes,
             groups,
+            compute_groups,
             primary: pipeline("primary"),
             build: pipeline("build"),
             guide: pipeline("guide"),
@@ -420,7 +490,7 @@ impl Lab {
             timing: buffer(
                 r,
                 "bounce timestamp readback",
-                16,
+                32,
                 wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             ),
         }
@@ -470,8 +540,16 @@ impl Lab {
         let mut e = r.device.create_command_encoder(&Default::default());
         let image = || Dispatch::Grid(W.div_ceil(8), H.div_ceil(8), 1);
         let atlas_count = p.dims[2] * 6 * p.counts[0] * p.counts[0];
-        if stage == "response-build" || stage == "response-combine" {
-            let kernel = if stage == "response-build" {
+        if stage == "response-build"
+            || stage == "response-combine"
+            || stage == "response-regional-full"
+            || stage == "response-seeds"
+        {
+            let kernel = if stage == "response-seeds" {
+                &self.response_seeds
+            } else if stage == "response-regional-full" {
+                &self.response_region_full
+            } else if stage == "response-build" {
                 &self.response_build
             } else {
                 &self.response_combine
@@ -481,7 +559,11 @@ impl Lab {
                 kernel,
                 group,
                 [Some(0), Some(1)],
-                Dispatch::Grid(atlas_count.div_ceil(64), 1, 1),
+                if stage == "response-regional-full" {
+                    Dispatch::Grid(6144, p.dims[2], 1)
+                } else {
+                    Dispatch::Grid(atlas_count.div_ceil(64), 1, 1)
+                },
             );
         } else if stage == "region-full" {
             self.pass(
@@ -756,12 +838,14 @@ fn main() -> Result<()> {
                 "--bake-validation",
                 "--bake-final",
                 "--regional-audit",
-                "--response-audit"
+                "--response-audit",
+                "--response-budget-audit"
             ]
             .contains(&arg.as_str()),
             "Unknown one-bounce argument: {arg}"
         );
     }
+    let response_budget_audit = std::env::args().any(|s| s == "--response-budget-audit");
     let response_audit = std::env::args().any(|s| s == "--response-audit");
     let regional_audit = std::env::args().any(|s| s == "--regional-audit");
     let baking = std::env::args().any(|s| s == "--bake-audit");
@@ -830,7 +914,25 @@ fn main() -> Result<()> {
                 || validation_d),
         "Choose one response experiment"
     );
-    let dir = if response_audit {
+    ensure!(
+        !response_budget_audit
+            || !(response_audit
+                || regional_audit
+                || baking
+                || hybrid
+                || validation_a
+                || validation_b
+                || validation_c
+                || validation_d),
+        "Choose one budget experiment"
+    );
+    let dir = if response_budget_audit {
+        if thin {
+            "artifacts/lighting-response-budget/thin-wall"
+        } else {
+            "artifacts/lighting-response-budget/open"
+        }
+    } else if response_audit {
         if thin {
             "artifacts/lighting-response/thin-wall"
         } else {
@@ -1024,6 +1126,9 @@ fn main() -> Result<()> {
         counts: [0; 4],
     };
     grid(&mut p, false);
+    if response_budget_audit {
+        return response_budget::run(&mut r, engine, boxes, native, target, p, dir);
+    }
     if response_audit {
         return response::run(&mut r, engine, boxes, native, target, p, dir);
     }

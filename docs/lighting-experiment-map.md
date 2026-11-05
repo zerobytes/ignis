@@ -211,3 +211,19 @@ GI-off or steady drawing. Dense storage/max12slots, one diffuse bounce, finite
 reference, synchronous lab and unsupported geometry/sun edits remain explicit
 boundaries. Final release build, scoped Clippy/rustfmt/Python F/diff and the full
 automated40case GPU/CPU audit pass; unrelated parallel work preserved.
+
+
+### Regional coefficients/frame-budget checkpoint (2026-11-05)
+
+`docs/lighting-response-budget.md`:68cases/2scenes/1and2ms targets, versioned
+private repair, persistent RNG checkpoints, asynchronous telemetry, supersession
+and committed-background rendering. Settled weight/dependency fields are exact
+and PNG maxchannel1, including38jobs explicitly settled OFFLINE after age-limit
+rejection. Direct64 preview fails the consistency gate (maxchannel73/68).
+Unbudgeted regional controls26/34.5ms versus fullcoeff32–33/39.8ms, but sliced
+attempts spent86–106ms median GPU before settling; all40geometry events fail
+completion+no-overrun jointly (largest slice9.393ms). Do NOT promote the current
+all-rows-before-publication policy or claim native/frame savings. Next: exact
+visible-receiver support first, retain offscreen contributors, integrate native
+frame scheduling and decouple telemetry latency. Scope/backend/CPU/memory and
+retained audit evidence are explicit in the document; unrelated work preserved.

@@ -89,3 +89,9 @@ regional coefficient repair for geometry/sun changes and bounded asynchronous
 publication. The current prototype deliberately rejects unsupported edits; it
 has no persistent response-file loader/invalidation integration or production
 scheduler. Ordinary baked lookup remains the previous added per-frame GI cost.
+
+
+Regional repair/frame admission was subsequently tested in
+[lighting-response-budget.md](lighting-response-budget.md). Repair consistency
+passes, but the1/2ms whole-revision scheduling policy fails the dynamic-geometry
+budget/latency gate; no production activation follows from color-only savings.
