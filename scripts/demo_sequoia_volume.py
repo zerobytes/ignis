@@ -1,4 +1,4 @@
-"""Native geometry-only sequoia volume comparison; no texture or POM in gray views."""
+"""Native geometry-only continuous sequoia volume comparison; no texture or POM in gray views."""
 import argparse,copy,json
 from verify_lab import ROOT,Client
 OUT=ROOT/'artifacts/sequoia-volume'
@@ -16,12 +16,14 @@ def main():
   def publish(r):
    path=OUT/'candidate.ignis-botany';path.write_text(json.dumps(r,separators=(',',':')))
    result=c.call('botany',operation=dict(kind='load',path='artifacts/sequoia-volume/candidate.ignis-botany',publish=True));path.unlink();return result
-  r=recipe();r['settings'].update(leaf_density=0,bark_color=[.42,.42,.42]);before=publish(r)
+  r=recipe();r['settings'].update(leaf_density=0,bark_color=[.42,.42,.42]);publish(r)
+  legacy=copy.deepcopy(definition['wood_volume']);legacy['continuous']=False
+  before=c.call('botany',operation=dict(kind='living',prefix=PREFIX,action=dict(kind='set_wood_volume',profile=legacy)))
   c.call('set_light',light=dict(direction=[.45,-.7,-.55],ambient=.22,direct_intensity=1.2,
    environment=dict(sky=[.55,.62,.72],horizon=[.5,.52,.54],ground=[.12,.13,.14],axis=[0,1,0],intensity=.3),
    atmosphere=dict(density=0,reduce_details=False,color=[.2,.24,.28],sun_color=[1,1,1],sun_strength=0,layers=dict(sky_color=[.12,.16,.2],mountain_color=[.12,.16,.2],detail_start=10000,detail_end=20000,influence=0)),
    shadow=dict(center=[0,35,0],extent=65,resolution=2048,bias=.0003,receiver_plane_bias=True)))
-  views=dict(front=dict(position=[15,8,24],target=[0,9,0],fov_degrees=42),side=dict(position=[24,8,-15],target=[0,9,0],fov_degrees=42),back=dict(position=[-15,8,-24],target=[0,9,0],fov_degrees=42),whole=dict(position=[72,6,110],target=[0,42,0],fov_degrees=42))
+  views=dict(front=dict(position=[15,8,24],target=[0,9,0],fov_degrees=42),transition=dict(position=[28,28,44],target=[0,36,0],fov_degrees=42),side=dict(position=[24,8,-15],target=[0,9,0],fov_degrees=42),back=dict(position=[-15,8,-24],target=[0,9,0],fov_degrees=42),whole=dict(position=[72,6,110],target=[0,42,0],fov_degrees=42))
   def capture(name):c.call('capture',path=f'artifacts/sequoia-volume/{name}.png',width=1500,height=1400)
   c.call('set_camera',camera=views['front']);c.call('save_scene',path='artifacts/sequoia-volume/before.scene.json');capture('front-before')
   source=recipe()['source']
@@ -30,7 +32,7 @@ def main():
   gray_material=c.call('material',operation=dict(kind='inspect',asset=f'{PREFIX}_wood'));assert gray_material['execution']=='legacy'
   c.call('undo');capture('undo');assert (OUT/'undo.png').read_bytes()==(OUT/'front-before.png').read_bytes()
   c.call('redo');capture('redo');assert (OUT/'redo.png').read_bytes()==(OUT/'front-after.png').read_bytes()
-  current=recipe();assert current['source']==source and current['living']['definition']['version']==7
+  current=recipe();assert current['source']==source and current['living']['definition']['version']==8
   bad=copy.deepcopy(definition['wood_volume']);bad['valley_depth_ratio']=.9
   c.call('botany',expected_error=True,operation=dict(kind='living',prefix=PREFIX,action=dict(kind='set_wood_volume',profile=bad)));assert recipe()==current
   c.call('save_scene',path='artifacts/sequoia-volume/neutral.scene.json')
@@ -59,7 +61,7 @@ def main():
   result=dict(build=c.call('inspect')['build_id'],before=before['compiled'],after=after['compiled'],source_graph_unchanged=True,undo_redo_png_exact=True,save_reopen_png_exact=True,invalid_profile_atomic=True,age_checks=not args.skip_age_checks,gray_material=gray_material)
   (OUT/'verification.json').write_text(json.dumps(result,indent=2)+'\n')
   cards=''.join(f'<h2>{v}</h2><div><figure><img src="{v}-before.png"><figcaption>Antes</figcaption></figure><figure><img src="{v}-after.png"><figcaption>Depois</figcaption></figure></div>' for v in views)
-  (OUT/'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Volumes do tronco</title><style>body{background:#1b2025;color:#eee;font:16px system-ui;max-width:1500px;margin:32px auto}div{display:flex}figure{width:50%;margin:8px}img{width:100%}</style><h1>Sequoia · volumes reais no mesh</h1><p>Albedo cinza uniforme, sem textura/paralaxe. Mesma câmera/luz antes e depois. Cordões, vales e saliências são geometria.</p>'+cards+'<h2>Controle sem sombra projetada</h2><p>Artefatos estreitos nos vales desaparecem sem shadow map; refinamento do renderer ainda pendente.</p><img src="shadow-off.png"><h2>Materiais aplicados</h2><img src="textured-detail.png">')
+  (OUT/'review.html').write_text('<!doctype html><meta charset="utf-8"><title>Volumes do tronco</title><style>body{background:#1b2025;color:#eee;font:16px system-ui;max-width:1500px;margin:32px auto}div{display:flex}figure{width:50%;margin:8px}img{width:100%}</style><h1>Sequoia · volumes reais no mesh</h1><p>Albedo cinza uniforme, sem textura/paralaxe. Mesma câmera/luz antes e depois. Antes: perfil7 com término comum. Depois: perfil8 contínuo, afunilado com o tronco.</p>'+cards+'<h2>Controle sem sombra projetada</h2><p>Artefatos estreitos nos vales desaparecem sem shadow map; refinamento do renderer ainda pendente.</p><img src="shadow-off.png"><h2>Materiais aplicados</h2><img src="textured-detail.png">')
   print(json.dumps(result))
  finally:c.close()
 if __name__=='__main__':main()

@@ -220,15 +220,16 @@ pub(super) fn properties(
             ui.collapsing("Poda persistente",|ui|{for site in plant.production.sites.keys().filter(|s|!plant.production.removed_sites.contains(*s)){
                 if ui.button(format!("Podar {site}")).clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::Prune{site:site.clone()}});}
             }});
-            if (6..=7).contains(&plant.definition.version) {ui.collapsing("Volumes reais do tronco",|ui|{
+            if (6..=8).contains(&plant.definition.version) {ui.collapsing("Volumes reais do tronco",|ui|{
                 let p=&mut state.living_volume;
+                ui.checkbox(&mut p.continuous,"Cordões contínuos · afinar com o tronco");
                 for (label,v) in [("Saliências / raio",&mut p.bulge_ratio),("Altura dos cordões / raio",&mut p.cord_height_ratio),("Profundidade dos vales / raio",&mut p.valley_depth_ratio)] {ui.add(egui::Slider::new(v,0. ..=0.45).text(label));}
                 ui.add(egui::Slider::new(&mut p.bulge_count,0..=8).text("Saliências locais"));
                 ui.add(egui::Slider::new(&mut p.cord_count,3..=9).text("Cordões"));
                 ui.add(egui::Slider::new(&mut p.cord_width_ratio,0.15..=0.5).text("Largura / raio"));
                 ui.add(egui::Slider::new(&mut p.valley_width_ratio,0.1..=0.45).text("Largura dos vales / raio"));
                 ui.add(egui::Slider::new(&mut p.meander,0. ..=0.8).text("Desvio angular"));
-                ui.add(egui::Slider::new(&mut p.extent,0.3..=0.7).text("Alcance no tronco"));
+                if !p.continuous {ui.add(egui::Slider::new(&mut p.extent,0.3..=0.7).text("Alcance no tronco"));}
                 if ui.button("Aplicar volumes ao mesh").clicked(){send(commands,Op::Living{prefix:recipe.prefix.clone(),action:crate::botany::growth::Action::SetWoodVolume{profile:p.clone()}});}
             });}
             if (2..=4).contains(&plant.definition.version) {ui.collapsing("Crescimento contínuo e nós foliares",|ui|{

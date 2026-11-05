@@ -1,6 +1,6 @@
 # Living sequoia: geometric woody volumes
 
-The optional grammar 7 `wood_volume` profile adds seeded bulges, curved longitudinal cords and negative valleys to the native trunk surface. This is vertex geometry, including its silhouette and shadow. The original grammar 6 source graph, crown and default shape remain available unchanged. The living definition, rather than a detached sculpt, owns the new parameters.
+The optional grammar 7/8 `wood_volume` profile adds seeded bulges, curved longitudinal cords and negative valleys to the native trunk surface. This is vertex geometry, including its silhouette and shadow. The original grammar 6 source graph, crown and default shape remain available unchanged. The living definition, rather than a detached sculpt, owns the new parameters.
 
 `examples/sequoia-volume.recipe.json` supplies a 1000-year comparison through `python3 scripts/demo_sequoia_volume.py`. Open `artifacts/sequoia-volume/review.html` for matching gray before/after cameras. These gray views use a uniform legacy material with no height map or parallax. The same tree also has a textured scene using the existing sequoia material generator assets.
 
@@ -10,7 +10,7 @@ Run `python3 scripts/open_sequoia_volume.py` to open the gray specimen in the na
 
 The profile independently controls local bulge amplitude/count, cord height/count/width, valley depth/width, angular meander and axial extent. Amplitudes and widths are ratios of the source stem radius R, evaluated before manual instance scaling. Added displacement uses `max(R−0.05,0)²/R`, suppressing large bark volumes on juvenile stems. This is an authored growth rule, not a calibrated bark-development model.
 
-Bulges have compact support in angle and axial position, with independently seeded centres and lengths. Cord/valley paths interpolate seeded angular controls along the axis, with compact transverse support and fading ends. They use the shared woody-surface evaluator and closed native tube/cap compiler. The new surface uses 32 section stations, 32 contour samples, 96 angular vertices and 128 axial intervals. Fine bark fibres remain material detail; this mesh targets the larger masses.
+Bulges have compact support in angle and axial position, with independently seeded centres and lengths. Cord/valley paths interpolate seeded angular controls along the axis, with compact transverse support and fading ends. They use the shared woody-surface evaluator and closed native tube/cap compiler. The volume surface uses 32 section stations, 32 contour samples, 96 angular vertices and 128 axial intervals. Fine bark fibres remain material detail; this mesh targets the larger masses.
 
 MCP `botany/living/set_wood_volume` and the editor invoke the same transaction. Applying a profile explicitly upgrades grammar 6 to 7; grammar 7 requires its profile, while grammars 1–6 omit it. Invalid profiles fail before publication. Save/load retains the living definition, generated materials and growth state. No global Scene/replay layout changes were introduced. The generic surface's angular budget now permits 96 sides; existing authored resolutions remain unchanged. A numerical tolerance of 16 machine epsilons handles interpolation at the existing 2 cm radial floor without altering the evaluator.
 
@@ -19,3 +19,11 @@ MCP `botany/living/set_wood_volume` and the editor invoke the same transaction. 
 The focused Rust checks evaluate juvenile/adult radii, deterministic seeds, exact zero-amplitude baseline, invalid values, the full adult source graph, unchanged crown vertices, and closed/oriented trunk edge incidence with positive signed volume. The native comparison also checks undo/redo, rejected-profile atomicity, age preview back and forth, and gray/textured save-load images.
 
 This initial living binding targets the sequoia stem. The profile mathematics is reusable, but other species and branch/root bindings need explicit integration. Star-shaped sections cannot represent tunnels, overhangs or arbitrary unions. This does not add root anastomosis, a bark fracture model, or prove collision/physics performance. Geometry tests and captures do not replace the user's artistic acceptance.
+
+## Continuous trunk correction (grammar 8)
+
+The user identified the common termination height of grammar7 cords as visually incorrect: the form appeared attached to the stem. The current exemplar explicitly uses grammar8 with `wood_volume.continuous=true`. Cord/valley paths span the entire stem; their height and width scale by the local woody contour relative to the basal contour, with the existing2cm radius floor subtracted. Thus volumes narrow with the stem and have no shared interior termination band. Local bulges can still have finite support; these represent local irregularities, rather than the longitudinal structure.
+
+The evaluator uses `follow_taper` only for these continuous reliefs. Missing flags deserialize as false, and grammar7 keeps its old evaluator/profile for existing saved trees and reproducible comparisons. Grammar8 requires continuous volumes; applying the continuous checkbox in Vegetação or the same MCP action explicitly upgrades the individual. The former extent control remains available in legacy mode. Global Scene/replay layouts are unchanged.
+
+The current native review compares grammar7 directly against8 on identical source, age, seed and cameras, including a `transition` view around the former termination height. Additional numerical coverage checks that relief continues above the old48% limit, thins toward the top, and preserves the old profile when its flag is absent. This is a procedural shape rule; no universal biological bark-growth law or automatic port to other species is implied.

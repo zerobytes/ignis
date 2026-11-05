@@ -177,6 +177,7 @@ pub fn editor(ui: &mut egui::Ui, edit: &mut OrganEdit, radius: f64, tip: f64) ->
             }
             if s.relief.len() < 32 && ui.button("Novo cordão / vale").clicked() {
                 s.relief.push(Relief {
+                    follow_taper: false,
                     id: fresh("relief", s.relief.iter().map(|r| r.id.as_str())),
                     enabled: true,
                     path: vec![Control { u: 0., angle: 0. }, Control { u: 1., angle: 0.5 }],

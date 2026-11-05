@@ -32,6 +32,9 @@ pub struct Relief {
     /// Signed metres: positive cord/bulge, negative valley.
     pub height: f64,
     pub end_fade: f64,
+    /// Follow the woody contour radius instead of ending a fixed-size overlay.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub follow_taper: bool,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -65,6 +68,9 @@ impl Default for Surface {
             samples: 48,
         }
     }
+}
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 fn smooth(x: f64) -> f64 {
     let x = x.clamp(0., 1.);
@@ -171,7 +177,22 @@ impl Surface {
                 let (p, q, t) = span(&r.path, u, |p| p.u);
                 let angle = p.angle * (1. - t) + q.angle * t;
                 let distance = 2. * base * ((a - angle) * 0.5).sin().abs();
-                let profile = (1. - (distance / r.width).powi(2)).max(0.).powi(2);
+                let taper = if r.follow_taper {
+                    let reference = Self::contour(&self.sections[0], a);
+                    if reference <= 0.02 {
+                        0.
+                    } else {
+                        ((base - 0.02).max(0.) / (reference - 0.02)).min(1.)
+                    }
+                } else {
+                    1.
+                };
+                if taper == 0. {
+                    return v;
+                }
+                let profile = (1. - (distance / (r.width * taper)).powi(2))
+                    .max(0.)
+                    .powi(2);
                 let start = r.path[0].u;
                 let end = r.path.last().unwrap().u;
                 let fade = if r.end_fade == 0. {
@@ -179,7 +200,7 @@ impl Surface {
                 } else {
                     smooth((u - start) / r.end_fade) * smooth((end - u) / r.end_fade)
                 };
-                v + r.height * profile * fade
+                v + r.height * taper * profile * fade
             })
     }
     pub fn offset(&self, u: f64) -> [f64; 2] {

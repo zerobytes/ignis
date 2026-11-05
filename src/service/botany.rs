@@ -371,11 +371,11 @@ impl Service {
                         );
                     }
                     b::growth::Action::SetWoodVolume { profile } => {
-                        if !(6..=7).contains(&plant.definition.version) {
-                            return Err(invalid("This volume binding requires sequoia grammar6/7"));
+                        if !(6..=8).contains(&plant.definition.version) {
+                            return Err(invalid("This volume binding requires sequoia grammar6/7/8"));
                         }
                         profile.validate()?;
-                        plant.definition.version = 7;
+                        plant.definition.version = if profile.continuous { 8 } else { 7 };
                         plant.definition.wood_volume = Some(profile.clone());
                         plant.validate()?;
                     }

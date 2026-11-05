@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "prefix": "sequoia_volume",
   "seed": 83,
   "interval": 365,
@@ -42,6 +42,7 @@
     "valley_width_ratio": 0.22,
     "cord_count": 7,
     "meander": 0.24,
-    "extent": 0.48
+    "extent": 0.48,
+    "continuous": true
   }
 }

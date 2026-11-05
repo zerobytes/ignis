@@ -15,6 +15,11 @@ pub struct Profile {
     pub cord_count: u8,
     pub meander: f64,
     pub extent: f64,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub continuous: bool,
+}
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 impl Default for Profile {
     fn default() -> Self {
@@ -28,6 +33,7 @@ impl Default for Profile {
             cord_count: 7,
             meander: 0.24,
             extent: 0.48,
+            continuous: true,
         }
     }
 }
@@ -113,7 +119,7 @@ impl Profile {
                     .into_iter()
                     .enumerate()
                     .map(|(k, t)| Control {
-                        u: t * self.extent,
+                        u: t * if self.continuous { 1. } else { self.extent },
                         angle: angle
                             + if valley {
                                 PI / self.cord_count as f64
@@ -140,7 +146,8 @@ impl Profile {
                         } else {
                             self.cord_height_ratio * (0.8 + 0.4 * tree::noise(seed, 2300 + i))
                         },
-                    end_fade: 0.035,
+                    end_fade: if self.continuous { 0. } else { 0.035 },
+                    follow_taper: self.continuous,
                 });
             }
         }
@@ -164,7 +171,7 @@ mod tests {
         p.advance(365000).unwrap();
         let before = p.bound_recipe().unwrap();
         let a = super::super::super::bake::compile(&before).unwrap();
-        d.version = 7;
+        d.version = 8;
         d.wood_volume = Some(Profile::default());
         let mut p = Plant::new(d, 0).unwrap();
         p.advance(365000).unwrap();
@@ -198,11 +205,53 @@ mod tests {
             volume += points[0].dot(points[1].cross(points[2])) / 6.;
         }
         assert!(volume > 0. && edges.values().all(|&(count, sign)| count == 2 && sign == 0));
-        let crown = |c: &super::super::super::bake::Compiled| c.vertices[0].iter().zip(&c.document.assets[0].geometry.positions).filter(|(v,_)|v.organ!=0).map(|(_,p)|*p).collect::<Vec<_>>();
-        assert_eq!(crown(&a),crown(&b));
-        assert!(b.vertices[0].iter().filter(|v|v.organ==0).count()>a.vertices[0].iter().filter(|v|v.organ==0).count());
+        let crown = |c: &super::super::super::bake::Compiled| {
+            c.vertices[0]
+                .iter()
+                .zip(&c.document.assets[0].geometry.positions)
+                .filter(|(v, _)| v.organ != 0)
+                .map(|(_, p)| *p)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(crown(&a), crown(&b));
+        assert!(
+            b.vertices[0].iter().filter(|v| v.organ == 0).count()
+                > a.vertices[0].iter().filter(|v| v.organ == 0).count()
+        );
         let restored: Plant = serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
         assert_eq!(restored, p);
+    }
+    #[test]
+    fn cords_continue_past_old_extent_and_taper_with_stem() {
+        let base = super::super::sequoia_realistic::bole(3.664, 83);
+        let p = Profile::default();
+        let s = p.apply(&base, 3.664, 83).unwrap();
+        let mut plain = s.clone();
+        plain.relief.clear();
+        let peak = |surface: &Surface, u: f64| {
+            (0..768)
+                .map(|j| {
+                    let a = TAU * j as f64 / 768.;
+                    (surface.radius(u, a) - plain.radius(u, a)).abs()
+                })
+                .fold(0_f64, f64::max)
+        };
+        for u in [0.3, 0.47, 0.48, 0.49, 0.6, 0.8, 0.9, 0.97] {
+            assert!(peak(&s, u) > 0.001, "missing volume at {u}");
+        }
+        assert!(peak(&s, 0.9) < peak(&s, 0.3));
+        assert!(peak(&s, 1.) < peak(&s, 0.97));
+        let legacy = Profile {
+            continuous: false,
+            ..p
+        };
+        let old = legacy.apply(&base, 3.664, 83).unwrap();
+        assert_eq!(peak(&old, 0.6), 0.);
+        let mut json = serde_json::to_value(&legacy).unwrap();
+        json.as_object_mut().unwrap().remove("continuous");
+        let decoded: Profile = serde_json::from_value(json).unwrap();
+        assert!(!decoded.continuous);
+        assert_eq!(decoded.apply(&base, 3.664, 83).unwrap(), old);
     }
     #[test]
     fn bounded_seeded_volumes_and_zero_identity() {

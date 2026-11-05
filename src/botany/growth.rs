@@ -80,10 +80,11 @@ impl Default for Definition {
 impl Definition {
     pub fn validate(&self) -> Result<()> {
         self.schedule.validate().map_err(invalid)?;
-        if (self.version == 7) != self.wood_volume.is_some() {
-            return Err(invalid("Woody volumes require explicit grammar7"));
+        if (self.version >= 7) != self.wood_volume.is_some() {
+            return Err(invalid("Woody volumes require explicit grammar7/8"));
         }
         if let Some(p) = &self.wood_volume {
+            if p.continuous != (self.version == 8) { return Err(invalid("Continuous woody volumes require grammar8")); }
             p.validate()?;
         }
         if (self.version >= 4) != self.continuous.is_some() {
@@ -139,7 +140,7 @@ impl Definition {
         {
             return Err(invalid("Living time/profile budget exceeded"));
         }
-        if !(1..=7).contains(&self.version)
+        if !(1..=8).contains(&self.version)
             || !identifier(&self.prefix)
             || self.prefix.len() > 20
             || self.interval == 0
@@ -254,7 +255,7 @@ impl Plant {
     }
     pub fn recipe(&self) -> Result<Recipe> {
         self.validate()?;
-        if self.definition.version == 6 || self.definition.version == 7 {
+        if self.definition.version >= 6 {
             return sequoia_realistic::recipe(self);
         }
         if self.definition.version == 5 {

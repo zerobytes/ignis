@@ -20,7 +20,7 @@ def main():
             light=json.loads((out/scene).read_text())['light'];light.pop('shadow',None)
             c.call('set_light',light=light)
         c.call('botany', operation=dict(kind='open', open=True, prefix='sequoia_volume'))
-        c.call('set_camera', camera=dict(position=[15,8,24],target=[0,9,0],fov_degrees=42))
+        c.call('set_camera', camera=dict(position=[28,28,44],target=[0,36,0],fov_degrees=42))
         c.call('capture_editor',path='artifacts/sequoia-volume/window.png',width=1700,height=1200)
         result=dict(pid=c.process.pid,build=c.call('inspect')['build_id'],textured=args.textured)
         (out/'window.json').write_text(json.dumps(result,indent=2)+'\n')
