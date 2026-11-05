@@ -3,7 +3,7 @@
 The site exposes `catalog/` on both existing hosting destinations. Content lives
 independently in https://github.com/zerobytes/ignis-catalog. Its pinned committed
 index is mirrored into `dist/catalog/data`, with 20 editable material sources,
-8 tree records and full-source download links, CC BY 4.0 license, optimized
+11 tree records and full-source download links, CC BY 4.0 license, optimized
 native-capture thumbnails and GPU preview packets.
 There is no additional service, account, paid storage or render server.
 
@@ -134,3 +134,8 @@ post-deployment verification include **all** assembled bytes on both hosts.
 artifacts/catalog-meshes` can reuse locally verified release payloads. A free
 hosting allowance is finite: downloads and GPU activation remain explicit;
 no unlimited bandwidth or performance guarantee is implied.
+
+Cuihua1.0.0 adds three original green fruit-tree variants. Their complete downloads
+include authored growth grammar9 sources and periodic cohorts; the browser preview
+and GLB remain static. Fruit uses an apple-like approximation, not an exact
+Sunsettia sculpture.
