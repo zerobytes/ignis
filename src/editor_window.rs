@@ -378,6 +378,12 @@ impl ApplicationHandler for App {
                         && (!graphics.context.wants_keyboard_input() || viewport_focus)
                         && (!response.consumed || viewport_focus)
                         && self.service.lock().unwrap().engine.playing;
+                    if eligible && down && !event.repeat && code == KeyCode::KeyV {
+                        self.keys.clear();
+                        let _ = self
+                            .keyboard
+                            .toggle_inspection(&mut self.service.lock().unwrap());
+                    }
                     let movement = matches!(
                         code,
                         KeyCode::KeyW

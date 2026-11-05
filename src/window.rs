@@ -164,7 +164,7 @@ impl App {
                 ))
             } else {
                 let help = if service.engine.inspection_flight_active() {
-                    "VOO · WASD mover · Espaço subir · C descer · Shift rápido · Ctrl devagar · clique olhar · Tab 1ª/3ª · Esc soltar"
+                    "VOO · V caminhar · WASD mover · Espaço subir · C descer · Shift rápido · Ctrl devagar · clique olhar · Tab 1ª/3ª · Esc soltar"
                 } else if service.engine.planet_active() {
                     "WASD mover · Shift correr · roda: superfície/globo · G globo/voltar · F superfície · Tab 1ª/3ª · clique olhar · Esc soltar · P pausa"
                 } else if guides.npc_routes {
@@ -174,7 +174,7 @@ impl App {
                 } else if guides.npc_vision {
                     "V: guias | FOV nominal | verde: viu | amarelo: memoria | azul: sem pista"
                 } else {
-                    "WASD mover · Shift correr · F câmera · Tab 1ª/3ª · roda zoom · clique olhar · Esc soltar/fechar · P play/pause · R reset"
+                    "V voo · WASD mover · Shift correr · F câmera · Tab 1ª/3ª · roda zoom · clique olhar · Esc soltar/fechar · P play/pause · R reset"
                 };
                 let mode = match title_state.4 {
                     crate::model::MovementMode::Walk => "caminhada",
@@ -452,6 +452,24 @@ impl ApplicationHandler for App {
                     let mut settings = self.service.lock().unwrap().engine.mesh_lod_settings;
                     settings.enabled = !settings.enabled;
                     self.command(Command::SetMeshLodSettings { settings });
+                    self.title_state = None;
+                    return;
+                }
+                if event.state == ElementState::Pressed
+                    && !event.repeat
+                    && event.physical_key == PhysicalKey::Code(KeyCode::KeyV)
+                    && {
+                        let service = self.service.lock().unwrap();
+                        !service.remote_client() && service.engine.player_view_context().is_some()
+                    }
+                {
+                    self.keys.clear();
+                    if let Err(e) = self
+                        .keyboard
+                        .toggle_inspection(&mut self.service.lock().unwrap())
+                    {
+                        eprintln!("{}: {}", e.code, e.message);
+                    }
                     self.title_state = None;
                     return;
                 }
@@ -952,6 +970,14 @@ pub(crate) struct KeyboardControl {
     remote_control: Option<String>,
 }
 impl KeyboardControl {
+    pub(crate) fn toggle_inspection(&mut self, service: &mut Service) -> crate::model::Result<()> {
+        self.release(service)?;
+        let config = (!service.engine.inspection_flight_active()).then(Default::default);
+        service.execute(Command::SetInspectionFlight { config }.into())?;
+        self.revision = None;
+        Ok(())
+    }
+
     pub(crate) fn apply_keys(
         &mut self,
         service: &mut Service,

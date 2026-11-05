@@ -1,0 +1,268 @@
+{
+  "document": {
+    "version": 4,
+    "space_version": 1,
+    "id": "natural_terraces",
+    "revision": 1,
+    "datum": {
+      "cell": [
+        "0",
+        "0",
+        "0"
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ]
+    },
+    "base": {
+      "kind": "constant",
+      "height_meters": 1
+    },
+    "operations": [
+      {
+        "kind": "natural_terraces",
+        "center": {
+          "cell": [
+            "0",
+            "0",
+            "0"
+          ],
+          "offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "settings": {
+          "seed": 2718,
+          "radius_meters": 240,
+          "tread_meters": 40,
+          "minimum_step_meters": 3,
+          "maximum_step_meters": 15,
+          "aspect": 1.1,
+          "contour_irregularity": 0.22,
+          "warp_meters": 14,
+          "warp_period_meters": 180,
+          "cliff_fraction": 0.04,
+          "top_detail_meters": 0.08,
+          "connections": [
+            {
+              "azimuth_degrees": -100,
+              "width_meters": 70,
+              "meander_radians": 0.45,
+              "meander_scale_meters": 80
+            },
+            {
+              "azimuth_degrees": 30,
+              "width_meters": 48,
+              "meander_radians": 0.7,
+              "meander_scale_meters": 95
+            }
+          ]
+        }
+      }
+    ],
+    "water_level_meters": null
+  },
+  "patches": [
+    {
+      "origin": {
+        "cell": [
+          "-1",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          724,
+          0,
+          724
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "-1",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          924,
+          0,
+          724
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "0",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          100,
+          0,
+          724
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "-1",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          724,
+          0,
+          924
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "-1",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          924,
+          0,
+          924
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "0",
+          "0",
+          "-1"
+        ],
+        "offset": [
+          100,
+          0,
+          924
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "-1",
+          "0",
+          "0"
+        ],
+        "offset": [
+          724,
+          0,
+          100
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "-1",
+          "0",
+          "0"
+        ],
+        "offset": [
+          924,
+          0,
+          100
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    },
+    {
+      "origin": {
+        "cell": [
+          "0",
+          "0",
+          "0"
+        ],
+        "offset": [
+          100,
+          0,
+          100
+        ]
+      },
+      "cells": [
+        100,
+        100
+      ],
+      "spacing_meters": 2
+    }
+  ],
+  "view": {
+    "actor": "player",
+    "yaw_degrees": 122.52437357618942,
+    "pitch_degrees": -12,
+    "eye_height": 1.45,
+    "fov_degrees": 70,
+    "mode": "third_person",
+    "third_person": {
+      "distance_meters": 10,
+      "shoulder_offset": 0.4,
+      "collision_radius": 0.15
+    }
+  },
+  "camera": {
+    "position": [
+      460,
+      340,
+      -460
+    ],
+    "target": [
+      0,
+      24,
+      0
+    ],
+    "fov_degrees": 52
+  }
+}

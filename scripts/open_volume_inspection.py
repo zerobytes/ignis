@@ -114,25 +114,26 @@ def prepare():
         (OUT/'verification.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='partitions'}))
     finally:c.close()
 
-def launch():
-    OUT.mkdir(parents=True,exist_ok=True);binary=native_entry();path=OUT/'launch.json';stamp=binary.stat();signature=[stamp.st_ino,stamp.st_size,stamp.st_mtime_ns]
+def launch(prefix=PREFIX):
+    out=ROOT/prefix;scene=f'{prefix}/world.scene.json'
+    out.mkdir(parents=True,exist_ok=True);binary=native_entry();path=out/'launch.json';stamp=binary.stat();signature=[stamp.st_ino,stamp.st_size,stamp.st_mtime_ns]
     if path.exists():
         old=json.loads(path.read_text());probe=subprocess.run(['ps','-p',str(old['pid']),'-o','command='],capture_output=True,text=True)
-        if probe.returncode==0 and '--scene '+SCENE in probe.stdout:
+        if probe.returncode==0 and '--scene '+scene in probe.stdout:
             if old.get('binary_stamp')!=signature:raise RuntimeError('Previous inspection window uses an older build; preserve it until closed')
             print(json.dumps(dict(already_running=True,pid=old['pid'])));return
-    c=Client(binary,window=True,log_path=OUT/'window.log',detached=True,startup_args=('--scene',SCENE,'--continuous','--third-person','player'))
+    c=Client(binary,window=True,log_path=out/'window.log',detached=True,startup_args=('--scene',scene,'--continuous','--third-person','player'))
     try:
-        init(c);saved=json.loads((OUT/'verification.json').read_text());view=saved['view'];flight=saved['flight'];c.call('set_viewport_performance',settings=dict(enabled=False,vsync=False))
+        init(c);saved=json.loads((out/'verification.json').read_text());view=saved['view'];flight=saved['flight'];c.call('set_viewport_performance',settings=dict(enabled=False,vsync=False))
         c.call('set_player_view',view=view);c.call('set_inspection_flight',config=flight);c.call('play')
         c.call('set_viewport_performance',settings=dict(enabled=True,vsync=False))
         performance=None
         for _ in range(8):
             time.sleep(.3);performance=c.call('inspect_viewport_performance')
             if performance['sample']['intervals']>=4 and performance['sample']['seconds']>=.3:break
-        assert c.call('inspect_inspection_flight')['active']
-        result=dict(pid=c.process.pid,scene=SCENE,binary_stamp=signature,view=view,flight=flight,playing=True,presentation=performance,
-            controls='Click+mouse; WASD; Space up; C down; Shift fast; Ctrl slow; Tab first/third person; Esc release')
+        assert c.call('inspect_inspection_flight')['active']==(flight is not None)
+        result=dict(pid=c.process.pid,scene=scene,binary_stamp=signature,view=view,flight=flight,playing=True,presentation=performance,
+            controls='V flight/walk; Click+mouse; WASD; Space up; C down; Shift fast; Ctrl slow; Tab first/third person; Esc release')
         path.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result))
     except BaseException:c.close();raise
     else:c.process.stdin.close();c.process.stdout.close();c.log.close()

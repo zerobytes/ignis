@@ -8,10 +8,11 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod coverage;
+pub mod plateaus;
 pub(crate) mod position_codec;
 pub mod region;
 pub mod surface;
-pub const VERSION: u16 = 3;
+pub const VERSION: u16 = 4;
 pub const MAX_SAMPLES: usize = 66_049;
 pub const MAX_OPERATIONS: usize = 64;
 pub const MAX_WORK: usize = 16_000_000;
@@ -116,6 +117,12 @@ pub enum NoiseKind {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    NaturalTerraces {
+        #[serde(with = "position_codec")]
+        #[schemars(with = "Position")]
+        center: Position,
+        settings: Box<plateaus::Settings>,
+    },
     /// Compact oriented mountain chain; shape data belongs equally to authoring/generation.
     Ridge {
         #[serde(with = "position_codec")]
@@ -275,6 +282,10 @@ impl Document {
         };
         for op in &self.operations {
             let valid = match op {
+                Operation::NaturalTerraces { settings, .. } => {
+                    settings.validate()?;
+                    self.version >= 4
+                }
                 Operation::Ridge {
                     azimuth_degrees,
                     width_meters,
@@ -392,6 +403,7 @@ impl Document {
             .map(|op| match op {
                 Operation::Noise { octaves, .. } => 4 * usize::from(*octaves),
                 Operation::Ridge { .. } => 16,
+                Operation::NaturalTerraces { settings, .. } => 48 + 32 * settings.connections.len(),
                 Operation::Surface { program } => program.work_per_point(),
                 Operation::Channel { points, .. } => points.len() * 2,
                 _ => 1,
@@ -407,6 +419,10 @@ impl Document {
 }
 fn operation_bounds(op: &Operation, h: [f64; 2]) -> [f64; 2] {
     let bounds = match op {
+        Operation::NaturalTerraces { settings, .. } => [
+            h[0] - settings.top_detail_meters,
+            h[1] + settings.maximum_height(),
+        ],
         Operation::Surface { program } => return program.range_meters,
         Operation::Raise {
             amount_meters: a, ..
@@ -613,6 +629,11 @@ impl<'a> Sampler<'a> {
         };
         for (i, op) in self.doc.operations.iter().enumerate() {
             match op {
+                Operation::NaturalTerraces { center, settings } => {
+                    if let Some(d) = horizontal(p, *center, settings.support_radius()) {
+                        h += settings.sample(d);
+                    }
+                }
                 Operation::Ridge {
                     center,
                     width_meters,
@@ -961,6 +982,14 @@ pub fn compile(document: &Document, patch: Patch, stride: u16) -> Result<Compile
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Query {
+    TerraceConnections {
+        document: Document,
+        operation: usize,
+        connection: usize,
+        from_radius: f64,
+        to_radius: f64,
+        samples: u16,
+    },
     PrepareSurface {
         draft: surface::Draft,
     },
@@ -1002,6 +1031,46 @@ fn edit_list<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<
 }
 pub fn query(query: Query) -> Result<serde_json::Value> {
     match query {
+        Query::TerraceConnections {
+            document,
+            operation,
+            connection,
+            from_radius,
+            to_radius,
+            samples,
+        } => {
+            if !(2..=2048).contains(&samples) {
+                return Err(invalid("Connection inspection needs2..2048samples"));
+            }
+            let sampler = Sampler::new(&document)?;
+            let Some(Operation::NaturalTerraces { center, settings }) =
+                document.operations.get(operation)
+            else {
+                return Err(invalid("Expected natural terrace operation"));
+            };
+            let mut points = vec![];
+            for i in 0..samples {
+                let r = mix(
+                    from_radius,
+                    to_radius,
+                    f64::from(i) / f64::from(samples - 1),
+                );
+                let d = settings.route_point(r, connection)?;
+                let p = center
+                    .translated([d[0], 0., d[1]])
+                    .map_err(|e| invalid(e.to_string()))?;
+                points.push(
+                    serde_json::json!({"point":p,"local_xz":d,"height_meters":sampler.sample(p)?}),
+                );
+            }
+            let n = (settings.radius_meters / settings.tread_meters).ceil() as i64;
+            let steps = (0..n.min(2048))
+                .map(|k| settings.level_height(k + 1) - settings.level_height(k))
+                .collect::<Vec<_>>();
+            Ok(
+                serde_json::json!({"points":points,"steps":steps,"total_levels":n,"maximum_height_meters":settings.maximum_height(),"route_is_inspection_not_geometry":true}),
+            )
+        }
         Query::PrepareSurface { draft } => Ok(serde_json::json!({"program":draft.prepare()?})),
         Query::InspectRegion { document, region } => {
             Ok(region::compile(&document, region)?.report())
