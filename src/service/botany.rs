@@ -373,7 +373,7 @@ impl Service {
                     b::growth::Action::SetContinuous { profile } => {
                         if plant.definition.version<2 {return Err(invalid("Independent growth requires a broadleaf tree"));}
                         profile.validate()?;
-                        if plant.definition.version != 5 {plant.definition.version=4;}plant.definition.stature=None;
+                        if plant.definition.version < 5 {plant.definition.version=4;}plant.definition.stature=None;
                         plant.definition.continuous=Some(profile.clone());
                         plant.definition.foliage.get_or_insert_with(Default::default);
                         plant.validate()?;

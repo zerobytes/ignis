@@ -3,6 +3,7 @@
 use super::{lifecycle::Schedule, production::Production, *};
 mod tree;
 pub mod sequoia;
+pub mod sequoia_realistic;
 pub mod continuous;
 pub mod foliage;
 mod stature;
@@ -79,7 +80,7 @@ impl Definition {
             p.validate()?;
             if self.foliage.as_ref().is_none_or(|f|p.leaf_turnover_days<f.expansion_days) {return Err(invalid("Independent growth requires foliage with expansion no longer than turnover"));}
         }
-        if self.version == 5 && (self.schedule.flower_duration != 0 || self.schedule.fruit_duration != 0 || self.schedule.ripe_duration != 0) { return Err(invalid("Sequoia cones are not implemented; disable angiosperm reproduction")); }
+        if self.version >= 5 && (self.schedule.flower_duration != 0 || self.schedule.fruit_duration != 0 || self.schedule.ripe_duration != 0) { return Err(invalid("Sequoia cones are not implemented; disable angiosperm reproduction")); }
         if let Some(profile) = &self.foliage {
             if self.version < 2 {
                 return Err(invalid("Early foliage requires a broadleaf grammar"));
@@ -105,7 +106,7 @@ impl Definition {
         {
             return Err(invalid("Living time/profile budget exceeded"));
         }
-        if !(1..=5).contains(&self.version)
+        if !(1..=6).contains(&self.version)
             || !identifier(&self.prefix)
             || self.prefix.len() > 20
             || self.interval == 0
@@ -220,6 +221,7 @@ impl Plant {
     }
     pub fn recipe(&self) -> Result<Recipe> {
         self.validate()?;
+        if self.definition.version == 6 { return sequoia_realistic::recipe(self); }
         if self.definition.version == 5 { return sequoia::recipe(self); }
         if self.definition.version >= 2 {
             let mut recipe=tree::recipe(self)?;

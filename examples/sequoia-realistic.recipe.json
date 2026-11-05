@@ -1,0 +1,36 @@
+{
+  "version": 6,
+  "prefix": "sequoia_real",
+  "seed": 83,
+  "interval": 365,
+  "maximum_nodes": 22,
+  "internode_length": 0.6,
+  "schedule": {
+    "period": 365,
+    "phase": 0,
+    "maturity": 0,
+    "flower_duration": 0,
+    "fruit_duration": 0,
+    "ripe_duration": 0
+  },
+  "foliage": {
+    "expansion_days": 30,
+    "apical_leaves": 16,
+    "primary_leaves": 24,
+    "secondary_leaves": 8,
+    "length_m": 0.35,
+    "width_m": 0.24
+  },
+  "continuous": {
+    "seedling_height_m": 0.6,
+    "height_limit_m": 85,
+    "height_reference_years": 1200,
+    "seedling_diameter_m": 0.04,
+    "diameter_limit_m": 8.5,
+    "diameter_reference_years": 3000,
+    "internode_m": 0.12,
+    "internode_days": 14,
+    "shoot_expansion_days": 365,
+    "leaf_turnover_days": 1095
+  }
+}

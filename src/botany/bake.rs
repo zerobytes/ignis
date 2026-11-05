@@ -425,7 +425,7 @@ pub fn poses(recipe: &Recipe) -> Result<Vec<Pose>> {
             flare,
             stiffness,
             section,
-            wood_surface: edit.wood_surface.clone().map(Arc::new),
+            wood_surface: if recipe.living.as_ref().is_some_and(|p|p.definition.version==6) && o.id=="stem" { Some(Arc::new(super::growth::sequoia_realistic::bole(match o.shape {Shape::Axis{radius,..}=>radius,_=>unreachable!()},recipe.source.seed))) } else {edit.wood_surface.clone().map(Arc::new)},
             surface_scale: match o.shape {
                 Shape::Axis { radius: r, .. } => radius / r,
                 _ => 1.,
@@ -1613,7 +1613,11 @@ pub fn compile(recipe: &Recipe) -> Result<Compiled> {
         let geometry = meshes::Geometry {
             positions: b.positions,
             triangles: b.triangles,
-            material_coordinates: None,
+            material_coordinates: if recipe.living.as_ref().is_some_and(|p|p.definition.version==6) {
+                Some(b.vertices.iter().map(|v| {let p=&poses[v.organ];
+                    if i==0 {[(v.local.z.atan2(v.local.y)*p.radius) as f32,(v.u*p.length) as f32,v.local.z as f32]}else{[(v.u*p.length) as f32,v.local.z as f32,v.local.y as f32]}
+                }).collect())
+            }else{None},
         };
         // Empty foliage remains a tiny hidden placeholder so source ownership stays stable.
         let geometry = if geometry.positions.is_empty() {
