@@ -8,7 +8,7 @@ use std::sync::Arc;
 mod extract;
 pub mod gpu;
 mod tables;
-pub const VERSION: u16 = 1;
+pub const VERSION: u16 = 2;
 pub const MAX_BYTES: usize = 65536;
 pub const MAX_POINTS: usize = 2_200_000;
 pub const MAX_VERTICES: usize = 600_000;
@@ -65,6 +65,8 @@ pub struct Document {
     pub version: u16,
     pub seed: u32,
     pub base: Base,
+    #[serde(default = "unit_scale", skip_serializing_if = "is_unit_scale")]
+    pub noise_domain_scale: [f64; 3],
     pub vertical_strength: f64,
     #[serde(deserialize_with = "octaves")]
     pub octaves: Vec<Octave>,
@@ -77,6 +79,12 @@ pub struct Document {
     #[serde(default)]
     pub floor: Option<Floor>,
 }
+fn unit_scale() -> [f64; 3] {
+    [1.; 3]
+}
+fn is_unit_scale(v: &[f64; 3]) -> bool {
+    *v == [1.; 3]
+}
 fn octaves<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<Octave>, D::Error> {
     crate::terrain::limited::<D, Octave, 12>(d)
 }
@@ -88,12 +96,17 @@ fn point(p: [f64; 3]) -> bool {
 }
 impl Document {
     pub fn validate(&self) -> Result<()> {
-        if self.version != VERSION
+        if ![1, VERSION].contains(&self.version)
+            || self
+                .noise_domain_scale
+                .iter()
+                .any(|&v| !bounded(v, 0.0001, 10000.))
+            || (self.version < 2 && !is_unit_scale(&self.noise_domain_scale))
             || !bounded(self.vertical_strength, 0.001, 100.)
             || self.octaves.len() > 12
         {
             return Err(invalid(
-                "Density requires version1, strength0.001..100 and at most12 octaves",
+                "Density requires version1/2, positive domain scales0.0001..10000 (non-unit requires2), strength0.001..100 and at most12 octaves",
             ));
         }
         let base_ok = match self.base {
@@ -144,6 +157,8 @@ struct PreparedOctave {
 }
 pub struct Sampler<'a> {
     doc: &'a Document,
+    domain_scale: DVec3,
+    inverse_domain_scale: DVec3,
     octaves: Vec<PreparedOctave>,
 }
 impl<'a> Sampler<'a> {
@@ -165,7 +180,12 @@ impl<'a> Sampler<'a> {
                 seed: doc.seed.wrapping_add((i as u32).wrapping_mul(0x9e3779b9)),
             })
             .collect();
-        Ok(Self { doc, octaves })
+        Ok(Self {
+            doc,
+            octaves,
+            domain_scale: DVec3::from_array(doc.noise_domain_scale),
+            inverse_domain_scale: DVec3::ONE / DVec3::from_array(doc.noise_domain_scale),
+        })
     }
     fn altitude(&self, p: DVec3) -> f64 {
         match self.doc.base {
@@ -184,6 +204,7 @@ impl<'a> Sampler<'a> {
     fn value(&self, p: DVec3) -> f64 {
         let original_altitude = self.altitude(p);
         let mut q = p;
+        let noise_p = p * self.domain_scale;
         if let Some(w) = &self.doc.warp {
             for axis in 0..3 {
                 let seed = self
@@ -191,8 +212,9 @@ impl<'a> Sampler<'a> {
                     .seed
                     .wrapping_add(0x85ebca6b_u32.wrapping_mul(axis as u32 + 1));
                 q[axis] += w.amplitude
-                    * (noise(p * w.frequency, seed) * 0.64
-                        + noise(p * (w.frequency * 0.461), seed ^ 0xc2b2ae35) * 0.32);
+                    * self.inverse_domain_scale[axis]
+                    * (noise(noise_p * w.frequency, seed) * 0.64
+                        + noise(noise_p * (w.frequency * 0.461), seed ^ 0xc2b2ae35) * 0.32);
             }
         }
         let altitude = self.altitude(q);
@@ -211,8 +233,9 @@ impl<'a> Sampler<'a> {
             let snapped = smooth_snap(fraction, t.sharpness);
             d += (fy.floor() + snapped - t.phase) * t.strength + (snapped - fraction) * t.overhang;
         }
+        let noise_q = q * self.domain_scale;
         for o in &self.octaves {
-            d += noise((o.rotation * q) * o.frequency, o.seed) * o.amplitude;
+            d += noise((o.rotation * noise_q) * o.frequency, o.seed) * o.amplitude;
         }
         d
     }
@@ -276,20 +299,30 @@ pub struct Grid {
     pub origin: [f64; 3],
     pub cells: [u16; 3],
     pub spacing: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vertical_spacing: Option<f64>,
 }
 impl Grid {
+    fn step(&self, axis: usize) -> f64 {
+        if axis == 1 {
+            self.vertical_spacing.unwrap_or(self.spacing)
+        } else {
+            self.spacing
+        }
+    }
     fn dimensions(&self) -> Result<([usize; 3], usize)> {
         let n = self.cells.map(|v| usize::from(v) + 1);
-        let count = n.iter().product();
+        let count = n
+            .iter()
+            .try_fold(1usize, |a, &b| a.checked_mul(b))
+            .ok_or_else(|| invalid("Density sample count overflow"))?;
         if self.cells.contains(&0)
             || count > MAX_POINTS
             || !bounded(self.spacing, 0.01, 4096.)
+            || !bounded(self.step(1), 0.01, 4096.)
             || !point(self.origin)
-            || (0..3).any(|i| self.origin[i].abs() + f64::from(self.cells[i]) * self.spacing > 1e12)
-            || self
-                .cells
-                .iter()
-                .any(|&n| f64::from(n) * self.spacing > 10000.)
+            || (0..3).any(|i| self.origin[i].abs() + f64::from(self.cells[i]) * self.step(i) > 1e12)
+            || (0..3).any(|i| f64::from(self.cells[i]) * self.step(i) > 10000.)
         {
             return Err(invalid(
                 "Density grid exceeds finite position, spacing0.01..4096m, 10000m extent or 2200000sample budget",

@@ -201,3 +201,74 @@ Recipe:examples/volume-terrain-region.recipe.json; current captures and timing
 report:artifacts/volumetric-terrain-region/. Static review, release lib/bin Clippy,
 focused rustfmt, Python syntax and the real MCP run validate this extension;
 no terrain mathematics or persisted Scene/source format changed.
+
+## Feature scale correction: kilometre landscape
+
+The208m experiment expanded the area without correcting the geological feature
+scale. The user's correction sets this map at approximately10×10km (100km²).
+Feature width, altitude and extraction resolution are separate controls.
+
+Volume source2 adds optional `noise_domain_scale` (positive XYZ coefficients,
+0.0001..10000, default1). Source1 remains readable and rejects non-unit values;
+unit values are omitted on serialization, preserving legacy source encoding.
+Both noise and warp use the scaled domain; warp displacement uses a prepared
+inverse scale. Plane/sphere base geometry remains defined in world coordinates,
+not turned into an ellipsoid. XYZ scales are Cartesian, not automatic planetary
+surface coordinates. All controls exist in the typed MCP API first.
+
+The kilometre recipe maps the208m reference field into10km horizontally
+(48.0769×) and8× vertically. It sets domain coefficients to
+[0.0208,0.125,0.0208], scales vertical density strength, terrace spacing and floor
+altitude/transition consistently. This preserves the density under the stated
+plane-coordinate mapping rather than merely increasing the count of small hills.
+Walls are tens of metres high; broad formations span hundreds of metres or more.
+Existing material frequency remains a separate metre-based appearance control.
+A new independently authored fine geometry layer is not implied by this mapping.
+
+Grid `vertical_spacing` defaults to the existing isotropic spacing. A50m
+horizontal/8m vertical grid supplies the landscape overview without sampling
+100km² every0.5m. It is a deliberately coarse overview, not full near-player
+resolution or dynamic LOD. All grid/cell/output budgets remain per operation;
+the96m laboratory and the10km landscape use the same extractor.
+
+Pre-code performance review: domain vectors/reciprocals are prepared once,
+no per-sample allocation/division/JSON; only fixed vector multiplications are
+added. GPU parameters grow by32bytes, not per-vertex data. Anisotropic lattice
+positions retain shared indices and use the same CPU/GPU steps. Grid count
+multiplication is checked, including32-bit hosts. GPU rejects noise coordinates
+beyond its local precision envelope rather than casting oversized lattices.
+
+The10km inspection also exposed legacy perspective depth precision: a5cm near
+plane is unsuitable for an overview kilometres from the terrain. `capture` now
+accepts an optional validated `clip` (near/far/reverse_z), using the existing
+renderer projection support. Omission preserves the previous capture path. The
+option affects only that offscreen capture; it does not mutate Scene camera,
+physics, gameplay viewport or saved state. Planet runtime overrides are refused
+to preserve its projection/atmospheric contract. The overview uses100m near,
+local landscape inspection20m near, both30km far and ordinary depth. A runtime
+large-world camera clipping policy is still separate work, not silently enabled.
+
+Validation:9focused release Rust tests passed, including exact mapped-plane
+values under independent horizontal/vertical scale, anisotropic plane extraction,
+source1 byte-stable encoding and real GPU/reference agreement for scaled plane
+and sphere. The headless10km MCP fixture produced94,272vertices/182,714triangles,
+with elevation range-216.79..130.43m,24matching boundary vertex sets, no vertical
+cutting, grounded contact and pixel-identical clipped Scene reload. Legacy source1
+was loaded/re-encoded byte-exact through MCP. Invalid capture clipping was refused;
+explicit legacy near/far matched default capture pixels; capture did not change
+Scene camera. Current artefacts live in artifacts/volumetric-terrain-landscape/;
+recipe in examples/volume-terrain-landscape.recipe.json.
+
+Visual review: macro contours now span the intended geographical area rather
+than adding more small hills. The oblique view shows broad terraces with roughly
+62m altitude spacing in the source. Neutral materials and coarse overview sampling
+still limit appearance; local high-resolution terrain and automatic transitions
+have not been delivered by this experiment. No screenshot is artistic acceptance.
+
+Final validation for this scale increment: release executable build, release
+lib/bin Clippy with warnings denied, focused rustfmt, Python syntax and the
+headless fixture passed. The final run repeated the same geometry, grounded
+contact, legacy-source bytes and clipped capture controls;16block publications
+including collision took816.28ms, or955.92ms including separate read-only mesh
+checks. This is the coarse overview result, not uniform metre-resolution100km²
+or a near-player streaming/performance claim. No engine window was opened.

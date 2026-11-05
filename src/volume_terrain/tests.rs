@@ -4,6 +4,7 @@ fn plane() -> Document {
         version: 1,
         seed: 19,
         base: Base::Plane { height: 0.25 },
+        noise_domain_scale: [1.; 3],
         vertical_strength: 1.,
         octaves: vec![],
         warp: None,
@@ -24,6 +25,7 @@ fn plane_sign_normal_and_exact_extraction() {
             origin: [-2.; 3],
             cells: [4; 3],
             spacing: 1.,
+            vertical_spacing: None,
         },
     )
     .unwrap();
@@ -50,6 +52,7 @@ fn sphere_is_closed_and_outward() {
             origin: [-2.; 3],
             cells: [16; 3],
             spacing: 0.25,
+            vertical_spacing: None,
         },
     )
     .unwrap();
@@ -111,7 +114,8 @@ fn seed_determinism_roundtrip_validation_and_budget() {
             &Grid {
                 origin: [0.; 3],
                 cells: [200; 3],
-                spacing: 1.
+                spacing: 1.,
+                vertical_spacing: None,
             }
         )
         .is_err()
@@ -140,6 +144,7 @@ fn integer_plane_has_no_degeneracy_and_adjacent_boundaries_match() {
             origin: [0., -2., 0.],
             cells: [4; 3],
             spacing: 1.,
+            vertical_spacing: None,
         },
     )
     .unwrap();
@@ -149,6 +154,7 @@ fn integer_plane_has_no_degeneracy_and_adjacent_boundaries_match() {
             origin: [4., -2., 0.],
             cells: [4; 3],
             spacing: 1.,
+            vertical_spacing: None,
         },
     )
     .unwrap();
@@ -179,6 +185,7 @@ fn gpu_density_matches_reference_for_all_operations_and_radial_base() {
         origin: [-4.; 3],
         cells: [16; 3],
         spacing: 0.5,
+        vertical_spacing: Some(0.25),
     };
     let mut d = plane();
     d.octaves = vec![
@@ -193,6 +200,8 @@ fn gpu_density_matches_reference_for_all_operations_and_radial_base() {
             rotation_degrees: [31., 7., 23.],
         },
     ];
+    d.version = 2;
+    d.noise_domain_scale = [0.5, 0.8, 0.7];
     d.warp = Some(Warp {
         frequency: 0.13,
         amplitude: 1.7,
@@ -231,7 +240,7 @@ fn gpu_density_matches_reference_for_all_operations_and_radial_base() {
             for y in 0..n[1] {
                 for x in 0..n[0] {
                     let p = std::array::from_fn(|i| {
-                        grid.origin[i] + [x, y, z][i] as f64 * grid.spacing
+                        grid.origin[i] + [x, y, z][i] as f64 * grid.step(i)
                     });
                     let cpu = sampler.sample(p).unwrap();
                     let error = (cpu - values[(z * n[1] + y) * n[0] + x]).abs();
@@ -255,6 +264,7 @@ fn empty_density_blocks_are_inspectable_without_invalid_mesh_publication() {
         origin: [0., 20., 0.],
         cells: [4; 3],
         spacing: 1.,
+        vertical_spacing: None,
     };
     let c = compile(&d, &grid).unwrap();
     assert_eq!(c.report["empty"], true);
@@ -272,4 +282,81 @@ fn empty_density_blocks_are_inspectable_without_invalid_mesh_publication() {
         })
         .is_err()
     );
+}
+
+#[test]
+fn horizontal_and_vertical_field_scales_preserve_plane_density_under_mapping() {
+    let mut a = plane();
+    a.base = Base::Plane { height: 0. };
+    a.octaves = vec![Octave {
+        frequency: 0.03,
+        amplitude: 7.,
+        rotation_degrees: [19., 37., 11.],
+    }];
+    a.warp = Some(Warp {
+        frequency: 0.05,
+        amplitude: 2.,
+    });
+    a.terraces = Some(Terraces {
+        spacing: 8.,
+        strength: 4.,
+        overhang: 1.6,
+        sharpness: 16.,
+        warp: 0.15,
+        phase: 0.,
+    });
+    a.floor = Some(Floor {
+        altitude: -30.,
+        transition: 3.,
+        strength: 40.,
+    });
+    let mut b = a.clone();
+    b.version = 2;
+    b.noise_domain_scale = [0.02, 0.125, 0.02];
+    b.vertical_strength *= 0.125;
+    b.terraces.as_mut().unwrap().spacing /= 0.125;
+    b.floor.as_mut().unwrap().altitude /= 0.125;
+    b.floor.as_mut().unwrap().transition /= 0.125;
+    let sa = Sampler::new(&a).unwrap();
+    let sb = Sampler::new(&b).unwrap();
+    for x in -8..8 {
+        for y in -8..8 {
+            let p = [x as f64 * 3.1, y as f64 * 0.71, 7.3];
+            let q = std::array::from_fn(|i| p[i] / b.noise_domain_scale[i]);
+            assert!((sa.sample(p).unwrap() - sb.sample(q).unwrap()).abs() < 1e-10);
+        }
+    }
+    b.version = 1;
+    assert!(b.validate().is_err());
+    b.version = 2;
+    b.noise_domain_scale[0] = 0.;
+    assert!(b.validate().is_err());
+    let bytes = encode(&a).unwrap();
+    let loaded = decode(&bytes).unwrap();
+    assert_eq!(bytes, encode(&loaded).unwrap());
+    assert!(
+        serde_json::to_value(&a)
+            .unwrap()
+            .get("noise_domain_scale")
+            .is_none()
+    );
+}
+
+#[test]
+fn anisotropic_vertical_grid_plane_extraction() {
+    let d = plane();
+    let c = compile(
+        &d,
+        &Grid {
+            origin: [-4., -2., -4.],
+            cells: [4, 16, 4],
+            spacing: 2.,
+            vertical_spacing: Some(0.25),
+        },
+    )
+    .unwrap();
+    assert_eq!(c.geometry.positions.len(), 25);
+    for p in &c.geometry.positions {
+        assert_eq!(p[1], 2.25);
+    }
 }

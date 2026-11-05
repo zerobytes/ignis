@@ -31,7 +31,7 @@ pub(super) fn compile(doc: &Document, grid: &Grid) -> Result<Compiled> {
     // grids require callers to use the same origin/spacing lattice (no cumulative steps).
     let world = |p: [usize; 3]| {
         DVec3::from_array(std::array::from_fn(|i| {
-            grid.origin[i] + p[i] as f64 * grid.spacing
+            grid.origin[i] + p[i] as f64 * grid.step(i)
         }))
     };
     let mut values = Vec::with_capacity(count);
@@ -105,8 +105,12 @@ pub(super) fn extract_values(
                                     "Density mesh exceeds600000vertex budget; reduce grid or split publication",
                                 ));
                             }
-                            let pa = DVec3::from_array(corners[a].map(|v| v as f64 * grid.spacing));
-                            let pb = DVec3::from_array(corners[b].map(|v| v as f64 * grid.spacing));
+                            let pa = DVec3::from_array(std::array::from_fn(|i| {
+                                corners[a][i] as f64 * grid.step(i)
+                            }));
+                            let pb = DVec3::from_array(std::array::from_fn(|i| {
+                                corners[b][i] as f64 * grid.step(i)
+                            }));
                             let p = pa + (pb - pa) * t;
                             vertex = positions.len() as u32;
                             positions.push(p.to_array().map(|v| v as f32));

@@ -51,7 +51,7 @@ impl Gpu {
         // A local f32 backend must not silently round away its sampling lattice.
         // Reference f64 remains available for larger authoring coordinates.
         let largest = (0..3)
-            .map(|i| grid.origin[i].abs() + f64::from(grid.cells[i]) * grid.spacing)
+            .map(|i| grid.origin[i].abs() + f64::from(grid.cells[i]) * grid.step(i))
             .fold(0., f64::max);
         let base_scale = match doc.base {
             Base::Plane { height } => height.abs(),
@@ -59,12 +59,31 @@ impl Gpu {
                 center.iter().map(|v| v.abs()).fold(radius, f64::max)
             }
         };
-        if largest.max(base_scale) > grid.spacing * 8192. {
+        if largest.max(base_scale) > grid.spacing.min(grid.step(1)) * 8192. {
             return Err(invalid(
                 "GPU density requires local coordinates/base within8192grid steps; use CPU reference for larger coordinates",
             ));
         }
-        let mut p = vec![[0f32; 4]; 9];
+        let max_frequency = doc
+            .octaves
+            .iter()
+            .map(|o| o.frequency)
+            .fold(doc.warp.as_ref().map_or(0., |w| w.frequency), f64::max);
+        let warp_amplitude = doc.warp.as_ref().map_or(0., |w| w.amplitude);
+        let noise_bound = (0..3)
+            .map(|i| {
+                (grid.origin[i].abs() + f64::from(grid.cells[i]) * grid.step(i)) * s.domain_scale[i]
+                    + warp_amplitude
+            })
+            .fold(0., f64::max)
+            * max_frequency
+            * 3f64.sqrt();
+        if noise_bound > 1_048_576. {
+            return Err(invalid(
+                "GPU density noise coordinates exceed the local lattice precision envelope; use CPU reference or rebase the source",
+            ));
+        }
+        let mut p = vec![[0f32; 4]; 11];
         p[0] = [
             grid.origin[0] as f32,
             grid.origin[1] as f32,
@@ -116,6 +135,9 @@ impl Gpu {
                 1.,
             ];
         }
+        p[5][3] = grid.step(1) as f32;
+        p[9][..3].copy_from_slice(&s.domain_scale.to_array().map(|v| v as f32));
+        p[10][..3].copy_from_slice(&s.inverse_domain_scale.to_array().map(|v| v as f32));
         for o in &s.octaves {
             p.push([
                 o.frequency as f32,

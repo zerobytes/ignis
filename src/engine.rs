@@ -944,6 +944,8 @@ pub enum Command {
         path: String,
         width: u32,
         height: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        clip: Option<crate::render::Clip>,
     },
     Exit,
 }

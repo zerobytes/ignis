@@ -212,7 +212,8 @@ pub struct RenderFrame {
     pub selection: Option<RenderBox>,
     pub selection_mesh: Option<String>,
 }
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Clip {
     pub near: f32,
     pub far: f32,

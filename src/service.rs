@@ -1557,11 +1557,15 @@ impl Service {
                 path,
                 width,
                 height,
+                clip,
             } => {
                 self.validate_capture(path, *width, *height)?;
+                if let Some(c)=clip {c.validate()?;if self.engine.planet_active(){return Err(invalid("Explicit capture clipping is for local scenes; preserve the planetary projection"));}}
                 self.engine.prepare_planet_viewport(*width,*height)?;
-                let mut reply =
-                    self.capture_frame(&self.game_frame(), path, *width, *height)?;
+                let mut frame=self.game_frame();
+                if let Some(c)=clip {frame.clip=Some(*c);}
+                let mut reply = self.capture_frame(&frame, path, *width, *height)?;
+                if clip.is_some(){reply.data["clip"]=json!(clip);}
                 reply.data["tick"] = json!(self.engine.simulation.tick);
                 reply.data["revision"] = json!(self.engine.revision);
                 reply.data["debug_view"] = json!(self.engine.debug_view);
