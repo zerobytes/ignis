@@ -1457,7 +1457,7 @@ impl Engine {
         scene.entities.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(scene)
     }
-    fn apply_edits(&mut self, edits: impl ExactSizeIterator<Item = SceneEdit>) -> Result<()> {
+    pub(crate) fn apply_edits(&mut self, edits: impl ExactSizeIterator<Item = SceneEdit>) -> Result<()> {
         let scene = self.staged_edits(edits)?;
         self.replace(scene)
     }
