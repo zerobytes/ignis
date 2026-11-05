@@ -640,7 +640,6 @@ pub fn main() -> Result<()> {
     let mut front = Front::new(root, Store::default_path())?;
     if args.iter().any(|a| a == "--play") {
         if front.selected().is_some() {
-            front.execute(Action::Roster)?;
             front.execute(Action::Offline)?;
         } else {
             front.execute(Action::New)?;
