@@ -8,14 +8,14 @@ from relief_compositions import ZERO,position
 from render_plateau_materials import grass
 from weathered_plateau import chip,edge_chip
 from directional_plateau import formation,box,fractures
-OUT=ROOT/'artifacts/directional-plateau';PREFIX='artifacts/directional-plateau'
-def main():
+def main(formation_builder=formation,fracture_builder=fractures,output='directional-plateau',configuration=None,joint_builder=None,spall_builder=None):
+ OUT=ROOT/'artifacts'/output;PREFIX=f'artifacts/{output}'
  OUT.mkdir(parents=True,exist_ok=True);c=Client(ROOT/'target/release/ignis',log_path=OUT/'native.log');operations=[];rejections=[]
  try:
   init(c);assert 'union_convex' in json.dumps(c.request('tools/list')['result'])
   c.call('generate',recipe=dict(width=20,depth=20,seed=221,obstacles=0));c.call('edit_scene',edits=[dict(op='remove',id=e['id']) for e in c.call('inspect')['scene']['entities']])
   params=dict(id='directional',seed=4721,width=104,depth=78,height=34,contour_points=20,rock_count=1)
-  source=formation(params)
+  params.update(configuration or {});source=formation_builder(params)
   c.call('publish_landform',publication=dict(document=source,asset='plateau',instance='plateau',frame_origin=ZERO,color=[.65,.65,.65],shading='flat',collision=True))
   def asset():return c.call('inspect_mesh',asset='plateau')['asset']
   def apply(kind,points):
@@ -29,10 +29,14 @@ def main():
    operations.append(op);return True
   assert apply('subtract_convex',box([-180,34,-180],[180,160,180]))
   assert apply('subtract_convex',box([-180,-160,-180],[180,0,180]))
-  for pts in fractures():apply('subtract_convex',pts)
+  for pts in fracture_builder():apply('subtract_convex',pts)
   rng=random.Random(27319)
-  for i in range(12):apply('subtract_convex',edge_chip(asset()['geometry'],rng))
-  for i in range(14):apply('subtract_convex',chip(asset()['geometry'],rng))
+  if joint_builder:
+   for i in range(10):apply('subtract_convex',joint_builder(asset()['geometry'],rng))
+  if spall_builder:
+   for i in range(14):apply('subtract_convex',spall_builder(asset()['geometry'],rng))
+  for i in range(4 if joint_builder else 12):apply('subtract_convex',edge_chip(asset()['geometry'],rng))
+  for i in range(10 if joint_builder else 14):apply('subtract_convex',chip(asset()['geometry'],rng))
   topology=c.call('inspect_mesh_topology',asset='plateau')['topology'];assert topology['boundary_edges']==topology['non_manifold_edges']==0
   islands=c.call('inspect_mesh_islands',asset='plateau')['topology']['islands'];assert len(islands)==1
   a=asset();g=a['geometry']
@@ -52,6 +56,6 @@ def main():
   c.call('set_camera',camera=views['overview']);c.call('save_scene',path=f'{PREFIX}/plateau.scene.json');c.call('load_scene',path=f'{PREFIX}/plateau.scene.json');c.call('capture',path=f'{PREFIX}/reload.png',width=1440,height=960);assert (OUT/'reload.png').read_bytes()==(OUT/'overview.png').read_bytes()
   c.call('step',ticks=2);c.call('save_replay',path=f'{PREFIX}/plateau.replay.json');r=c.call('run_replay',path=f'{PREFIX}/plateau.replay.json');assert r['matched'] and r['meshes_matched']
   report=dict(build=c.call('inspect')['build_id'],vertices=len(g['positions']),triangles=len(g['triangles']),operations=len(operations),rejections=len(rejections),closed=True,islands=1,roof_faces=len(roof),reload_pixels_equal=True,replay_matched=True,physical_erosion=False,human_acceptance=False)
-  (OUT/'verification.json').write_text(json.dumps(report,indent=2));(OUT/'rejections.json').write_text(json.dumps(rejections,indent=2));(ROOT/'examples/directional-plateau.recipe.json').write_text(json.dumps(dict(parameters=params,base=source,operations=operations,views=views),indent=2)+'\n');print(json.dumps(report))
+  (OUT/'verification.json').write_text(json.dumps(report,indent=2));(OUT/'rejections.json').write_text(json.dumps(rejections,indent=2));(ROOT/'examples'/f'{output}.recipe.json').write_text(json.dumps(dict(parameters=params,base=source,operations=operations,views=views),indent=2)+'\n');print(json.dumps(report))
  finally:c.close()
 if __name__=='__main__':main()
