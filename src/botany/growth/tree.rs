@@ -89,7 +89,9 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
     if let Shape::Axis { tip_ratio, .. } = &mut organs[0].shape {
         *tip_ratio = 0.03;
     }
-    if let Some(profile) = &d.foliage && d.version<4 {
+    if let Some(profile) = &d.foliage
+        && d.version < 4
+    {
         young_leaves(
             &mut organs,
             "stem",
@@ -106,10 +108,17 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
             continue;
         }
         let birth = (i + 1) * d.interval;
-        let shoot_days=d.continuous.as_ref().map_or(d.interval*4,|p|p.shoot_expansion_days);
+        let shoot_days = d
+            .continuous
+            .as_ref()
+            .map_or(d.interval * 4, |p| p.shoot_expansion_days);
         let g = progress(age, birth, shoot_days);
         let y = 1.0 + i as f64 * d.internode_length * 0.74;
-        let insertion = if d.version==4 {0.18+0.64*i as f64/d.maximum_nodes as f64}else{(y / height).min(0.95)};
+        let insertion = if d.version == 4 {
+            0.18 + 0.64 * i as f64 / d.maximum_nodes as f64
+        } else {
+            (y / height).min(0.95)
+        };
         let angle = i as f64 * 2.3999632297 + noise(d.seed, i) * 0.7;
         let dir = V::new(
             angle.cos(),
@@ -130,10 +139,18 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
             Some("stem".into()),
             insertion,
             path.clone(),
-            if d.version==4 {(0.025+0.075*maturity)*(0.1+0.2*g)}else{0.006+0.04*g*(0.5+maturity*0.5)},
+            if d.version == 4 {
+                (0.025 + 0.075 * maturity) * (0.1 + 0.2 * g)
+            } else {
+                0.006 + 0.04 * g * (0.5 + maturity * 0.5)
+            },
         ));
         // Persistent juvenile foliage: early crowns are visible before later orders emerge.
-        let leaf_count = if d.version==4 {0}else{d.foliage.as_ref().map_or(16, |p| p.primary_leaves as u64)};
+        let leaf_count = if d.version == 4 {
+            0
+        } else {
+            d.foliage.as_ref().map_or(16, |p| p.primary_leaves as u64)
+        };
         for l in 0..leaf_count {
             let at = if d.foliage.is_some() {
                 0.15 + l as f64 * 0.8 / (leaf_count - 1) as f64
@@ -168,16 +185,34 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
             leaf.normal = [a.cos() * 0.3, 1., a.sin() * 0.3];
             organs.push(leaf);
         }
-        if age < birth + d.continuous.as_ref().map_or(d.interval,|p|p.shoot_expansion_days) {
+        if age
+            < birth
+                + d.continuous
+                    .as_ref()
+                    .map_or(d.interval, |p| p.shoot_expansion_days)
+        {
             continue;
         }
         for j in 0..6u64 {
-            let secondary_span=d.continuous.as_ref().map_or(d.interval,|p|p.shoot_expansion_days);
-            let secondary_birth = birth + d.continuous.as_ref().map_or(d.interval*4,|p|p.shoot_expansion_days) + j * secondary_span / 3;
+            let secondary_span = d
+                .continuous
+                .as_ref()
+                .map_or(d.interval, |p| p.shoot_expansion_days);
+            let secondary_birth = birth
+                + d.continuous
+                    .as_ref()
+                    .map_or(d.interval * 4, |p| p.shoot_expansion_days)
+                + j * secondary_span / 3;
             if age < secondary_birth {
                 continue;
             }
-            let sg = progress(age, secondary_birth, d.continuous.as_ref().map_or(d.interval*3,|p|p.shoot_expansion_days));
+            let sg = progress(
+                age,
+                secondary_birth,
+                d.continuous
+                    .as_ref()
+                    .map_or(d.interval * 3, |p| p.shoot_expansion_days),
+            );
             let at = 0.28 + j as f64 * 0.115;
             let a = angle + if j % 2 == 0 { 0.85 } else { -0.85 };
             let direction = V::new(
@@ -192,9 +227,15 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
                 Some(id.clone()),
                 at,
                 branch.clone(),
-                if d.version==4 {(0.025+0.075*maturity)*(0.03+0.04*sg)}else{0.002+0.009*sg},
+                if d.version == 4 {
+                    (0.025 + 0.075 * maturity) * (0.03 + 0.04 * sg)
+                } else {
+                    0.002 + 0.009 * sg
+                },
             ));
-            if let Some(profile) = &d.foliage && d.version<4 {
+            if let Some(profile) = &d.foliage
+                && d.version < 4
+            {
                 young_leaves(
                     &mut organs,
                     &sid,
@@ -206,11 +247,21 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
                 );
             }
             for k in 0..4u64 {
-                let twig_birth = secondary_birth + d.continuous.as_ref().map_or(d.interval*3,|p|p.shoot_expansion_days) + k * secondary_span / 4;
+                let twig_birth = secondary_birth
+                    + d.continuous
+                        .as_ref()
+                        .map_or(d.interval * 3, |p| p.shoot_expansion_days)
+                    + k * secondary_span / 4;
                 if age < twig_birth {
                     continue;
                 }
-                let tg = progress(age, twig_birth, d.continuous.as_ref().map_or(d.interval*2,|p|p.shoot_expansion_days));
+                let tg = progress(
+                    age,
+                    twig_birth,
+                    d.continuous
+                        .as_ref()
+                        .map_or(d.interval * 2, |p| p.shoot_expansion_days),
+                );
                 let at = 0.35 + k as f64 * 0.18;
                 let a = a + if k % 2 == 0 { 0.75 } else { -0.75 };
                 let td = V::new(
@@ -225,9 +276,13 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
                     Some(sid.clone()),
                     at,
                     twig.clone(),
-                    if d.version==4 {(0.025+0.075*maturity)*(0.01+0.02*tg)}else{0.002+0.002*tg},
+                    if d.version == 4 {
+                        (0.025 + 0.075 * maturity) * (0.01 + 0.02 * tg)
+                    } else {
+                        0.002 + 0.002 * tg
+                    },
                 ));
-                for l in 0..if d.version==4 {0}else{10u64} {
+                for l in 0..if d.version == 4 { 0 } else { 10u64 } {
                     let at = 0.22 + l as f64 * 0.077;
                     let leaf_angle = a
                         + l as f64 * 2.3999632297
@@ -268,6 +323,7 @@ pub(super) fn recipe(plant: &Plant) -> Result<Recipe> {
         }
     }
     let r = Recipe {
+        wood_details: None,
         version: 8,
         prefix: d.prefix.clone(),
         source: Arc::new(Source {
@@ -323,7 +379,6 @@ mod tests {
         assert!(
             !pruned
                 .source
-        wood_details: None,
                 .organs
                 .iter()
                 .any(|o| o.id == "node0" || o.id.starts_with("node0/"))

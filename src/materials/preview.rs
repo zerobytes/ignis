@@ -55,7 +55,10 @@ mod tests {
         assert_eq!(&packet[4..8], &PACKET_VERSION.to_le_bytes());
         let size = u32::from_le_bytes(packet[8..12].try_into().unwrap()) as usize;
         assert_eq!(size, std::mem::size_of::<super::super::GpuMaterial>());
-        assert_eq!(&packet[16..16 + size], bytemuck::cast_slice::<_, u8>(&table));
+        assert_eq!(
+            &packet[16..16 + size],
+            bytemuck::cast_slice::<_, u8>(&table)
+        );
         assert_eq!(&packet[16 + size..], bytemuck::cast_slice::<_, u8>(&words));
     }
 

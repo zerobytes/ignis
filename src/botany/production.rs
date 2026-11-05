@@ -109,7 +109,9 @@ impl Production {
                         cohort,
                         slot,
                     };
-                    if let Some(stage) = self.stage(schedule, &id) && stage != Stage::Dropped {
+                    if let Some(stage) = self.stage(schedule, &id)
+                        && stage != Stage::Dropped
+                    {
                         result.push((id, stage));
                     }
                 }

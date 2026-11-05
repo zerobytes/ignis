@@ -16,16 +16,16 @@ pub mod deformation;
 pub mod development;
 pub mod dynamics;
 pub mod growth;
+pub mod junction_flow;
+pub mod junction_quality;
 pub mod lifecycle;
 pub mod production;
 mod reproduction;
 pub mod root_crown;
 pub mod root_sections;
 pub mod roots;
-pub mod wood_surface;
-pub mod junction_quality;
-pub mod junction_flow;
 pub mod wood_details;
+pub mod wood_surface;
 pub const VERSION: u16 = 13;
 pub const LIVING_SCENE_VERSION: u32 = 121;
 fn one() -> f64 {
@@ -243,9 +243,28 @@ pub enum ManualPolicy {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
-    AdoptLiving { prefix: String, #[serde(default)] timing: growth::authored::Timing, #[serde(default)] born: u64 },
-    SetWoodDetails { prefix: String, details: Option<wood_details::Details>, #[serde(default)] preview: bool, #[serde(default)] policy: ManualPolicy },
-    LoseBranch { prefix: String, organ: String, cause: wood_details::Cause, #[serde(default)] policy: ManualPolicy },
+    AdoptLiving {
+        prefix: String,
+        #[serde(default)]
+        timing: growth::authored::Timing,
+        #[serde(default)]
+        born: u64,
+    },
+    SetWoodDetails {
+        prefix: String,
+        details: Option<wood_details::Details>,
+        #[serde(default)]
+        preview: bool,
+        #[serde(default)]
+        policy: ManualPolicy,
+    },
+    LoseBranch {
+        prefix: String,
+        organ: String,
+        cause: wood_details::Cause,
+        #[serde(default)]
+        policy: ManualPolicy,
+    },
     CreateLiving {
         definition: growth::Definition,
         born: u64,
@@ -567,7 +586,9 @@ impl Outline {
 }
 impl Recipe {
     pub fn validate(&self) -> Result<()> {
-        if let Some(details)=&self.wood_details {details.validate(self)?;}
+        if let Some(details) = &self.wood_details {
+            details.validate(self)?;
+        }
         if let Some(plant) = &self.living {
             if self.version < 8
                 || self.source.version < 8
@@ -626,7 +647,9 @@ impl Recipe {
             || !(0. ..=1.).contains(&s.frond_growth_variation)
             || (s.frond_growth_variation != 0. && self.version < 9)
         {
-            return Err(invalid("Frond growth variation must be0..1 and requires recipe9"));
+            return Err(invalid(
+                "Frond growth variation must be0..1 and requires recipe9",
+            ));
         }
         if self.source.development.is_some() {
             if self.version < 3 {
@@ -653,15 +676,11 @@ impl Recipe {
                 s.leaf_width,
                 s.leaf_density,
             ])
-            || [
-                s.scale,
-                s.crown_width,
-                s.leaf_length,
-                s.leaf_width,
-            ]
-            .iter()
-            .any(|v| *v < 0.1 || *v > 5.)
-            || !s.radius.is_finite() || s.radius <= 0.
+            || [s.scale, s.crown_width, s.leaf_length, s.leaf_width]
+                .iter()
+                .any(|v| *v < 0.1 || *v > 5.)
+            || !s.radius.is_finite()
+            || s.radius <= 0.
             || !(0. ..=1.).contains(&s.leaf_density)
             || !(4..=64).contains(&s.axis_samples)
             || !(4..=32).contains(&s.blade_samples)
@@ -683,25 +702,40 @@ impl Recipe {
         if self.pruned.iter().any(|v| !ids.contains(v.as_str())) {
             return Err(invalid("Unknown pruned botanical organ"));
         }
-        let archived: BTreeSet<&str>=self.wood_details.iter().flat_map(|d|d.scars.iter()).filter(|s|s.year<=wood_details::age(self)).flat_map(|s|s.removed_organs.iter().map(String::as_str)).collect();
-        let woody_ids:BTreeSet<&str>=self.source.organs.iter().filter(|o|matches!(o.shape,Shape::Axis{..})).map(|o|o.id.as_str()).collect();
+        let archived: BTreeSet<&str> = self
+            .wood_details
+            .iter()
+            .flat_map(|d| d.scars.iter())
+            .filter(|s| s.year <= wood_details::age(self))
+            .flat_map(|s| s.removed_organs.iter().map(String::as_str))
+            .collect();
+        let woody_ids: BTreeSet<&str> = self
+            .source
+            .organs
+            .iter()
+            .filter(|o| matches!(o.shape, Shape::Axis { .. }))
+            .map(|o| o.id.as_str())
+            .collect();
         for (id, e) in &self.edits {
-            let archived_edit=!ids.contains(id.as_str()) && archived.contains(id.as_str());
-            let woody=woody_ids.contains(id.as_str()) || archived_edit;
+            let archived_edit = !ids.contains(id.as_str()) && archived.contains(id.as_str());
+            let woody = woody_ids.contains(id.as_str()) || archived_edit;
             e.deformation.validate()?;
             if let Some(flow) = e.junction_flow
-                && (self.version < 13 || !woody || !flow.is_finite() || !(0. ..=1.).contains(&flow)) {
-                return Err(invalid("Woody junction flow requires recipe13 and strength0..1"));
+                && (self.version < 13 || !woody || !flow.is_finite() || !(0. ..=1.).contains(&flow))
+            {
+                return Err(invalid(
+                    "Woody junction flow requires recipe13 and strength0..1",
+                ));
             }
             if let Some(level) = e.junction_refinement
-                && (self.version < 11 || level > 3 || !woody) {
-                return Err(invalid("Junction refinement requires recipe11, a woody axis and level0..3"));
+                && (self.version < 11 || level > 3 || !woody)
+            {
+                return Err(invalid(
+                    "Junction refinement requires recipe11, a woody axis and level0..3",
+                ));
             }
             if let Some(surface) = &e.wood_surface {
-                if self.version < 10
-                    || self.living.is_some()
-                    || !woody
-                {
+                if self.version < 10 || self.living.is_some() || !woody {
                     return Err(invalid(
                         "Wood surface requires recipe10 and a nonliving woody axis",
                     ));
@@ -711,7 +745,8 @@ impl Recipe {
             if (!ids.contains(id.as_str()) && !archived_edit)
                 || !finite(&e.offset)
                 || !finite(&e.rotation)
-                || !e.radius.is_finite() || e.radius <= 0.
+                || !e.radius.is_finite()
+                || e.radius <= 0.
                 || [e.length, e.width]
                     .iter()
                     .any(|x| !x.is_finite() || *x < 0.1 || *x > 5.)

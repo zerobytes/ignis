@@ -344,25 +344,55 @@ impl Service {
     }
     pub(super) fn botany_command(&mut self, operation: &Op) -> Result<Value> {
         match operation {
-            Op::AdoptLiving{prefix,timing,born}=>{
-                let old=self.botanical_recipe(prefix)?;
-                let plant=b::growth::authored::adopt(&old,timing,*born)?;
-                self.botanical_publish(plant.bound_recipe()?,Policy::Preserve)
+            Op::AdoptLiving {
+                prefix,
+                timing,
+                born,
+            } => {
+                let old = self.botanical_recipe(prefix)?;
+                let plant = b::growth::authored::adopt(&old, timing, *born)?;
+                self.botanical_publish(plant.bound_recipe()?, Policy::Preserve)
             }
-            Op::SetWoodDetails{prefix,details,preview,policy}=>{
-                let mut recipe=self.botanical_recipe(prefix)?;
-                b::wood_details::preserve_losses(recipe.wood_details.as_ref(),details.as_ref())?;
-                recipe.version=recipe.version.max(12);recipe.wood_details=details.clone();
-                if recipe.living.is_none() && recipe.source.development.is_some() && let Some(d)=&recipe.wood_details {recipe.settings.age_years=Some(d.age_years);}
-                if *preview {self.botany_command(&Op::Preview{recipe:Box::new(recipe),policy:*policy})}else{self.botanical_publish(recipe,*policy)}
-            }
-            Op::LoseBranch{prefix,organ,cause,policy}=>{
-                let mut recipe=self.botanical_recipe(prefix)?;b::wood_details::record_loss(&mut recipe,organ,*cause,None)?;
-                if let Some(plant)=&mut recipe.living && plant.production.sites.contains_key(organ) {
-                    plant.production.remove_site(organ).map_err(invalid)?;
-                    recipe.source=plant.recipe()?.source;
+            Op::SetWoodDetails {
+                prefix,
+                details,
+                preview,
+                policy,
+            } => {
+                let mut recipe = self.botanical_recipe(prefix)?;
+                b::wood_details::preserve_losses(recipe.wood_details.as_ref(), details.as_ref())?;
+                recipe.version = recipe.version.max(12);
+                recipe.wood_details = details.clone();
+                if recipe.living.is_none()
+                    && recipe.source.development.is_some()
+                    && let Some(d) = &recipe.wood_details
+                {
+                    recipe.settings.age_years = Some(d.age_years);
                 }
-                self.botanical_publish(recipe,*policy)
+                if *preview {
+                    self.botany_command(&Op::Preview {
+                        recipe: Box::new(recipe),
+                        policy: *policy,
+                    })
+                } else {
+                    self.botanical_publish(recipe, *policy)
+                }
+            }
+            Op::LoseBranch {
+                prefix,
+                organ,
+                cause,
+                policy,
+            } => {
+                let mut recipe = self.botanical_recipe(prefix)?;
+                b::wood_details::record_loss(&mut recipe, organ, *cause, None)?;
+                if let Some(plant) = &mut recipe.living
+                    && plant.production.sites.contains_key(organ)
+                {
+                    plant.production.remove_site(organ).map_err(invalid)?;
+                    recipe.source = plant.recipe()?.source;
+                }
+                self.botanical_publish(recipe, *policy)
             }
             Op::CreateLiving { definition, born } => {
                 if self
@@ -379,7 +409,7 @@ impl Service {
             }
             Op::Living { prefix, action } => {
                 let old = self.botanical_recipe(prefix)?;
-                let mut details=old.wood_details.clone();
+                let mut details = old.wood_details.clone();
                 let mut plant = old
                     .living
                     .clone()
@@ -393,7 +423,9 @@ impl Service {
                     }
                     b::growth::Action::SetWoodVolume { profile } => {
                         if !(6..=8).contains(&plant.definition.version) {
-                            return Err(invalid("This volume binding requires sequoia grammar6/7/8"));
+                            return Err(invalid(
+                                "This volume binding requires sequoia grammar6/7/8",
+                            ));
                         }
                         profile.validate()?;
                         plant.definition.version = if profile.continuous { 8 } else { 7 };
@@ -429,7 +461,7 @@ impl Service {
                         plant.validate()?;
                     }
                     b::growth::Action::Advance { time } => {
-                        details=b::wood_details::advance(&old,&mut plant,*time)?;
+                        details = b::wood_details::advance(&old, &mut plant, *time)?;
                     }
                     b::growth::Action::Harvest { fruit } => {
                         if plant.production.harvested.len() >= b::growth::MAX_HARVESTED {
@@ -441,8 +473,16 @@ impl Service {
                             .map_err(invalid)?;
                     }
                     b::growth::Action::Prune { site } => {
-                        if old.wood_details.is_some() && old.source.organs.iter().any(|o|o.id==*site) {
-                            let mut marked=old.clone();b::wood_details::record_site_loss(&mut marked,site,b::wood_details::Cause::Pruning)?;details=marked.wood_details;
+                        if old.wood_details.is_some()
+                            && old.source.organs.iter().any(|o| o.id == *site)
+                        {
+                            let mut marked = old.clone();
+                            b::wood_details::record_site_loss(
+                                &mut marked,
+                                site,
+                                b::wood_details::Cause::Pruning,
+                            )?;
+                            details = marked.wood_details;
                         }
                         plant.production.remove_site(site).map_err(invalid)?;
                     }
@@ -450,7 +490,11 @@ impl Service {
                 let mut next = plant.bound_recipe()?;
                 next.settings = old.settings;
                 next.edits = old.edits;
-                next.wood_details=details;next.version=next.version.max(old.version).max(if next.wood_details.is_some(){12}else{8});
+                next.wood_details = details;
+                next.version = next
+                    .version
+                    .max(old.version)
+                    .max(if next.wood_details.is_some() { 12 } else { 8 });
                 next.manual = old.manual;
                 self.botanical_publish(next, Policy::Preserve)
             }
@@ -465,16 +509,33 @@ impl Service {
                     .ok_or_else(|| invalid("Recipe is not a living plant"))?;
                 // Recorded history is causal; future previews simulate the same advance.
                 // Backward comparisons still do not replay arbitrary harvest/sculpt history.
-                let forward=old.wood_details.is_some() && *time>=saved.production.plant.time;
-                let mut plant=if forward {saved.clone()}else{b::growth::Plant::new(saved.definition.clone(),saved.production.plant.born)?};
-                let details=if forward {b::wood_details::advance(&old,&mut plant,*time)?}else{plant.advance(*time)?;old.wood_details.clone()};
-                let mut recipe=plant.bound_recipe()?;recipe.settings=old.settings.clone();recipe.wood_details=details;
-                if recipe.wood_details.is_some(){recipe.version=recipe.version.max(old.version).max(12);}
-                if forward {recipe.edits=old.edits.clone();recipe.manual=old.manual.clone();recipe=self.botanical_preserve(recipe,Policy::Preserve)?;}
+                let forward = old.wood_details.is_some() && *time >= saved.production.plant.time;
+                let mut plant = if forward {
+                    saved.clone()
+                } else {
+                    b::growth::Plant::new(saved.definition.clone(), saved.production.plant.born)?
+                };
+                let details = if forward {
+                    b::wood_details::advance(&old, &mut plant, *time)?
+                } else {
+                    plant.advance(*time)?;
+                    old.wood_details.clone()
+                };
+                let mut recipe = plant.bound_recipe()?;
+                recipe.settings = old.settings.clone();
+                recipe.wood_details = details;
+                if recipe.wood_details.is_some() {
+                    recipe.version = recipe.version.max(old.version).max(12);
+                }
+                if forward {
+                    recipe.edits = old.edits.clone();
+                    recipe.manual = old.manual.clone();
+                    recipe = self.botanical_preserve(recipe, Policy::Preserve)?;
+                }
                 recipe.validate()?;
                 let compiled = bake::compile(&recipe)?;
                 let overlay = self.botanical_merge(compiled.document, Policy::Preserve)?;
-                let history_applied=recipe.wood_details.is_some();
+                let history_applied = recipe.wood_details.is_some();
                 self.botany.basis = Some(self.botanical_basis(prefix));
                 self.botany.overlay = Some(overlay);
                 self.botany.preview = Some(recipe);
@@ -568,7 +629,9 @@ impl Service {
                 recipe.settings.age_years = Some(*age_years);
                 if let Some(vigor) = vigor {
                     recipe.settings.vigor = *vigor;
-                if let Some(d)=&mut recipe.wood_details {d.age_years = *age_years;}
+                    if let Some(d) = &mut recipe.wood_details {
+                        d.age_years = *age_years;
+                    }
                 }
                 if *preview {
                     self.botany_command(&Op::Preview {
@@ -585,8 +648,12 @@ impl Service {
                 edit,
             } => {
                 let mut recipe = self.botanical_recipe(prefix)?;
-                if edit.junction_refinement.is_some() { recipe.version = recipe.version.max(11); }
-                if edit.junction_flow.is_some() { recipe.version = recipe.version.max(13); }
+                if edit.junction_refinement.is_some() {
+                    recipe.version = recipe.version.max(11);
+                }
+                if edit.junction_flow.is_some() {
+                    recipe.version = recipe.version.max(13);
+                }
                 if edit.wood_surface.is_some() {
                     recipe.version = recipe.version.max(10);
                 }

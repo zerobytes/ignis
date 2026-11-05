@@ -187,6 +187,6 @@ pub mod surface_field;
 pub mod rock_wall;
 pub mod volume_terrain;
 
+pub mod mesh_chamfer;
 pub mod mesh_slope;
 pub mod mesh_wall_rock;
-pub mod mesh_chamfer;

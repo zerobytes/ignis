@@ -84,7 +84,11 @@ pub fn point(p: &Pose, source: &Source, u: f64, theta: f64) -> DVec3 {
     let f = p.at(u);
     let (a, b) = p.radius_at(source, u);
     if let Some(surface) = &p.wood_surface {
-        if p.patches.is_empty() {surface.point(f, u, theta, p.surface_scale)} else {super::wood_details::point(surface,p,u,theta)}
+        if p.patches.is_empty() {
+            surface.point(f, u, theta, p.surface_scale)
+        } else {
+            super::wood_details::point(surface, p, u, theta)
+        }
     } else if let Some(section) = &p.section {
         section.point(f, a, theta)
     } else {
@@ -96,10 +100,17 @@ pub fn area_bound(p: &Pose, source: &Source, u: f64) -> (f64, f64) {
     let mut area = DVec3::ZERO;
     let mut bound: f64 = 0.;
     let count = p.wood_surface.as_ref().map_or(24, |s| 2 * s.sides as usize);
-    let points: Vec<DVec3> = (0..count).map(|i| {
-        let q = point(p, source, u, std::f64::consts::TAU * i as f64 / count as f64);
-        p.flutes.as_ref().map_or(q, |f| f.warp(q)) - f.p
-    }).collect();
+    let points: Vec<DVec3> = (0..count)
+        .map(|i| {
+            let q = point(
+                p,
+                source,
+                u,
+                std::f64::consts::TAU * i as f64 / count as f64,
+            );
+            p.flutes.as_ref().map_or(q, |f| f.warp(q)) - f.p
+        })
+        .collect();
     for i in 0..points.len() {
         area += points[i].cross(points[(i + 1) % points.len()]);
         bound = bound.max(points[i].length());
@@ -125,7 +136,11 @@ pub fn center(p: &Pose, source: &Source, u: f64) -> DVec3 {
 pub fn deform(mesh: &mut crate::mesh_organic::MultiJunction, targets: &[Vec<DVec3>]) -> Result<()> {
     deform_cuffs(mesh, targets, &[])
 }
-pub(super) fn deform_cuffs(mesh: &mut crate::mesh_organic::MultiJunction, targets: &[Vec<DVec3>], cuffs: &[(usize, DVec3)]) -> Result<()> {
+pub(super) fn deform_cuffs(
+    mesh: &mut crate::mesh_organic::MultiJunction,
+    targets: &[Vec<DVec3>],
+    cuffs: &[(usize, DVec3)],
+) -> Result<()> {
     if targets.len() != mesh.boundaries.len() || targets.iter().flatten().any(|p| !p.is_finite()) {
         return Err(invalid(
             "Buttress junction requires finite targets for every collar",
@@ -144,7 +159,7 @@ pub(super) fn deform_cuffs(mesh: &mut crate::mesh_organic::MultiJunction, target
             return Err(invalid("Invalid woody transition cuff"));
         }
         fixed[i] = true;
-        displacement[i] = target-old[i];
+        displacement[i] = target - old[i];
     }
     for (boundary, target) in mesh.boundaries.iter().zip(targets) {
         if boundary.vertices.len() != target.len() {
@@ -164,7 +179,9 @@ pub(super) fn deform_cuffs(mesh: &mut crate::mesh_organic::MultiJunction, target
     let mut next = displacement.clone();
     for _ in 0..160 {
         for i in mesh.collar_vertices..old.len() {
-            if fixed[i] { continue; }
+            if fixed[i] {
+                continue;
+            }
             next[i] = adjacent[i].iter().map(|&j| displacement[j]).sum::<DVec3>()
                 / adjacent[i].len() as f64;
         }

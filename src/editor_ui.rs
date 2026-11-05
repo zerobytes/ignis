@@ -255,7 +255,9 @@ impl Graphics {
             } else if service.botany.revision == Some(service.engine.revision)
                 && let Some(overlay) = &service.botany.overlay
             {
-                service.engine.update_render_frame_with_meshes(frame, overlay);
+                service
+                    .engine
+                    .update_render_frame_with_meshes(frame, overlay);
             } else {
                 service.engine.update_render_frame(frame);
             }
@@ -264,7 +266,9 @@ impl Graphics {
             if service.botany.revision == Some(service.engine.revision)
                 && let Some(overlay) = &service.botany.overlay
             {
-                service.engine.update_render_frame_with_meshes(&mut frame, overlay);
+                service
+                    .engine
+                    .update_render_frame_with_meshes(&mut frame, overlay);
             }
             self.frame = Some(frame);
         }

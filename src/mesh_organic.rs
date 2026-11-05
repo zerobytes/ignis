@@ -176,7 +176,9 @@ fn samples_many(collars: &[Collar]) -> Result<(Geometry, Vec<Boundary>, Vec<DVec
             let p =
                 v(c.center) + f64::from(c.radius) * (radial * theta.cos() + other * theta.sin());
             if !p.is_finite() || p.abs().max_element() > 10000. {
-                return Err(invalid("Organic collar exceeds mesh coordinate domain +/-10000m"));
+                return Err(invalid(
+                    "Organic collar exceeds mesh coordinate domain +/-10000m",
+                ));
             }
             b.vertices.push(geometry.positions.len() as u32);
             points.push(p);

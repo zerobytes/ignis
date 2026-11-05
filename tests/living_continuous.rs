@@ -208,7 +208,10 @@ fn native_upgrade_is_atomic_and_old_definitions_are_unchanged() {
         4
     );
     let before = s.engine.scene.clone();
-    let bad = Profile {internode_m:f64::NAN,..Default::default()};
+    let bad = Profile {
+        internode_m: f64::NAN,
+        ..Default::default()
+    };
     assert!(
         cmd(
             &mut s,

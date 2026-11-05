@@ -84,13 +84,22 @@ impl Default for Definition {
 impl Definition {
     pub fn validate(&self) -> Result<()> {
         self.schedule.validate().map_err(invalid)?;
-        if (self.version == 9) != self.authored.is_some() {return Err(invalid("Authored growth requires grammar9"));}
-        if let Some(p)=&self.authored {p.validate()?;if p.sites.len()!=self.maximum_nodes as usize {return Err(invalid("Authored primary count must match the definition"));}}
+        if (self.version == 9) != self.authored.is_some() {
+            return Err(invalid("Authored growth requires grammar9"));
+        }
+        if let Some(p) = &self.authored {
+            p.validate()?;
+            if p.sites.len() != self.maximum_nodes as usize {
+                return Err(invalid("Authored primary count must match the definition"));
+            }
+        }
         if ((7..=8).contains(&self.version)) != self.wood_volume.is_some() {
             return Err(invalid("Woody volumes require explicit grammar7/8"));
         }
         if let Some(p) = &self.wood_volume {
-            if p.continuous != (self.version == 8) { return Err(invalid("Continuous woody volumes require grammar8")); }
+            if p.continuous != (self.version == 8) {
+                return Err(invalid("Continuous woody volumes require grammar8"));
+            }
             p.validate()?;
         }
         if ((4..=8).contains(&self.version)) != self.continuous.is_some() {
@@ -222,10 +231,21 @@ impl Plant {
             return Err(invalid("Invalid/unsupported living individual state"));
         }
         let nodes = ((i.time - i.born) / d.interval).min(d.maximum_nodes as u64);
-        let expected: BTreeMap<String, u16> = if let Some(a)=&d.authored {a.births(i.born,i.time).into_keys().map(|id|(id,1)).collect()}else{(0..nodes).map(|n| (format!("node{n}"), 1)).collect()};
-        let births: BTreeMap<String, u64> = if let Some(a)=&d.authored {a.births(i.born,i.time)}else{(0..nodes)
-            .map(|n| (format!("node{n}"), i.born + (n + 1) * d.interval))
-            .collect()};
+        let expected: BTreeMap<String, u16> = if let Some(a) = &d.authored {
+            a.births(i.born, i.time)
+                .into_keys()
+                .map(|id| (id, 1))
+                .collect()
+        } else {
+            (0..nodes).map(|n| (format!("node{n}"), 1)).collect()
+        };
+        let births: BTreeMap<String, u64> = if let Some(a) = &d.authored {
+            a.births(i.born, i.time)
+        } else {
+            (0..nodes)
+                .map(|n| (format!("node{n}"), i.born + (n + 1) * d.interval))
+                .collect()
+        };
         if p.sites != expected
             || p.site_births != births
             || !p.removed_sites.iter().all(|id| expected.contains_key(id))
@@ -261,7 +281,9 @@ impl Plant {
     }
     pub fn recipe(&self) -> Result<Recipe> {
         self.validate()?;
-        if self.definition.version == 9 {return authored::recipe(self);}
+        if self.definition.version == 9 {
+            return authored::recipe(self);
+        }
         if self.definition.version >= 6 {
             return sequoia_realistic::recipe(self);
         }
@@ -383,17 +405,21 @@ impl Plant {
         let d = &candidate.definition;
         let nodes =
             ((time - candidate.production.plant.born) / d.interval).min(d.maximum_nodes as u64);
-        if let Some(a)=&d.authored {
-            for (id,birth) in a.births(candidate.production.plant.born,time) {candidate.production.sites.entry(id.clone()).or_insert(1);candidate.production.site_births.entry(id).or_insert(birth);}
-        }else{for i in 0..nodes {
-            let id = format!("node{i}");
-            candidate.production.sites.entry(id.clone()).or_insert(1);
-            candidate
-                .production
-                .site_births
-                .entry(id)
-                .or_insert(candidate.production.plant.born + (i + 1) * d.interval);
-        }
+        if let Some(a) = &d.authored {
+            for (id, birth) in a.births(candidate.production.plant.born, time) {
+                candidate.production.sites.entry(id.clone()).or_insert(1);
+                candidate.production.site_births.entry(id).or_insert(birth);
+            }
+        } else {
+            for i in 0..nodes {
+                let id = format!("node{i}");
+                candidate.production.sites.entry(id.clone()).or_insert(1);
+                candidate
+                    .production
+                    .site_births
+                    .entry(id)
+                    .or_insert(candidate.production.plant.born + (i + 1) * d.interval);
+            }
         }
         let recipe = candidate.recipe()?;
         bake::compile(&recipe)?;
