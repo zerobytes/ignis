@@ -1,11 +1,7 @@
 //! Native editor host. The legacy playable window remains independent.
 use crate::{
-    editor_ui::Graphics,
-    engine::Command,
-    model::FIXED_DT,
-    render::Renderer,
-    service::Service,
-    window::{KeyboardControl, keyboard_input},
+    editor_ui::Graphics, engine::Command, model::FIXED_DT, render::Renderer, service::Service,
+    window::KeyboardControl,
 };
 use std::{
     collections::BTreeSet,
@@ -396,6 +392,8 @@ impl ApplicationHandler for App {
                             | KeyCode::ShiftRight
                             | KeyCode::ControlLeft
                             | KeyCode::ControlRight
+                            | KeyCode::Space
+                            | KeyCode::KeyC
                     );
                     let changed = if down && eligible && movement {
                         self.keys.insert(code)
@@ -405,10 +403,9 @@ impl ApplicationHandler for App {
                         false
                     };
                     if changed {
-                        let _ = self.keyboard.apply(
-                            &mut self.service.lock().unwrap(),
-                            keyboard_input(&self.keys),
-                        );
+                        let _ = self
+                            .keyboard
+                            .apply_keys(&mut self.service.lock().unwrap(), &self.keys);
                     }
                     if down && code == KeyCode::Escape {
                         self.release();

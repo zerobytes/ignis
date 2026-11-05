@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "material": {
+    "pattern": {
+      "kind": "noise",
+      "frequency": [0.6, 0.6, 0.6],
+      "low": [0.045, 0.12, 0.018],
+      "high": [0.12, 0.30, 0.045],
+      "bump": 0.004,
+      "warp": 0.25,
+      "octaves": 3,
+      "seed": 2718,
+      "contrast": 1.1
+    },
+    "reflectance": {"roughness": 0.98, "f0": 0.02}
+  }
+}

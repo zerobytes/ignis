@@ -431,6 +431,30 @@ impl Service {
     }
     pub fn execute(&mut self, request: Request) -> Result<Reply> {
         self.engine.guard(request.expected_revision)?;
+        if self.engine.inspection_flight_active()
+            && matches!(
+                &request.command,
+                Command::SaveCheckpoint { .. }
+                    | Command::SavePortableSave { .. }
+                    | Command::StartMultiplayerHost { .. }
+                    | Command::ConnectMultiplayer { .. }
+                    | Command::SetPlanetRuntime { .. }
+                    | Command::LoadPlanetRuntime { .. }
+            )
+        {
+            return Err(invalid(
+                "Disable inspection flight before persistence, networking or planet runtime",
+            ));
+        }
+        if self.remote_client()
+            && matches!(
+                &request.command,
+                Command::SetInspectionFlight { .. } | Command::SetInspectionFlightVertical { .. }
+            )
+        {
+            return Err(invalid("Inspection flight is offline only"));
+        }
+
         if matches!(
             &request.command,
             Command::SetPlanetRuntime { .. } | Command::LoadPlanetRuntime { .. }

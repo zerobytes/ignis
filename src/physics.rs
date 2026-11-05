@@ -1177,6 +1177,17 @@ impl Simulation {
         entries: &[crate::abilities::Entry],
         population: &[crate::population::Entry],
     ) {
+        self.step_with_inspection(input, controls, noises, entries, population, None);
+    }
+    pub(crate) fn step_with_inspection(
+        &mut self,
+        input: Input,
+        controls: &[Option<Input>],
+        noises: &[crate::noise::Noise],
+        entries: &[crate::abilities::Entry],
+        population: &[crate::population::Entry],
+        inspection: Option<crate::engine::inspection_flight::Motion>,
+    ) {
         self.interactions
             .cleanup(&self.actors, &self.vitality, self.tick);
         self.apply_population(population);
@@ -1812,6 +1823,29 @@ impl Simulation {
         }
         self.abilities
             .interrupt_movement(&self.scene, &self.actors, self.tick);
+        // Inspection owns only this living player's kinematic target for this step.
+        // Disable its collider during noclip and restore before public post-step state.
+        let inspection_restore = inspection.and_then(|m| {
+            let a = self.actors.actor_slot(m.actor)?;
+            let entity_index = self.actors.entity(a as u16);
+            let entity = &self.scene.entities[entity_index];
+            let id = &entity.id;
+            if self.vitality.dead(a) {
+                return None;
+            }
+            let state = self.character_controllers.get_mut(id)?;
+            let airborne = state.airborne;
+            state.airborne = true;
+            state.grounded = false;
+            state.vertical_velocity = 0.;
+            let body = &mut self.bodies[self.handles[id]];
+            let collider = body.colliders()[0];
+            let enabled = self.colliders[collider].is_enabled();
+            self.colliders[collider].set_enabled(false);
+            body.set_linvel(vector![0., 0., 0.], true);
+            body.set_next_kinematic_translation(m.target.into());
+            Some((entity_index, airborne, collider, enabled))
+        });
         self.move_ground_characters();
         let positions = &position_snapshot;
         let substeps = if self.wind.bodies.is_empty() {
@@ -1845,6 +1879,33 @@ impl Simulation {
                 &(),
                 &(),
             );
+        }
+        if let Some((entity, airborne, collider, enabled)) = inspection_restore {
+            self.colliders[collider].set_enabled(enabled);
+            let id = &self.scene.entities[entity].id;
+            if let Some(state) = self.character_controllers.get_mut(id) {
+                state.airborne = airborne;
+                state.grounded = false;
+                state.vertical_velocity = 0.;
+                state.requested_velocity = [0.; 2];
+            }
+            self.bodies[self.handles[id]].set_linvel(vector![0., 0., 0.], true);
+            let pose = *self.bodies[self.handles[id]].position()
+                * self.colliders[collider]
+                    .position_wrt_parent()
+                    .copied()
+                    .unwrap_or_default();
+            self.colliders[collider].set_position(pose);
+            if enabled {
+                self.broad.set_aabb(
+                    &IntegrationParameters {
+                        dt: FIXED_DT,
+                        ..Default::default()
+                    },
+                    collider,
+                    self.colliders[collider].compute_aabb(),
+                );
+            }
         }
         self.tick += 1;
         for (a, &index) in self.actors.actors.iter().enumerate() {

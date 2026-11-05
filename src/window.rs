@@ -163,7 +163,9 @@ impl App {
                     title_state.1
                 ))
             } else {
-                let help = if service.engine.planet_active() {
+                let help = if service.engine.inspection_flight_active() {
+                    "VOO · WASD mover · Espaço subir · C descer · Shift rápido · Ctrl devagar · clique olhar · Tab 1ª/3ª · Esc soltar"
+                } else if service.engine.planet_active() {
                     "WASD mover · Shift correr · roda: superfície/globo · G globo/voltar · F superfície · Tab 1ª/3ª · clique olhar · Esc soltar · P pausa"
                 } else if guides.npc_routes {
                     "J: rotas | branco: caminho/destino | lilas: patrulha | vermelho: inacessivel"
@@ -296,9 +298,7 @@ impl ApplicationHandler for App {
                     .is_ok()
                     && owned
                 {
-                    let _ = self
-                        .keyboard
-                        .apply(&mut service, keyboard_input(&self.keys));
+                    let _ = self.keyboard.apply_keys(&mut service, &self.keys);
                 }
             }
         }
@@ -556,11 +556,12 @@ impl ApplicationHandler for App {
                                     | KeyCode::ShiftRight
                                     | KeyCode::ControlLeft
                                     | KeyCode::ControlRight
+                                    | KeyCode::Space
+                                    | KeyCode::KeyC
                             )
-                            && let Err(e) = self.keyboard.apply(
-                                &mut self.service.lock().unwrap(),
-                                keyboard_input(&self.keys),
-                            )
+                            && let Err(e) = self
+                                .keyboard
+                                .apply_keys(&mut self.service.lock().unwrap(), &self.keys)
                         {
                             eprintln!("{}: {}", e.code, e.message);
                         }
@@ -866,15 +867,14 @@ impl ApplicationHandler for App {
                                 | KeyCode::ShiftRight
                                 | KeyCode::ControlLeft
                                 | KeyCode::ControlRight
+                                | KeyCode::Space
+                                | KeyCode::KeyC
                         )
-                    {
-                        let input = keyboard_input(&self.keys);
-                        if let Err(e) = self
+                        && let Err(e) = self
                             .keyboard
-                            .apply(&mut self.service.lock().unwrap(), input)
-                        {
-                            eprintln!("{}: {}", e.code, e.message);
-                        }
+                            .apply_keys(&mut self.service.lock().unwrap(), &self.keys)
+                    {
+                        eprintln!("{}: {}", e.code, e.message);
                     }
                 }
             }
@@ -952,6 +952,22 @@ pub(crate) struct KeyboardControl {
     remote_control: Option<String>,
 }
 impl KeyboardControl {
+    pub(crate) fn apply_keys(
+        &mut self,
+        service: &mut Service,
+        keys: &BTreeSet<KeyCode>,
+    ) -> crate::model::Result<()> {
+        if service.engine.inspection_flight_active() {
+            service.execute(
+                Command::SetInspectionFlightVertical {
+                    value: f32::from(u8::from(keys.contains(&KeyCode::Space)))
+                        - f32::from(u8::from(keys.contains(&KeyCode::KeyC))),
+                }
+                .into(),
+            )?;
+        }
+        self.apply(service, keyboard_input(keys))
+    }
     pub(crate) fn apply(
         &mut self,
         service: &mut Service,
@@ -983,6 +999,9 @@ impl KeyboardControl {
             service.execute(Command::ReleaseMultiplayerInput { control }.into())?;
         }
         if self.revision.take() == Some(service.engine.input_revision) {
+            if service.engine.inspection_flight_active() {
+                service.execute(Command::SetInspectionFlightVertical { value: 0. }.into())?;
+            }
             service.execute(
                 Command::SetInput {
                     input: Input::default(),

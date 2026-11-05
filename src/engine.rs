@@ -1,3 +1,5 @@
+#[path = "inspection_flight.rs"]
+pub mod inspection_flight;
 #[path = "engine_planet.rs"]
 mod planet;
 #[path = "engine_planet_view.rs"]
@@ -675,6 +677,16 @@ pub enum Command {
     },
     Inspect,
     InspectExecution,
+    StyleMeshBySlope {
+        style: Box<crate::mesh_slope::Style>,
+    },
+    SetInspectionFlight {
+        config: Option<inspection_flight::Config>,
+    },
+    SetInspectionFlightVertical {
+        value: f32,
+    },
+    InspectInspectionFlight,
     SetPlayerView {
         view: Option<crate::player_view::Config>,
     },
@@ -1056,6 +1068,7 @@ pub struct Engine {
     pub view_revision: u64,
     player_view: Option<crate::player_view::State>,
     player_view_serial: u64,
+    inspection_flight: Option<inspection_flight::State>,
     planet_view: Option<crate::planet::orbit::Atlas>,
     pub particle_preview: Option<u64>,
     pub(crate) mesh_lods: std::sync::Arc<crate::mesh_lods::Document>,
@@ -1105,6 +1118,7 @@ impl Engine {
             view_revision: 0,
             player_view: None,
             player_view_serial: 0,
+            inspection_flight: None,
             planet_view: None,
             particle_preview: None,
             mesh_lods: Default::default(),
@@ -1139,6 +1153,11 @@ impl Engine {
             && (!self.recording() || self.simulation.tick < MAX_TICKS as u64)
     }
     pub fn set_execution_mode(&mut self, mode: ExecutionMode) -> Result<()> {
+        if self.inspection_flight_active() && mode != ExecutionMode::Continuous {
+            return Err(invalid(
+                "Disable inspection flight before changing execution mode",
+            ));
+        }
         if self.planet_active() && mode != ExecutionMode::Continuous {
             return Err(invalid(
                 "Planet runtime currently requires continuous execution",
@@ -1437,6 +1456,7 @@ impl Engine {
         self.replace(scene)
     }
     pub fn reset(&mut self) {
+        self.inspection_flight = None;
         self.particle_preview = None;
         self.planet_view = None;
         let planet = self.simulation.planet.as_ref().map(|w| w.config.clone());
@@ -1521,15 +1541,21 @@ impl Engine {
                 self.input_revision += 1;
                 return Err(error);
             }
+            let inspection_motion = self.inspection_motion();
             let controls = self
                 .controls
                 .inputs(&self.simulation.actors, &self.simulation.vitality);
-            self.simulation.step_with_controls(
-                self.input,
+            self.simulation.step_with_inspection(
+                if inspection_motion.is_some() {
+                    Input::default()
+                } else {
+                    self.input
+                },
                 controls,
                 &self.noises[self.consumed_noises..],
                 &self.ability_inputs[self.consumed_ability_inputs..],
                 &self.population_inputs[self.consumed_population_inputs..],
+                inspection_motion,
             );
             self.simulation.transport_planet_after_step();
             self.controls
@@ -1657,7 +1683,7 @@ impl Engine {
                 self.particle_preview.unwrap_or(self.simulation.tick),
             );
         }
-        frame.clip = None;
+        frame.clip = self.inspection_clip();
         frame.planet_air = None;
         frame.suppress_diagnostic_grid = self.planet_active();
         if let Some(view) = &self.planet_view {
@@ -3038,7 +3064,9 @@ impl Engine {
             &self.simulation.definitions().entities[self.simulation.actors.entity(actor as u16)];
         let config = &self.player_view.as_ref()?.config;
         let placement = config.placement(self.simulation.position(&e.id)?, e.transform.size[1]);
-        let (fraction, overlap) = if config.mode == crate::player_view::Mode::ThirdPerson {
+        let (fraction, overlap) = if config.mode == crate::player_view::Mode::ThirdPerson
+            && !self.inspection_flight_active()
+        {
             self.simulation.camera_fraction(
                 &e.id,
                 placement.pivot,
@@ -3186,6 +3214,27 @@ impl Engine {
                 return Ok(
                     json!({"settings":self.mesh_lod_settings,"compiled":self.mesh_lods.inspect(),"session_only":true}),
                 );
+            }
+            Command::StyleMeshBySlope { style } => {
+                if self.playing {
+                    return Err(invalid("Pause before styling mesh surfaces"));
+                }
+                let (edits, report) = crate::mesh_slope::plan(&self.scene, *style)?;
+                self.apply_edits(edits.into_iter())?;
+                return Ok(json!({"revision":self.revision,"partition":report}));
+            }
+            Command::SetInspectionFlight { config } => return self.set_inspection_flight(config),
+            Command::InspectInspectionFlight => return Ok(self.inspect_inspection_flight()),
+            Command::SetInspectionFlightVertical { value } => {
+                if !value.is_finite() || !(-1. ..=1.).contains(&value) {
+                    return Err(invalid("Inspection vertical input requires[-1,1]"));
+                }
+                if !self.inspection_flight_active() {
+                    return Err(invalid("Inspection flight is inactive"));
+                }
+                self.inspection_flight.as_mut().unwrap().vertical = value;
+                self.input_revision += 1;
+                return Ok(self.inspect_inspection_flight());
             }
             Command::SetPlayerView { view } => {
                 if self.planet_view.is_some() {

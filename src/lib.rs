@@ -183,3 +183,5 @@ mod render_particles;
 pub mod surface_field;
 
 pub mod volume_terrain;
+
+pub mod mesh_slope;
