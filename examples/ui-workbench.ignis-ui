@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "id": "workbench",
+  "theme": {
+    "background": [
+      14,
+      21,
+      31,
+      255
+    ],
+    "surface": [
+      23,
+      34,
+      48,
+      255
+    ],
+    "text": [
+      229,
+      235,
+      244,
+      255
+    ],
+    "normal": [
+      38,
+      57,
+      76,
+      255
+    ],
+    "hover": [
+      51,
+      79,
+      102,
+      255
+    ],
+    "pressed": [
+      24,
+      106,
+      112,
+      255
+    ],
+    "disabled": [
+      36,
+      40,
+      46,
+      255
+    ],
+    "focus": [
+      112,
+      226,
+      209,
+      255
+    ],
+    "accent": [
+      67,
+      196,
+      179,
+      255
+    ],
+    "font_size": 17,
+    "spacing": 12,
+    "rounding": 8
+  },
+  "translations": {
+    "en": {
+      "title": "Make the interface your own.",
+      "subtitle": "A reusable UI document, composed by Ignis. Resize the window, use Tab, or edit the hierarchy.",
+      "name": "Name this prototype",
+      "progress": "Live consumer data",
+      "increment": "Update data",
+      "modal": "Open modal",
+      "disabled": "Disabled action",
+      "preview": "Native 3D preview",
+      "status": "Ready to explore"
+    },
+    "pt-BR": {
+      "title": "Uma interface com a sua identidade.",
+      "subtitle": "Um documento reutilizável de UI, composto pelo Ignis. Redimensione a janela, use Tab ou edite a hierarquia.",
+      "name": "Dê um nome ao protótipo",
+      "progress": "Dados vivos do consumidor",
+      "increment": "Atualizar dados",
+      "modal": "Abrir modal",
+      "disabled": "Ação desabilitada",
+      "preview": "Prévia 3D nativa",
+      "status": "Pronto para explorar"
+    }
+  },
+  "root": {
+    "id": "root",
+    "kind": "column",
+    "layout": {
+      "padding": 24
+    },
+    "children": [
+      {
+        "id": "title",
+        "kind": "heading",
+        "text": {
+          "source": "key",
+          "value": "title"
+        }
+      },
+      {
+        "id": "intro",
+        "kind": "label",
+        "text": {
+          "source": "key",
+          "value": "subtitle"
+        }
+      },
+      {
+        "id": "name",
+        "kind": "text_input",
+        "binding": "name",
+        "text": {
+          "source": "key",
+          "value": "name"
+        },
+        "layout": {
+          "max_width": 420
+        }
+      },
+      {
+        "id": "progress",
+        "kind": "progress",
+        "binding": "progress",
+        "text": {
+          "source": "key",
+          "value": "progress"
+        },
+        "layout": {
+          "max_width": 600
+        }
+      },
+      {
+        "id": "actions",
+        "kind": "row",
+        "children": [
+          {
+            "id": "increment",
+            "kind": "button",
+            "text": {
+              "source": "key",
+              "value": "increment"
+            },
+            "action": "increment",
+            "layout": {
+              "max_width": 190
+            }
+          },
+          {
+            "id": "modal",
+            "kind": "button",
+            "text": {
+              "source": "key",
+              "value": "modal"
+            },
+            "action": "modal",
+            "layout": {
+              "max_width": 190
+            }
+          },
+          {
+            "id": "disabled",
+            "kind": "button",
+            "text": {
+              "source": "key",
+              "value": "disabled"
+            },
+            "action": "disabled",
+            "enabled": false,
+            "layout": {
+              "max_width": 190
+            }
+          }
+        ]
+      },
+      {
+        "id": "status",
+        "kind": "label",
+        "text": {
+          "source": "binding",
+          "value": "status"
+        }
+      },
+      {
+        "id": "preview_title",
+        "kind": "label",
+        "text": {
+          "source": "key",
+          "value": "preview"
+        }
+      },
+      {
+        "id": "preview",
+        "kind": "viewport",
+        "layout": {
+          "max_width": 900,
+          "min_height": 180
+        }
+      }
+    ]
+  }
+}

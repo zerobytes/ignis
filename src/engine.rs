@@ -130,6 +130,12 @@ fn default_session_capacity() -> usize {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    /// UI authoring has its own revision/history, independent of scene edits.
+    Ui {
+        operation: Box<crate::game_ui::Operation>,
+        #[serde(default)]
+        expected_ui_revision: Option<u64>,
+    },
     Wind {
         operation: Box<crate::wind::Operation>,
     },

@@ -8,6 +8,15 @@ For exact command arguments, discover `engine_command` through MCP `tools/list`.
 
 [Ignis Horizon rendering](#ignis-horizon-rendering) | [Materials and surface detail](#materials-and-surface-detail) | [Particles and VFX](#particles-and-vfx) | [Worlds, terrain and planets](#worlds-terrain-and-planets) | [Procedural botany](#procedural-botany) | [Parametric characters](#parametric-characters) | [Modeling and sculpting](#modeling-and-sculpting) | [Physics and player control](#physics-and-player-control) | [NPC perception and personality](#npc-perception-and-personality) | [Navigation, tactics and interaction](#navigation-tactics-and-interaction) | [Abilities and combat](#abilities-and-combat) | [Populations and spawning](#populations-and-spawning) | [Animation and audio](#animation-and-audio) | [Multiplayer and actor runtime](#multiplayer-and-actor-runtime) | [Editor, MCP and persistence](#editor-mcp-and-persistence)
 
+## Authored game UI
+
+Versioned UI documents provide reusable node trees, themes, wrapping layouts,
+text/data bindings and consumer events on the existing egui/native renderer.
+The neutral UI Workbench edits hierarchy/properties and uses the same guarded
+MCP/CLI operations for save/load and undo/redo. This is an initial authoring
+slice; animation timelines, gamepad navigation, virtualized repeaters and a
+complete canvas editor remain future work. See [contracts and audit](game-ui.md).
+
 ## Ignis Horizon rendering
 
 Horizon is the presentation name for the integrated native rendering stack: geometry sharing, visibility, residency, lighting and atmosphere-aware representations. It does not rename the experimental IGL path or imply a complete Nanite equivalent.

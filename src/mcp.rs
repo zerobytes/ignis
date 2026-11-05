@@ -67,7 +67,7 @@ impl Session {
                         PROTOCOL
                     };
                 self.initialized = true;
-                json!({"protocolVersion":negotiated,"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"ignis-engine","version":env!("CARGO_PKG_VERSION")},"instructions":"Use engine_command. Inspect before edits; expected_revision guards stale changes. Editing resets/pauses the simulation. Pause before deterministic stepping. Scene and artifact paths are relative to the project root. create_project/open_project explicitly select an absolute project folder. Capture returns real PNG pixels plus state metadata."})
+                json!({"protocolVersion":negotiated,"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"ignis-engine","version":env!("CARGO_PKG_VERSION")},"instructions":"Use engine_command. Inspect before edits; expected_revision guards stale changes. Scene edits reset/pause the simulation. UI authoring uses independent expected_ui_revision and preserves the world. Pause before deterministic stepping. Scene and artifact paths are relative to the project root. create_project/open_project explicitly select an absolute project folder. Capture returns real PNG pixels plus state metadata."})
             }
             "ping" => json!({}),
             _ if !self.ready => {
@@ -78,7 +78,7 @@ impl Session {
                 ));
             }
             "tools/list" => {
-                json!({"tools":[{"name":"engine_command","description":"Inspect, edit, generate, save, play, pause, step, capture and replay the same 3D world used by the native window. All commands use the shared typed engine API. Editing resets the runtime; saves use the authoring scene. Invoke inspect to obtain revision, then provide expected_revision for guarded edits.","inputSchema":schemars::schema_for!(Request),"annotations":{"readOnlyHint":false,"destructiveHint":true,"idempotentHint":false,"openWorldHint":true}}]})
+                json!({"tools":[{"name":"engine_command","description":"Inspect, edit, generate, save, play, pause, step, capture and replay the same 3D world used by the native window. All commands use the shared typed engine API. Scene edits reset the runtime; UI edits preserve it and use expected_ui_revision. Scene saves use the authoring scene. Invoke inspect to obtain revision, then provide expected_revision for guarded edits.","inputSchema":schemars::schema_for!(Request),"annotations":{"readOnlyHint":false,"destructiveHint":true,"idempotentHint":false,"openWorldHint":true}}]})
             }
             "tools/call" => {
                 if params.get("name").and_then(Value::as_str) != Some("engine_command") {
@@ -114,12 +114,27 @@ impl Session {
 
 pub fn serve(
     reader: impl BufRead,
-    mut writer: impl Write,
+    writer: impl Write,
     service: Arc<Mutex<Service>>,
+) -> std::io::Result<()> {
+    serve_with(reader, writer, |request| {
+        let mut service = service.lock().unwrap();
+        let result = service.execute(request);
+        (result, service.engine.exit_requested)
+    })
+}
+
+/// The same transport can dispatch on a native event-loop thread. The closure
+/// returns whether a command requested exit; protocol-only calls need no lock.
+pub fn serve_with(
+    reader: impl BufRead,
+    mut writer: impl Write,
+    mut execute: impl FnMut(Request) -> (Result<Reply>, bool),
 ) -> std::io::Result<()> {
     let mut reader = reader;
     let mut session = Session::default();
     let mut bytes = Vec::new();
+    let mut exit_requested = false;
     loop {
         bytes.clear();
         let read = std::io::Read::take(&mut reader, (MAX_MESSAGE + 1) as u64)
@@ -132,9 +147,9 @@ pub fn serve(
         } else {
             match serde_json::from_slice(&bytes) {
                 Ok(message) => session.handle_with(message, |request| {
-                    // Only command execution needs the world lock. JSON text/base64 and
-                    // protocol-only requests are handled after releasing it.
-                    service.lock().unwrap().execute(request)
+                    let (result, exit) = execute(request);
+                    exit_requested |= exit;
+                    result
                 }),
                 Err(_) => Some(error(Value::Null, -32700, "Invalid JSON")),
             }
@@ -144,7 +159,7 @@ pub fn serve(
             writer.write_all(b"\n")?;
             writer.flush()?;
         }
-        if bytes.len() > MAX_MESSAGE || service.lock().unwrap().engine.exit_requested {
+        if bytes.len() > MAX_MESSAGE || exit_requested {
             break;
         }
     }

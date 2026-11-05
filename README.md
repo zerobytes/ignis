@@ -61,6 +61,7 @@ an agent. The public source includes the systems below.
 | **[Populations and spawning](docs/features.md#populations-and-spawning)** | Actor templates, persistent individual identity, seeded/weighted regions, population generators and finite waves. |
 | **[Animation and audio](docs/features.md#animation-and-audio)** | Rigs/clips, retarget mappings, visual IK and optional root motion; spatial PCM mixing, presentation events and optional device output. |
 | **[Multiplayer and actor runtime](docs/features.md#multiplayer-and-actor-runtime)** | Optional authoritative QUIC/TLS sessions, scoped remote controls, replication/reconnect and documented local/loopback 1,000-player load experiments. |
+| **[Game UI tooling](docs/game-ui.md)** | Versioned components/layouts/themes, consumer bindings/events, native authoring workbench and shared MCP/CLI save/load/undo operations. Initial slice; richer authoring and animation remain open. |
 | **[Editor, MCP and persistence](docs/features.md#editor-mcp-and-persistence)** | Projects, workspaces, file browsing, typed commands, undo/redo, real captures, image comparison, replay, checkpoints and portable saves. |
 
 **[Read the full feature guide →](docs/features.md)** for concrete capabilities,

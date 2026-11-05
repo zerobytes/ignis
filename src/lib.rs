@@ -14,6 +14,7 @@ pub mod editor_ui;
 pub mod editor_window;
 pub mod engine;
 pub mod footsteps;
+pub mod game_ui;
 pub mod interactions;
 pub mod mcp;
 pub mod mesh_screen;

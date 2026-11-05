@@ -9,6 +9,7 @@ mod botany;
 mod characters;
 mod materials;
 mod particles;
+mod ui;
 mod wind;
 use std::{
     io::{BufReader, BufWriter, Read, Write},
@@ -37,6 +38,7 @@ pub struct Reply {
     pub png: Option<Vec<u8>>,
 }
 pub struct Service {
+    pub game_ui: crate::game_ui::State,
     pub wind_panel_open: bool,
     pub botany: crate::botany::State,
     pub particle_panel_open: bool,
@@ -282,6 +284,7 @@ impl Service {
             saved_scene_revision: 0,
             editor_capture: None,
             viewport_performance: Default::default(),
+            game_ui: Default::default(),
             network_host: None,
             network_client: None,
             network_frame: None,
@@ -544,6 +547,10 @@ impl Service {
         }
         let pause_audio = matches!(&request.command, Command::Pause | Command::Exit);
         let data = match &request.command {
+            Command::Ui {
+                operation,
+                expected_ui_revision,
+            } => self.ui_command(operation, *expected_ui_revision)?,
             Command::Particles { operation } => self.particles_command(operation)?,
             Command::Material { operation } => self.material_command(operation)?,
             Command::Wind { operation } => self.wind_command(operation)?,
