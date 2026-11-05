@@ -188,3 +188,13 @@ already; ch10/8 shadow allocation/filtering and ch16/14 material appearance are
 separate experiments. Historical book results do not establish Ignis speedups.
 A new read-only script records zero-direct-lobe eligibility and response-storage
 planning from existing datasets; no renderer optimization is implemented here.
+
+## Native shadow-query rejection checkpoint (2026-11-05)
+
+The [native-only experiment](shadow-work.md) preserved51static +204sequence
+image pairs and resource/work counters, but failed its performance gates:
+representative total-GPU ratio0.98946 and a control median above1.05. Normal
+constructors retain the legacy path; candidate is diagnostic-only. Analytical
+zero-contribution eligibility did not establish an execution-time win. Continue
+response coefficients as a separate added-GI-update hypothesis, not a claim
+that the original renderer has become cheaper.

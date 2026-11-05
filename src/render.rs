@@ -426,19 +426,29 @@ impl Renderer {
         instance: &wgpu::Instance,
         surface: Option<&wgpu::Surface<'_>>,
     ) -> Result<Self> {
-        Self::new_internal(instance, surface, false).await
+        Self::new_internal(instance, surface, false, false).await
     }
     /// Diagnostic pass timestamps; ordinary construction has no query overhead.
     pub async fn new_profiled(
         instance: &wgpu::Instance,
         surface: Option<&wgpu::Surface<'_>>,
     ) -> Result<Self> {
-        Self::new_internal(instance, surface, true).await
+        Self::new_internal(instance, surface, true, false).await
+    }
+    /// Profiled diagnostic pair; selects only zero-contribution shadow queries.
+    /// No scene state, resource layout, shadow caster or persistence changes.
+    pub async fn new_profiled_shadow_work(
+        instance: &wgpu::Instance,
+        surface: Option<&wgpu::Surface<'_>>,
+        enabled: bool,
+    ) -> Result<Self> {
+        Self::new_internal(instance, surface, true, enabled).await
     }
     async fn new_internal(
         instance: &wgpu::Instance,
         surface: Option<&wgpu::Surface<'_>>,
         profile: bool,
+        shadow_work_culling: bool,
     ) -> Result<Self> {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -674,6 +684,7 @@ impl Renderer {
             &pipeline_layout,
             &depth_pipeline_layout,
             format,
+            shadow_work_culling,
         );
         let attrs = wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,2=>Float32x3,3=>Float32x3,4=>Uint32,5=>Float32x3];
         let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -730,7 +741,13 @@ impl Renderer {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_main"),
-                compilation_options: Default::default(),
+                compilation_options: wgpu::PipelineCompilationOptions {
+                    constants: &[(
+                        "cull_zero_light_shadow",
+                        if shadow_work_culling { 1. } else { 0. },
+                    )],
+                    ..Default::default()
+                },
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: None,
@@ -768,7 +785,13 @@ impl Renderer {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_transparent"),
-                compilation_options: Default::default(),
+                compilation_options: wgpu::PipelineCompilationOptions {
+                    constants: &[(
+                        "cull_zero_light_shadow",
+                        if shadow_work_culling { 1. } else { 0. },
+                    )],
+                    ..Default::default()
+                },
                 targets: &crate::render_transparency::targets(),
             }),
             primitive: wgpu::PrimitiveState {

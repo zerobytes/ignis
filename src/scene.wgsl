@@ -84,6 +84,8 @@ struct ShadowOut {
     out.rest = rest; out.material = material;
     return out;
 }
+// Compile-time diagnostic oracle; other shader consumers retain the legacy default.
+override cull_zero_light_shadow: bool = false;
 fn visibility(world: vec3<f32>) -> f32 {
     if globals.shadow_settings.x < 0.5 { return 1.0; }
     let p = globals.shadow_projection * vec4<f32>(world, 1.0);
@@ -109,6 +111,49 @@ fn visibility(world: vec3<f32>) -> f32 {
             footprint_bias = dot(abs(gradient), vec2<f32>(globals.shadow_settings.z));
         }
     }
+    if any(uv < vec2<f32>(0.0)) || any(uv > vec2<f32>(1.0)) || ndc.z < 0.0 || ndc.z > 1.0 {
+        return 1.0;
+    }
+    var sum = 0.0;
+    for (var y = -1; y <= 1; y++) {
+        for (var x = -1; x <= 1; x++) {
+            let offset = vec2<f32>(f32(x), f32(y)) * globals.shadow_settings.z;
+            var reference = ndc.z - globals.shadow_settings.y;
+            if globals.shadow_settings.w > 0.5 {
+                reference += dot(gradient, offset) - footprint_bias;
+            }
+            sum += textureSampleCompareLevel(shadow_map, shadow_sampler, uv + offset, reference);
+        }
+    }
+    return sum / 9.0;
+}
+fn selected_visibility(world: vec3<f32>, needed: bool) -> f32 {
+    if globals.shadow_settings.x < 0.5 { return 1.0; }
+    let p = globals.shadow_projection * vec4<f32>(world, 1.0);
+    let ndc = p.xyz / p.w;
+    let uv = vec2<f32>(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5);
+    var gradient = vec2<f32>(0.0);
+    var footprint_bias = 0.0;
+    if globals.shadow_settings.w > 0.5 {
+        // Differentiate geometry, not the bumped shading normal. Compute before
+        // the per-fragment light-volume branch, including quads at its boundary.
+        let dx = dpdx(vec3<f32>(uv, ndc.z));
+        let dy = dpdy(vec3<f32>(uv, ndc.z));
+        let determinant = dx.x*dy.y - dx.y*dy.x;
+        let scale = length(dx.xy)*length(dy.xy);
+        if abs(determinant) > max(1e-20, scale*1e-4) {
+            let slope = vec2<f32>(dx.z*dy.y-dy.z*dx.y, dx.x*dy.z-dy.x*dx.z) / determinant;
+            // Bound grazing amplification to 1% of light depth per texel. An
+            // ill-conditioned receiver uses the legacy constant bias instead.
+            let limit = 0.01 / globals.shadow_settings.z;
+            gradient = clamp(slope, vec2<f32>(-limit), vec2<f32>(limit));
+            // Hardware comparison filtering compares one reference with the
+            // four neighbouring depths: account for the remaining footprint.
+            footprint_bias = dot(abs(gradient), vec2<f32>(globals.shadow_settings.z));
+        }
+    }
+    // Derivatives above remain uniform even when direct contribution is zero.
+    if !needed { return 1.0; }
     if any(uv < vec2<f32>(0.0)) || any(uv > vec2<f32>(1.0)) || ndc.z < 0.0 || ndc.z > 1.0 {
         return 1.0;
     }
@@ -658,7 +703,12 @@ fn shade_surface(in: VertexOut, front: bool) -> ShadedSurface {
     }
     let light = -normalize(globals.light.xyz);
     let diffuse = max(dot(normal, light), 0.0) + material.response.x * max(dot(-normal, light), 0.0);
-    let visible = visibility(in.world)*recipe_shadow;
+    var visible: f32;
+    if cull_zero_light_shadow {
+        // Test the bumped/flipped normal and retain thin-sheet backlighting.
+        let needed = dot(normal, light)>0.0 || (material.response.x>0.0 && dot(-normal,light)>0.0);
+        visible = selected_visibility(in.world, needed)*recipe_shadow;
+    } else { visible = visibility(in.world)*recipe_shadow; }
     let base = in.color * tint;
     var color = base * (globals.light.w + (1.0 - globals.light.w) * diffuse * visible);
     if material.high.w > 0.0 {

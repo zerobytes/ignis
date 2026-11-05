@@ -204,6 +204,7 @@ impl Gpu {
         layout: &wgpu::PipelineLayout,
         shadow_layout: &wgpu::PipelineLayout,
         format: wgpu::TextureFormat,
+        shadow_work_culling: bool,
     ) -> Self {
         let attrs = wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x3,2=>Float32x3,3=>Float32x3,4=>Uint32,5=>Float32x3];
         let compact_attrs =
@@ -310,11 +311,13 @@ impl Gpu {
                         "fs_main"
                     }),
                     compilation_options: wgpu::PipelineCompilationOptions {
-                        constants: if minimal_mode == 1 {
-                            &[("uniform_material", 1.0)]
-                        } else {
-                            &[]
-                        },
+                        constants: &[
+                            ("uniform_material", if minimal_mode == 1 { 1. } else { 0. }),
+                            (
+                                "cull_zero_light_shadow",
+                                if shadow_work_culling { 1. } else { 0. },
+                            ),
+                        ],
                         ..Default::default()
                     },
                     targets: if shadow {
