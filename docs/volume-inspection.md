@@ -152,3 +152,14 @@ The larger-height preset remains available for other terrain. Chamfer remains
 chamfer: amplitude0.65m, stratum height0.9m, joint width24m, seed2718, subject
 to local-edge and normal-inversion guards. The Fractured content file is unchanged;
 its application tile override is now2m to suit the smaller walls.
+
+## Current regression fix
+
+The compact pre-chamfer profile above was rejected by the user. It changed both
+the geometry construction and the stone/green classification. The current demo
+reproduces the approved high surface first, with its original material groups,
+then uses `finish_heights` to reduce the completed geometry at the true original
+stratum anchors. The previous wall-relief modification is disabled here.
+Regression checks require exact X/Z and triangle preservation, the approved
+360728stone/883658green counts, and measured adjacent plateau levels in3–15m.
+Player remains1.6m (native f32 representation1.60000002384m).

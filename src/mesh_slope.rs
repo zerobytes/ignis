@@ -97,6 +97,9 @@ pub struct Style {
     pub terrace_lift: Option<TerraceLift>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wall_rock: Option<crate::mesh_wall_rock::Config>,
+    /// Remap the finished, classified surface without changing its material groups.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub finish_heights: Option<TerraceLift>,
     pub walls: crate::materials::Material,
     pub top: crate::materials::Material,
     pub wall_color: [f32; 3],
@@ -137,7 +140,7 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     {
         return Err(invalid("Slope output IDs must be distinct and unused"));
     }
-    if (s.terrace_lift.is_some() || s.wall_rock.is_some())
+    if (s.terrace_lift.is_some() || s.wall_rock.is_some() || s.finish_heights.is_some())
         && (instance.rotation != [0., 0., 0., 1.] || instance.scale != 1.)
     {
         return Err(invalid(
@@ -217,7 +220,27 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
             "Slope split requires both top and wall faces at the selected threshold",
         ));
     }
-    for o in &outputs {
+    for o in &mut outputs {
+        if let Some(profile) = &s.finish_heights {
+            // Rebase Y before compressing, avoiding the large source-origin offset
+            // consuming precision in the small final walls.
+            for p in &mut o.positions {
+                p[1] += instance.position[1];
+            }
+            *o = lift(o, profile, 0.)?;
+            o.material_coordinates = Some(
+                o.positions
+                    .iter()
+                    .map(|p| {
+                        [
+                            p[0] + instance.position[0],
+                            p[1],
+                            p[2] + instance.position[2],
+                        ]
+                    })
+                    .collect(),
+            );
+        }
         o.validate()?;
     }
     let counts = outputs.each_ref().map(|o| o.triangles.len());
@@ -233,10 +256,16 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     let mut wall_instance = instance.clone();
     wall_instance.asset = s.wall_asset;
     wall_instance.color = s.wall_color;
+    if s.finish_heights.is_some() {
+        wall_instance.position[1] = 0.;
+    }
     let mut top_instance = instance.clone();
     top_instance.id = s.top_instance.clone();
     top_instance.asset = s.top_asset;
     top_instance.color = s.top_color;
+    if s.finish_heights.is_some() {
+        top_instance.position[1] = 0.;
+    }
     let mut edits = vec![
         SceneEdit::Mesh {
             edit: meshes::Edit::PutAsset { asset: wall_asset },
@@ -277,6 +306,6 @@ pub fn plan(scene: &crate::model::Scene, s: Style) -> Result<(Vec<SceneEdit>, se
     }
     Ok((
         edits,
-        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":s.chamfer.is_some() || s.terrace_lift.is_some() || s.wall_rock.is_some(),"terrace_lift":s.terrace_lift,"wall_rock":s.wall_rock,"input_triangles":asset.geometry.triangles.len(),"chamfer":s.chamfer}),
+        serde_json::json!({"wall_triangles":counts[0],"top_triangles":counts[1],"source_triangles":g.triangles.len(),"disjoint":true,"geometry_displaced":s.chamfer.is_some() || s.terrace_lift.is_some() || s.wall_rock.is_some() || s.finish_heights.is_some(),"terrace_lift":s.terrace_lift,"wall_rock":s.wall_rock,"finish_heights":s.finish_heights,"input_triangles":asset.geometry.triangles.len(),"chamfer":s.chamfer}),
     ))
 }

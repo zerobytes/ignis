@@ -123,3 +123,40 @@ hover,600m fast and2m precision per second and persistence guards passed.
 Captures inspected; small surface resolution limits remain explicit. Inspection
 starts nearer the wall, with a horizontal offset and eye near wall mid-height,
 rather than carrying the high-altitude spawn offset from the giant-wall demo.
+
+## Regression correction: preserve the approved surface before reducing height
+
+Human review rejected the compact profile: it compressed the raw density surface
+before chamfer and classification. Besides changing the bevel construction, this
+changed material membership from360728stone/883658green to149382/1095004.
+The3–15m parameter bounded abstract raw-height bands, not measured plateau walls;
+that was insufficient validation and must not be reported as visual acceptance.
+
+`StyleMeshBySlope.finish_heights` now remaps Y AFTER the approved high plateau
+mesh, chamfer and material partition have been constructed. Current recipe first
+reproduces the prior factor20 surface with no new wall relief, then maps its
+actual stratum anchor spacing1230.769230768m (phase30.7692307692m) to seeded
+3–15m intervals. X/Z, triangle indices, chamfer connectivity and stone/green
+membership are preserved. Y is rebased to world datum before compression to
+avoid wasting f32 precision on the old−384m origin; instance Y becomes0.
+Material coordinates are regenerated in physical world metres to avoid shrinking
+old kilometre-scale texture coordinates along with the geometry.
+
+Static performance review: cold per-output O(V+T) map/validation and coordinate
+regeneration, no new triangles, no per-frame work. Existing seeded profile
+budgets apply. Unit regression compares exact material group counts, X/Z and
+indices; anchor heights are measured against the player's1.6m body. Full-scene
+MCP must also preserve the approved360728/883658counts. Fine rock relief remains
+available but is disabled for this correction so it cannot change the reference.
+
+Native full-scene check recovered exactly360728stone and883658green faces.
+Read-only measurements of matched published vertices near three adjacent
+reference plateau anchors gave10.832817m,6.581184m and7.862504m, respectively
+6.77051/4.11324/4.91407times the1.6m player. This samples actual published
+surface levels; it is not a universal guarantee about every small natural ledge.
+Exact X/Z and triangle indices were compared against the approved control mesh,
+and save/reload pixels and the existing flight/persistence checks passed.
+Final validation:10release tests passed (profile/slope5, chamfer2, flight3),
+focused strict Clippy passed, release binary built by the test run, focused
+format/Python/whitespace checks passed. No extra faces were introduced by the
+height correction. Previous relief remains opt-in, not part of the restored demo.
