@@ -135,8 +135,10 @@ artifacts/catalog-meshes` can reuse locally verified release payloads. A free
 hosting allowance is finite: downloads and GPU activation remain explicit;
 no unlimited bandwidth or performance guarantee is implied.
 
-Cuihua1.1.0 revises the three green fruit-tree variants with dense continuous
-crowns, upper taper and short robust stems from the supplied reference. Their complete downloads
-include authored growth grammar9 sources and periodic cohorts; the browser preview
-and GLB remain static. Fruit uses an apple-like approximation, not an exact
-Sunsettia sculpture.
+Cuihua1.2.0 revises the three green fruit-tree variants with broader, denser
+crowns, thicker trunks and first forks15% lower than1.1.0. Complete downloads
+include authored growth grammar9 sources, periodic cohorts and optional native
+botanical LOD sidecars loaded explicitly after the source/scene. Browser preview
+and GLB remain static; native LOD selection does not run in the browser. Fruit
+uses a generic red ellipsoid, not an exact Sunsettia sculpture. Reference fidelity
+remains subject to artistic review.
