@@ -1,5 +1,16 @@
 # Plantas completas: autoria e dinâmica nativas
 
+## English walkthrough: native procedural botany
+
+Shortest tested path (rev EAF-194, macOS):
+
+- Build: `cargo build --release`
+- Open/inspect: load `gallery.scene.json` in the native renderer, open the Vegetação panel.
+- Contract/schema: see [botany-architecture.md](botany-architecture.md).
+- Included: sources/recipes + `gallery.scene.json`. Generated locally: `artifacts/botany-native/*` (report.json, verification.json, PNGs).
+- Boundaries: native authoring is not universal botany, calibrated growth, or production gameplay physics.
+- Example: the isolated plátano leaf captured in the gallery.
+
 EAF-194 acrescenta [forquilhas terminais e copas volumétricas](botany-architecture.md), fonte/receita4 com leitor1..4, preservando os contratos nativos descritos abaixo.
 
 EAF-193 acrescenta [idade cronológica por perfil](botany-age.md), fonte/receita3
