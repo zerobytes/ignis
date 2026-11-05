@@ -266,8 +266,8 @@ impl Ui {
                                 "WASD para mover · Shift para correr",
                             ));
                             ui.small(tr(
-                                "Gameplay stage · temporary avatar",
-                                "Palco de gameplay · avatar provisório",
+                                "Character in rest pose · art in development",
+                                "Personagem em repouso · arte em desenvolvimento",
                             ));
                             if self.button(
                                 ui,

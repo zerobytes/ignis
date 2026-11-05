@@ -1656,6 +1656,7 @@ impl Engine {
             camera: self.scene.camera.clone(),
             light: self.scene.light.clone(),
             boxes: Vec::with_capacity(self.scene.entities.len()),
+            player_primitives: Vec::new(),
             vision_guides: Vec::new(),
             hearing_guides: Vec::new(),
             noise_guides: Vec::new(),
@@ -1675,6 +1676,7 @@ impl Engine {
         frame: &mut crate::render::RenderFrame,
         meshes: &crate::meshes::Document,
     ) {
+        frame.player_primitives.clear();
         if self.planet_active() {
             frame.particles.clear();
         } else {
@@ -1774,19 +1776,34 @@ impl Engine {
                                     .is_some_and(|r| r.instance == p.actor)
                         })
                 })
-                .map(|(index, e)| crate::render::RenderBox {
-                    geometry: e.geometry,
-                    position: self.simulation.position(&e.id).expect("present placement"),
-                    size: e.transform.size,
-                    color: if self
-                        .simulation
-                        .vitality
-                        .dead(self.simulation.actors.slot(index) as usize)
+                .enumerate()
+                .map(|(box_index, (index, e))| {
+                    if e.body == Some(crate::model::BodyKind::Player)
+                        && let Some(reference) = self.simulation.actors.entity_reference(index)
                     {
-                        [0.22, 0.22, 0.24]
-                    } else {
-                        e.color
-                    },
+                        frame
+                            .player_primitives
+                            .push(crate::render::PlayerPrimitive {
+                                actor: reference.instance,
+                                life: self.simulation.vitality.state.lives
+                                    [self.simulation.actors.slot(index) as usize],
+                                box_index,
+                            });
+                    }
+                    crate::render::RenderBox {
+                        geometry: e.geometry,
+                        position: self.simulation.position(&e.id).expect("present placement"),
+                        size: e.transform.size,
+                        color: if self
+                            .simulation
+                            .vitality
+                            .dead(self.simulation.actors.slot(index) as usize)
+                        {
+                            [0.22, 0.22, 0.24]
+                        } else {
+                            e.color
+                        },
+                    }
                 }),
         );
         for shot in &self.simulation.abilities.state.projectiles.active {

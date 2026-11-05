@@ -180,6 +180,10 @@ impl Graphics {
             self.frame = Some(service.game_frame());
         }
     }
+    /// Decorate the last native snapshot with game-owned presentation only.
+    pub fn custom_frame_mut(&mut self) -> Option<&mut RenderFrame> {
+        self.frame.as_mut()
+    }
     pub fn build(
         &mut self,
         service: &Service,

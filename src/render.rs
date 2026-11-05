@@ -189,6 +189,15 @@ fn depth_bindings(
     })
 }
 
+/// Identifies a physical Player primitive in a single presentation snapshot.
+#[derive(Debug, Clone, Copy)]
+pub struct PlayerPrimitive {
+    pub actor: u64,
+    pub life: u64,
+    /// Index in this snapshot's boxes, before a consumer replaces the primitive.
+    pub box_index: usize,
+}
+
 /// Compact, reusable snapshot. No authoring IDs, scripts or NPC configuration.
 pub struct RenderFrame {
     /// Render-only projection. None preserves the legacy main/depth contract.
@@ -204,6 +213,9 @@ pub struct RenderFrame {
     pub camera: Camera,
     pub light: Light,
     pub boxes: Vec<RenderBox>,
+    /// Stable public identities for replacing physical Player visuals in a game.
+    /// This is presentation metadata; consuming it never changes colliders.
+    pub player_primitives: Vec<PlayerPrimitive>,
     pub vision_guides: Vec<VisionGuide>,
     pub hearing_guides: Vec<RingGuide>,
     pub noise_guides: Vec<RingGuide>,

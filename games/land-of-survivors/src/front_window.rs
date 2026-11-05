@@ -45,6 +45,11 @@ impl Composition {
             }
         }
         self.graphics.update_custom_scene(front.service());
+        if let Some(frame) = self.graphics.custom_frame_mut()
+            && let Err(e) = front.present(frame)
+        {
+            front.error = e.to_string();
+        }
         output
     }
     fn raw() -> egui::RawInput {
@@ -348,6 +353,49 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
         "Identity changed on reopen"
     );
     reopened.execute(Action::Offline)?;
+    for _ in 0..30 {
+        reopened.tick(1. / 60., Input::default())?;
+    }
+    graphics.capture(&mut reopened, &out.join("character-in-scene.png"))?;
+    let initial_vertices = graphics
+        .graphics
+        .custom_frame_mut()
+        .unwrap()
+        .meshes
+        .vertices
+        .len();
+    ensure!(initial_vertices > 1000, "Player character was not drawn");
+    {
+        let frame = graphics.graphics.custom_frame_mut().unwrap();
+        ensure!(
+            frame.boxes.len() == 1,
+            "Player box was not replaced or the floor was removed"
+        );
+        let s = reopened.session.as_ref().unwrap();
+        ensure!(
+            s.client.engine.scene.meshes.is_empty(),
+            "Presentation contaminated the saved world"
+        );
+        let placed = &s.visuals.placements[0];
+        let center = s.client.engine.simulation.position("player0").unwrap();
+        ensure!(
+            placed.center == center
+                && placed.actor > 0
+                && placed.life == s.client.engine.simulation.vitality.state.lives[0]
+                && placed.selected_model,
+            "Visual is not bound to the selected physical actor"
+        );
+        let foot = frame
+            .meshes
+            .vertices
+            .iter()
+            .map(|v| v.position[1])
+            .fold(f32::INFINITY, f32::min);
+        ensure!(
+            (foot - placed.foot_y).abs() < 0.00001,
+            "Character feet do not match the collider base"
+        );
+    }
     let mut concurrent = Front::new(root.into(), profile.clone())?;
     ensure!(
         concurrent.execute(Action::Offline).is_err(),
@@ -381,6 +429,31 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
         .simulation
         .positions();
     ensure!(before != after, "Offline movement did not execute");
+    graphics.capture(&mut reopened, &out.join("character-moving.png"))?;
+    {
+        let frame = graphics.graphics.custom_frame_mut().unwrap();
+        ensure!(
+            frame.meshes.vertices.len() == initial_vertices,
+            "Visual geometry accumulated across frames"
+        );
+        let position = reopened
+            .session
+            .as_ref()
+            .unwrap()
+            .client
+            .engine
+            .simulation
+            .position("player0")
+            .unwrap();
+        ensure!(
+            reopened.session.as_ref().unwrap().visuals.placements[0].center == position,
+            "Character did not follow movement"
+        );
+        ensure!(
+            (frame.camera.target[0] - position[0]).abs() < 0.00001,
+            "Camera did not follow the character"
+        );
+    }
     reopened.leave()?;
     ensure!(
         reopened.selected_save_path().unwrap().is_file(),
@@ -405,6 +478,8 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
     let mut peer = Front::new(root.into(), dir.path().join("peer/characters.json"))?;
     let d = Draft {
         name: "Gorak".into(),
+        people: crate::characters::People::Orc,
+        body: crate::characters::Body::Masculine,
         ..Default::default()
     };
     let hash = peer.source_hash.clone();
@@ -482,12 +557,75 @@ fn verify(root: &Path, out: &Path) -> Result<()> {
         "Remote movement was not applied by authority"
     );
     graphics.capture(&mut f, &out.join("multiplayer.png"))?;
+    ensure!(
+        graphics.graphics.custom_frame_mut().unwrap().boxes.len() == 1,
+        "Network Players still use primitive visuals"
+    );
+    {
+        let session = f.session.as_ref().unwrap();
+        let local = session.status["actor"]["actor"].as_u64().unwrap();
+        ensure!(
+            session.visuals.placements.len() == 8,
+            "Network player mapping is incomplete"
+        );
+        ensure!(
+            session
+                .visuals
+                .placements
+                .iter()
+                .filter(|p| p.selected_model)
+                .count()
+                == 1
+                && session
+                    .visuals
+                    .placements
+                    .iter()
+                    .any(|p| p.actor == local && p.selected_model),
+            "Selected model was assigned to the wrong network actor"
+        );
+    }
+    graphics.capture(&mut peer, &out.join("multiplayer-peer.png"))?;
+    {
+        let session = peer.session.as_ref().unwrap();
+        let local = session.status["actor"]["actor"].as_u64().unwrap();
+        let placed = session
+            .visuals
+            .placements
+            .iter()
+            .find(|p| p.selected_model)
+            .unwrap();
+        ensure!(
+            placed.actor == local && session.visuals.placements.len() == 8,
+            "Peer model was assigned to the wrong actor"
+        );
+        let authority = &f
+            .session
+            .as_ref()
+            .unwrap()
+            .host
+            .as_ref()
+            .unwrap()
+            .engine
+            .simulation;
+        let slot = *authority
+            .actors
+            .order()
+            .iter()
+            .find(|&&slot| authority.actors.instance_order(slot) == local)
+            .unwrap();
+        let entity = authority.actors.entity(slot);
+        let name = &authority.definitions().entities[entity].id;
+        ensure!(
+            (placed.center[0] - after_network[name][0]).abs() < 0.25,
+            "Received model did not follow authoritative movement"
+        );
+    }
     peer.leave()?;
     f.leave()?;
     fs::write(
         out.join("verification.json"),
         serde_json::to_vec_pretty(
-            &serde_json::json!({"native_ui_click_flow":true,"cancel_preserves_file":true,"identity_reopen":true,"offline_movement_and_portable_save":true,"concurrent_save_writer_rejected":true,"real_quic_clients":2,"remote_movement_authoritative":true,"logo_original":true,"human_acceptance":false}),
+            &serde_json::json!({"native_ui_click_flow":true,"cancel_preserves_file":true,"identity_reopen":true,"offline_movement_and_portable_save":true,"concurrent_save_writer_rejected":true,"real_quic_clients":2,"remote_movement_authoritative":true,"logo_original":true,"native_player_model":true,"collider_foot_alignment":true,"model_follows_movement":true,"camera_follows_player":true,"visuals_excluded_from_saves":true,"network_model_lease_binding":true,"human_acceptance":false}),
         )?,
     )?;
     println!("Native creator, durable characters, offline save and two QUIC clients verified.");
@@ -499,7 +637,15 @@ pub fn main() -> Result<()> {
     if args.iter().any(|a| a == "--verify") {
         return verify(&root, &root.join("games/land-of-survivors/artifacts/app"));
     }
-    let front = Front::new(root, Store::default_path())?;
+    let mut front = Front::new(root, Store::default_path())?;
+    if args.iter().any(|a| a == "--play") {
+        if front.selected().is_some() {
+            front.execute(Action::Roster)?;
+            front.execute(Action::Offline)?;
+        } else {
+            front.execute(Action::New)?;
+        }
+    }
     let mut app = App {
         front,
         window: None,

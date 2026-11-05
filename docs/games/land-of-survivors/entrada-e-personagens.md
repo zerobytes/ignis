@@ -10,6 +10,7 @@ identidades e telas ficam em `games/land-of-survivors/src/front_*.rs` e
 ```sh
 python3 games/land-of-survivors/app.py --build
 python3 games/land-of-survivors/app.py --open
+python3 games/land-of-survivors/app.py --play
 python3 games/land-of-survivors/app.py --verify
 ```
 
@@ -74,8 +75,11 @@ futuras ainda precisa ser definida.
 
 ## Sessões offline e multiplayer
 
-O palco permite testar movimento com WASD/Shift e um avatar provisório. Offline
-usa o mesmo núcleo Ignis e save portátil por personagem. Hospedar inicia um
+O palco permite testar movimento com WASD/Shift usando o modelo nativo do
+personagem selecionado, na pose de repouso e ainda com arte provisória.
+A câmera acompanha esse personagem. `--play` abre diretamente o personagem
+selecionado offline; sem cadastro selecionado, abre a criação. Offline usa o
+mesmo núcleo Ignis e save portátil por personagem. Hospedar inicia um
 host QUIC/TLS real com8slots e conecta o jogador por um cliente separado dentro
 da aplicação. Outros apps podem entrar com o convite copiado, que contém
 endereço e certificado público fixado. O convite não contém chave privada nem
@@ -113,3 +117,34 @@ de segundo escritor offline, movimento e save/load portátil, host com dois
 clientes QUIC/TLS e movimento remoto aplicado pela autoridade. Capturas de
 menu, lista, criador e sessão foram inspecionadas. Aceite humano e uso em duas
 máquinas físicas permanecem separados.
+
+
+## Personagem dentro da cena — continuação de LOS-22
+
+A criação e a sessão compartilham `Front::character_meshes`: povo, base, rosto,
+pele, olhos e orelhas usam a mesma configuração nativa. `presentation.rs` prepara
+os vértices/materiais da pose de repouso uma vez ao entrar; cada frame aplica a
+posição física, escala para a altura do colisor e orientação pelo deslocamento.
+Pés coincidem com a base física. Não foram criadas animações, roupas ou arte nova.
+A câmera segue o ator selecionado e preserva os controles WASD/Shift existentes.
+
+O snapshot do Ignis agora expõe `player_primitives` com identidade/vida/índice
+exatos das caixas de Player, tanto offline quanto na réplica recebida. A camada
+do jogo substitui somente essas representações após preparar o frame nativo,
+sem alterar colisores, Scene, PSV ou estado autoritativo. Piso, outros objetos e
+projéteis permanecem visíveis. Os modelos são derivados locais, não ficam
+embutidos no save. Este recorte exige o palco sem meshes autorais da entrada;
+não constitui um sistema genérico de attachments ou integração planetária.
+
+Na rede a própria aparência acompanha o Player concedido pelo host; outros
+Players usam uma base nativa de viajante provisória. Isso não transmite a
+aparência escolhida para os demais clientes nem cria posse durável. O vínculo
+usa a identidade pública do snapshot, não posição, cor ou ordem presumida das
+caixas. Os oito Players pré-autorizados do palco continuam presentes; não são
+oito conexões nem NPCs com IA.
+
+A validação deste incremento acrescenta captura de personagem na cena/ao mover,
+alinhamento dos pés, ausência da caixa visual, câmera seguindo, contagem de
+vértices estável, save sem meshes derivados e vínculo correto ao ator recebido
+para dois clientes com configurações diferentes. A aparência remota completa,
+animações e aceite humano permanecem etapas separadas.

@@ -17,6 +17,7 @@ pub fn empty(camera: Camera, light: Light) -> RenderFrame {
         camera,
         light,
         boxes: Vec::new(),
+        player_primitives: Vec::new(),
         vision_guides: Vec::new(),
         hearing_guides: Vec::new(),
         noise_guides: Vec::new(),
@@ -54,6 +55,7 @@ pub fn update(state: &State, frame: &mut RenderFrame, camera: Option<&Camera>) -
                 .map(|a| (a.position(), a.appearance.color))
         })?;
     frame.boxes.clear();
+    frame.player_primitives.clear();
     frame
         .boxes
         .reserve(state.replica.actors().len() + state.replica.projectiles().len());
@@ -67,15 +69,27 @@ pub fn update(state: &State, frame: &mut RenderFrame, camera: Option<&Camera>) -
                     p.actor == a.id && p.hide_body && frame.meshes.drawn_avatars.contains(&a.id)
                 })
             })
-            .map(|a| RenderBox {
-                geometry: a.appearance.geometry,
-                position: a.position(),
-                size: a.appearance.size,
-                color: if a.health.is_some_and(|h| h.units == 0) {
-                    [0.22, 0.22, 0.24]
-                } else {
-                    a.appearance.color
-                },
+            .enumerate()
+            .map(|(box_index, a)| {
+                if a.appearance.kind == super::replica::Kind::Player {
+                    frame
+                        .player_primitives
+                        .push(crate::render::PlayerPrimitive {
+                            actor: a.id,
+                            life: a.life,
+                            box_index,
+                        });
+                }
+                RenderBox {
+                    geometry: a.appearance.geometry,
+                    position: a.position(),
+                    size: a.appearance.size,
+                    color: if a.health.is_some_and(|h| h.units == 0) {
+                        [0.22, 0.22, 0.24]
+                    } else {
+                        a.appearance.color
+                    },
+                }
             }),
     );
     frame

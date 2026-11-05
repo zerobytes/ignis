@@ -1,4 +1,4 @@
-use crate::characters::*;
+use crate::{characters::*, presentation::Presentation};
 use anyhow::{Result, ensure};
 use ignis::{
     engine::Command,
@@ -59,6 +59,7 @@ pub struct Session {
     pub character: String,
     pub invitation: String,
     pub status: Value,
+    pub visuals: Presentation,
     elapsed: f32,
     inspect_elapsed: f32,
     _save_lease: Option<SaveLease>,
@@ -204,11 +205,11 @@ impl Front {
         }
         Ok(())
     }
-    pub fn preview(&mut self) -> Result<()> {
-        let Some(source) = &self.source else {
-            return Ok(());
-        };
-        let d = &self.draft;
+    pub fn character_meshes(&self, d: &Draft) -> Result<ignis::meshes::Document> {
+        let source = self
+            .source
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Character source is unavailable"))?;
         let mut p = BTreeMap::new();
         p.insert(
             "body_masculinity".into(),
@@ -277,6 +278,13 @@ impl Front {
                 i.color = eyes[d.appearance.eyes as usize];
             }
         }
+        Ok(doc)
+    }
+    pub fn preview(&mut self) -> Result<()> {
+        if self.source.is_none() {
+            return Ok(());
+        }
+        let doc = self.character_meshes(&self.draft)?;
         let height = doc
             .assets
             .iter()
@@ -335,9 +343,15 @@ impl Front {
             json!({"op":"set_execution_mode","mode":"continuous"}),
         )?;
         command(&mut client, json!({"op":"play"}))?;
+        ensure!(
+            client.engine.scene.meshes.is_empty(),
+            "This character stage requires an empty authored mesh layer"
+        );
+        let visuals = Presentation::new(self.character_meshes(&c.identity)?, None)?;
         self.session = Some(Session {
             host: None,
             client,
+            visuals,
             offline: true,
             _save_lease: Some(lease),
             character: c.id,
@@ -362,7 +376,12 @@ impl Front {
             json!({"op":"start_multiplayer_host","address":self.bind,"capacity":8}),
         )?;
         let client = self.world(&c, 1)?;
+        let visuals = Presentation::new(
+            self.character_meshes(&c.identity)?,
+            Some(self.character_meshes(&Draft::default())?),
+        )?;
         self.session = Some(Session {
+            visuals,
             host: Some(host),
             client,
             offline: false,
@@ -386,9 +405,14 @@ impl Front {
             &mut client,
             json!({"op":"connect_multiplayer","address":invite.address,"certificate_der":invite.certificate_der}),
         )?;
+        let visuals = Presentation::new(
+            self.character_meshes(&c.identity)?,
+            Some(self.character_meshes(&Draft::default())?),
+        )?;
         self.session = Some(Session {
             host: None,
             client,
+            visuals,
             offline: false,
             _save_lease: None,
             character: c.id,
@@ -480,6 +504,17 @@ impl Front {
         }
         self.session = None;
         self.page = Page::Roster;
+        Ok(())
+    }
+    pub fn present(&mut self, frame: &mut ignis::render::RenderFrame) -> Result<()> {
+        if let Some(s) = &mut self.session {
+            let local = if s.offline {
+                frame.player_primitives.first().map(|p| p.actor)
+            } else {
+                s.status["actor"]["actor"].as_u64()
+            };
+            s.visuals.apply(frame, local)?;
+        }
         Ok(())
     }
     pub fn service(&self) -> &Service {

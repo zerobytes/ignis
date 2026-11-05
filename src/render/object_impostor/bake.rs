@@ -21,6 +21,7 @@ fn frame(doc: &crate::meshes::Document) -> Result<RenderFrame> {
         camera: s.camera,
         light,
         boxes: vec![],
+        player_primitives: Vec::new(),
         vision_guides: vec![],
         hearing_guides: vec![],
         noise_guides: vec![],

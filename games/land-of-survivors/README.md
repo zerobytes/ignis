@@ -10,10 +10,11 @@ Projeto nativo Ignis, iniciado em 3 de novembro de 2026. A entrada usa um palco 
 python3 games/land-of-survivors/start.py
 python3 games/land-of-survivors/app.py --build
 python3 games/land-of-survivors/app.py --open
+python3 games/land-of-survivors/app.py --play
 python3 games/land-of-survivors/start.py --editor
 ```
 
-Sem opção, verifica a entrada, as dimensões, save/load e preservação da câmera por MCP, capturando `artifacts/front-end/start.png` e `overview.png`. `start.py --open` abre o jogo com seu menu; `--editor` abre o projeto para autoria. Usa o executável corrente do Ignis, sem compilar ou copiar um app. As capturas foram inspecionadas offscreen; não comprovam interação desktop ou menus prontos.
+Sem opção, verifica a entrada, as dimensões, save/load e preservação da câmera por MCP, capturando `artifacts/front-end/start.png` e `overview.png`. `start.py --open` abre o jogo com seu menu; `--editor` abre o projeto para autoria. Usa o executável corrente do Ignis, sem compilar ou copiar um app. `app.py --play` abre o personagem selecionado diretamente no palco offline, com seu modelo nativo em repouso e câmera acompanhando. As capturas são evidência automatizada; aceite humano de interface/arte permanece separado.
 
 `scenes/Principal.scene.json` continua sendo a cena do observador planetário. Os launchers de mundo/relevo selecionam essa cena explicitamente, sem depender da nova entrada. A geografia e o laboratório de habilidades continuam independentes do palco de interface.
 

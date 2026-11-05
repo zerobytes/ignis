@@ -519,6 +519,7 @@ impl State {
                 camera: source.camera.clone(),
                 light: source.light.clone(),
                 boxes: vec![],
+                player_primitives: Vec::new(),
                 vision_guides: vec![],
                 hearing_guides: vec![],
                 noise_guides: vec![],
@@ -535,6 +536,9 @@ impl State {
         frame.mesh_lods = source.mesh_lods.clone();
         frame.mesh_lod_settings = source.mesh_lod_settings;
         frame.boxes.clone_from(&source.boxes);
+        frame
+            .player_primitives
+            .clone_from(&source.player_primitives);
         frame.vision_guides.clone_from(&source.vision_guides);
         frame.hearing_guides.clone_from(&source.hearing_guides);
         frame.noise_guides.clone_from(&source.noise_guides);
