@@ -23,7 +23,8 @@ pub mod root_crown;
 pub mod root_sections;
 pub mod roots;
 pub mod wood_surface;
-pub const VERSION: u16 = 10;
+pub mod junction_quality;
+pub const VERSION: u16 = 11;
 pub const LIVING_SCENE_VERSION: u32 = 121;
 fn one() -> f64 {
     1.
@@ -186,6 +187,9 @@ pub struct OrganEdit {
     pub deformation: deformation::Deformation,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wood_surface: Option<wood_surface::Surface>,
+    /// Local interior refinement for junctions incident to this woody organ.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub junction_refinement: Option<u8>,
 }
 impl Default for OrganEdit {
     fn default() -> Self {
@@ -197,6 +201,7 @@ impl Default for OrganEdit {
             radius: 1.,
             deformation: Default::default(),
             wood_surface: None,
+            junction_refinement: None,
         }
     }
 }
@@ -668,6 +673,10 @@ impl Recipe {
         }
         for (id, e) in &self.edits {
             e.deformation.validate()?;
+            if let Some(level) = e.junction_refinement
+                && (self.version < 11 || level > 3 || !self.source.organs.iter().any(|o|o.id == *id && matches!(o.shape,Shape::Axis{..}))) {
+                return Err(invalid("Junction refinement requires recipe11, a woody axis and level0..3"));
+            }
             if let Some(surface) = &e.wood_surface {
                 if self.version < 10
                     || self.living.is_some()

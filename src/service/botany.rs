@@ -557,6 +557,7 @@ impl Service {
                 edit,
             } => {
                 let mut recipe = self.botanical_recipe(prefix)?;
+                if edit.junction_refinement.is_some() { recipe.version = recipe.version.max(11); }
                 if edit.wood_surface.is_some() {
                     recipe.version = recipe.version.max(10);
                 }

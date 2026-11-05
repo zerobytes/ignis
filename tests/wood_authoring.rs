@@ -299,3 +299,89 @@ fn wide_wood_has_no_fixed_artistic_radius_ceiling() {
         .radii[0] = f64::INFINITY;
     assert!(r.validate().is_err());
 }
+
+#[test]
+fn junction_refinement_is_local_versioned_and_transactional() {
+    let r = specimen();
+    let base = bake::compile(&r).unwrap();
+    let mut same = r.clone();
+    same.version = 11;
+    same.edits.get_mut("trunk").unwrap().junction_refinement = Some(1);
+    assert_eq!(bake::compile(&same).unwrap().document, base.document);
+    let mut detailed = same.clone();
+    detailed.edits.get_mut("trunk").unwrap().junction_refinement = Some(2);
+    closed(&detailed);
+    let next = bake::compile(&detailed).unwrap();
+    assert!(
+        next.document.assets[0].geometry.positions.len()
+            > base.document.assets[0].geometry.positions.len()
+    );
+    let body = |c: &bake::Compiled| {
+        c.vertices[0]
+            .iter()
+            .zip(&c.document.assets[0].geometry.positions)
+            .filter(|(v, _)| v.key.contains(":wall") && v.key.contains('@'))
+            .map(|(v, p)| (v.key.clone(), *p))
+            .collect::<BTreeMap<_, _>>()
+    };
+    let original = body(&base);
+    assert!(!original.is_empty());
+    assert_eq!(original, body(&next));
+    let encoded = serde_json::to_vec(&detailed).unwrap();
+    let round: b::Recipe = serde_json::from_slice(&encoded).unwrap();
+    assert_eq!(bake::compile(&round).unwrap().document, next.document);
+    let mut invalid = detailed.clone();
+    invalid.version = 10;
+    assert!(invalid.validate().is_err());
+    let root = tempfile::tempdir().unwrap();
+    let mut service = Service::new(root.path(), RoomRecipe::default().generate().unwrap()).unwrap();
+    op(
+        &mut service,
+        b::Operation::Publish {
+            recipe: Box::new(r.clone()),
+            policy: Default::default(),
+        },
+    )
+    .unwrap();
+    let before = service.engine.scene.clone();
+    op(
+        &mut service,
+        b::Operation::Preview {
+            recipe: Box::new(detailed.clone()),
+            policy: Default::default(),
+        },
+    )
+    .unwrap();
+    assert_eq!(service.engine.scene, before);
+    op(&mut service, b::Operation::CancelPreview).unwrap();
+    assert_eq!(service.engine.scene, before);
+    op(
+        &mut service,
+        b::Operation::EditOrgan {
+            prefix: r.prefix.clone(),
+            organ: "trunk".into(),
+            edit: detailed.edits["trunk"].clone(),
+        },
+    )
+    .unwrap();
+    let after = service.engine.scene.clone();
+    assert_eq!(after.botany[0].version, 11);
+    let mut bad = detailed.edits["trunk"].clone();
+    bad.junction_refinement = Some(4);
+    assert!(
+        op(
+            &mut service,
+            b::Operation::EditOrgan {
+                prefix: r.prefix.clone(),
+                organ: "trunk".into(),
+                edit: bad
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(service.engine.scene, after);
+    service.execute(Command::Undo.into()).unwrap();
+    assert_eq!(service.engine.scene, before);
+    service.execute(Command::Redo.into()).unwrap();
+    assert_eq!(service.engine.scene, after);
+}

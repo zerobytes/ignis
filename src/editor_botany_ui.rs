@@ -342,6 +342,14 @@ pub(super) fn properties(
                     send(commands,match action {Action::Preview=>Op::Preview{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Apply=>Op::Publish{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Cancel=>unreachable!()});
                 }
             }
+            if recipe.source.organs.iter().any(|o|o.id==*id && matches!(o.shape,crate::botany::Shape::Axis{..}))
+                && let Some(action)=crate::botany::junction_quality::editor(ui,&mut state.edit) {
+                    use crate::botany::wood_surface::ui::Action;
+                    if matches!(action,Action::Cancel){state.edit=recipe.edits.get(id).cloned().unwrap_or_default();send(commands,Op::CancelPreview);}else{
+                        let mut r=recipe.clone();r.version=r.version.max(11);r.edits.insert(id.clone(),state.edit.clone());
+                        send(commands,match action{Action::Preview=>Op::Preview{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Apply=>Op::Publish{recipe:Box::new(r),policy:ManualPolicy::Preserve},Action::Cancel=>unreachable!()});
+                    }
+            }
             ui.collapsing("Curva de crescimento do galho",|ui|{
                 ui.label("Curvatura na base / ponta (rad/m), nos dois eixos locais");
                 for (label,values) in [("Base",&mut state.edit.deformation.base),("Ponta",&mut state.edit.deformation.tip)] {

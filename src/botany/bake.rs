@@ -812,7 +812,7 @@ fn junctions(poses: &[Pose], recipe: &Recipe) -> Result<Vec<Joint>> {
             match crate::mesh_organic::junction(
                 &collars,
                 crate::mesh_organic::Options {
-                    refinement_levels: 1,
+                    refinement_levels: super::junction_quality::level(recipe,[parent_pose.source,p.source],1),
                     relaxation_steps: 2,
                     ..Default::default()
                 },
@@ -905,7 +905,7 @@ fn junctions(poses: &[Pose], recipe: &Recipe) -> Result<Vec<Joint>> {
                     match crate::mesh_organic::junction(
                         &collars,
                         crate::mesh_organic::Options {
-                            refinement_levels: 1,
+                            refinement_levels: super::junction_quality::level(recipe,[parent_pose.source,poses[child].source,poses[other].source],1),
                             relaxation_steps: 2,
                             ..Default::default()
                         },
@@ -1048,7 +1048,7 @@ fn junctions(poses: &[Pose], recipe: &Recipe) -> Result<Vec<Joint>> {
                 match crate::mesh_organic::junction_many(
                     &collars,
                     crate::mesh_organic::Options {
-                        refinement_levels: 2,
+                        refinement_levels: super::junction_quality::level(recipe,std::iter::once(p.source).chain(roots.iter().map(|&i|poses[i].source)),2),
                         relaxation_steps: 2,
                         ..Default::default()
                     },
