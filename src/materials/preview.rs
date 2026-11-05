@@ -64,8 +64,10 @@ mod tests {
 
     #[test]
     fn invalid_and_unsupported_materials_fail_before_export() {
-        let mut material = super::super::Material::default();
-        material.transmission = f32::NAN;
+        let mut material = super::super::Material {
+            transmission: f32::NAN,
+            ..Default::default()
+        };
         assert!(encode(&material).is_err());
         material.transmission = 0.;
         material.surface = Some(super::super::Surface {

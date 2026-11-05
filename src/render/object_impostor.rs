@@ -230,6 +230,34 @@ impl Pack {
     }
 }
 
+fn eligible(a: &crate::meshes::Asset) -> bool {
+    a.rig.is_none()
+        && a.clips.is_empty()
+        && a.shading == crate::meshes::Shading::Smooth
+        && a.geometry.material_coordinates.is_none()
+        && a.material.detail.is_none()
+        && a.material.procedural.is_none()
+        && !a.material.has_coverage()
+        && a.material.surface.is_none()
+        && a.material.transmission == 0.
+}
+fn basis(az: f32, elevation: f32) -> (Vec3, Vec3, Vec3) {
+    let forward = -Vec3::new(
+        az.sin() * elevation.cos(),
+        elevation.sin(),
+        az.cos() * elevation.cos(),
+    );
+    let right = forward.cross(Vec3::Y).normalize();
+    (right, right.cross(forward), forward)
+}
+fn world(i: &crate::meshes::Instance) -> Mat4 {
+    Mat4::from_scale_rotation_translation(
+        Vec3::splat(i.scale),
+        Quat::from_array(i.rotation),
+        Vec3::from(i.position),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -301,31 +329,4 @@ mod tests {
             .unwrap();
         }
     }
-}
-fn eligible(a: &crate::meshes::Asset) -> bool {
-    a.rig.is_none()
-        && a.clips.is_empty()
-        && a.shading == crate::meshes::Shading::Smooth
-        && a.geometry.material_coordinates.is_none()
-        && a.material.detail.is_none()
-        && a.material.procedural.is_none()
-        && !a.material.has_coverage()
-        && a.material.surface.is_none()
-        && a.material.transmission == 0.
-}
-fn basis(az: f32, elevation: f32) -> (Vec3, Vec3, Vec3) {
-    let forward = -Vec3::new(
-        az.sin() * elevation.cos(),
-        elevation.sin(),
-        az.cos() * elevation.cos(),
-    );
-    let right = forward.cross(Vec3::Y).normalize();
-    (right, right.cross(forward), forward)
-}
-fn world(i: &crate::meshes::Instance) -> Mat4 {
-    Mat4::from_scale_rotation_translation(
-        Vec3::splat(i.scale),
-        Quat::from_array(i.rotation),
-        Vec3::from(i.position),
-    )
 }

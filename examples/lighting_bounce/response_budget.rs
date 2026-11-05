@@ -376,56 +376,55 @@ fn schedule(
             dirty = 0;
             offset = 0;
         }
-        if let Some(f) = &flight {
-            if let Some(c) = f.poll(r)? {
-                observed = Some(c.phase);
-                let stale = c.epoch != epoch;
-                rows.push(json!({"epoch":c.epoch,"phase":format!("{:?}",c.phase),"issued_frame":c.frame,"completion_frame":frame,"rows":c.rows,"gpu_ms":c.gpu_ms,"cpu_submit_ms":c.cpu_submit_ms,"stale_discarded":stale,"over_budget":c.gpu_ms>budget}));
-                if !stale {
-                    if c.phase == Phase::Mark {
-                        dirty = c.dirty;
-                        phase = if dirty == 0 {
-                            Phase::Publish
-                        } else {
-                            Phase::Repair
-                        };
-                    }
-                    if c.phase == Phase::Repair {
-                        if offset == 0 && c.rows == 1 {
-                            launch = c.gpu_ms * 1.1;
-                        } else {
-                            costs.pop_front();
-                            costs.push_back(
-                                ((c.gpu_ms - launch).max(0.) / f64::from(c.rows))
-                                    .max(cold_rate * 0.5),
-                            );
-                        }
-                        if offset == 0 {
-                            println!("Budget {budget}: one-row probe {:.3} ms", c.gpu_ms);
-                        }
-                        offset += c.rows;
-                        phase = if offset >= dirty {
-                            Phase::Publish
-                        } else {
-                            Phase::Repair
-                        };
-                    }
-                    if c.phase == Phase::Publish {
-                        ticks.push(json!({"frame":frame,"cpu_tick_ms":ms(tick),"submitted":false,"published_epoch":epoch}));
-                        return Ok(ScheduleResult {
-                            rows,
-                            ticks,
-                            latency_ms: ms(start),
-                            publish_frame: frame,
-                            cancelled,
-                            dirty,
-                            working_epoch: epoch,
-                            published: true,
-                        });
-                    }
+        if let Some(f) = &flight
+            && let Some(c) = f.poll(r)?
+        {
+            observed = Some(c.phase);
+            let stale = c.epoch != epoch;
+            rows.push(json!({"epoch":c.epoch,"phase":format!("{:?}",c.phase),"issued_frame":c.frame,"completion_frame":frame,"rows":c.rows,"gpu_ms":c.gpu_ms,"cpu_submit_ms":c.cpu_submit_ms,"stale_discarded":stale,"over_budget":c.gpu_ms>budget}));
+            if !stale {
+                if c.phase == Phase::Mark {
+                    dirty = c.dirty;
+                    phase = if dirty == 0 {
+                        Phase::Publish
+                    } else {
+                        Phase::Repair
+                    };
                 }
-                flight = None;
+                if c.phase == Phase::Repair {
+                    if offset == 0 && c.rows == 1 {
+                        launch = c.gpu_ms * 1.1;
+                    } else {
+                        costs.pop_front();
+                        costs.push_back(
+                            ((c.gpu_ms - launch).max(0.) / f64::from(c.rows)).max(cold_rate * 0.5),
+                        );
+                    }
+                    if offset == 0 {
+                        println!("Budget {budget}: one-row probe {:.3} ms", c.gpu_ms);
+                    }
+                    offset += c.rows;
+                    phase = if offset >= dirty {
+                        Phase::Publish
+                    } else {
+                        Phase::Repair
+                    };
+                }
+                if c.phase == Phase::Publish {
+                    ticks.push(json!({"frame":frame,"cpu_tick_ms":ms(tick),"submitted":false,"published_epoch":epoch}));
+                    return Ok(ScheduleResult {
+                        rows,
+                        ticks,
+                        latency_ms: ms(start),
+                        publish_frame: frame,
+                        cancelled,
+                        dirty,
+                        working_epoch: epoch,
+                        published: true,
+                    });
+                }
             }
+            flight = None;
         }
         if flight.is_none() && frame >= 150 {
             ticks.push(json!({"frame":frame,"cpu_tick_ms":ms(tick),"submitted":false,"published_epoch":0,"deadline_rejected":true}));
