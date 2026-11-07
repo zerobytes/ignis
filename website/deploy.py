@@ -4,10 +4,10 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
-import tempfile
 import time
 from runtime_assets import declarations, materialize
 
@@ -102,15 +102,20 @@ def wait_pages(head):
 
 def firebase_publish(files):
     # Publish the captured bytes, even if another task edits the working tree.
-    with tempfile.TemporaryDirectory(prefix='ignis-website-') as tmp:
-        stage = Path(tmp)
+    stage=ROOT/'.hosting-stage'
+    stage.mkdir()  # Exclusive, on the same volume as the captured asset library.
+    try:
         for path, data in files.items():
             out = stage / 'dist' / path
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(data)
         for name in ['firebase.json', '.firebaserc']:
             shutil.copyfile(ROOT / name, stage / name)
-        subprocess.run(['npx', '-y', 'firebase-tools@latest', 'deploy', '--only', 'hosting:website', '--project', 'ignisengine', '--account', 'zerobyte30k@gmail.com', '--non-interactive'], cwd=stage, check=True)
+        (stage/'tmp').mkdir()
+        env=os.environ.copy();env['TMPDIR']=str(stage/'tmp')
+        subprocess.run(['npx', '-y', 'firebase-tools@latest', 'deploy', '--only', 'hosting:website', '--project', 'ignisengine', '--account', 'zerobyte30k@gmail.com', '--non-interactive'], cwd=stage, env=env, check=True)
+    finally:
+        shutil.rmtree(stage)
 
 
 def verify(files, version):
