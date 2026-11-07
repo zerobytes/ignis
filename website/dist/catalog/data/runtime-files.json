@@ -1,90 +1,250 @@
 {
   "version": 1,
   "files": {
-    "catalog/data/meshes/ignis.mesh.tree.ancestral-blue-lilac.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-blue-lilac.igmpz",
-      "bytes": 62431072,
-      "sha256": "f2b1dd91c2e972d73b6efde8bf98afdceacfd8de04287ee2b4f471cbcd2c92ff"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-blue-lilac.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-blue-lilac.native-part-0.igmpz",
+      "bytes": 112183882,
+      "sha256": "73918c058868553e4c55f858ecc139409d32daad136fc2826202ef70c7df9fda"
     },
-    "catalog/data/meshes/ignis.mesh.tree.ancestral-pink.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-pink.igmpz",
-      "bytes": 45666960,
-      "sha256": "c44584964de0ab937f94a3d5bb8d6ea50567e7d9521d84b3848a837ee1bf3ed3"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-blue-lilac.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-blue-lilac.native-part-1.igmpz",
+      "bytes": 70142985,
+      "sha256": "c9d86ea9442962645bdb88132c5a298f279475217129c47d30f64bcea9bbaae6"
     },
-    "catalog/data/meshes/ignis.mesh.tree.ancestral-white.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white.igmpz",
-      "bytes": 69056384,
-      "sha256": "6f40dcd8a7b56bf6c3f8e9273801673847e1bf171f15a53b11ecf52c6d91498b"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-blue-lilac.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-blue-lilac.native-part-2.igmpz",
+      "bytes": 133701508,
+      "sha256": "5cc415befd5996f5f8e6d352e73bfc4d5b1ff6580b42553cf3cfcfc12a1257c5"
     },
-    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-41.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-41.igmpz",
-      "bytes": 70131394,
-      "sha256": "01b180f74bdf2f8cb340269a06b4e06f04a33697b8536df4a9eb596b8f274535"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-pink.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-pink.native-part-0.igmpz",
+      "bytes": 89747060,
+      "sha256": "2fdc6fdc5650da2edf1a7ef34ea37854f16ffc88dad8c66d969cf631aa96c077"
     },
-    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-42.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-42.igmpz",
-      "bytes": 64603081,
-      "sha256": "30c5100eb9c3ffe05c9c94949315825b8be73c382a4b8bfed1c0facae0e537c0"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-pink.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-pink.native-part-1.igmpz",
+      "bytes": 51233338,
+      "sha256": "f9961ee481ca345c1ad510aaa4f5a7004e413ca11a4cc55a9cd89638a99d274c"
     },
-    "catalog/data/meshes/ignis.mesh.tree.ancestral-wine.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-wine.igmpz",
-      "bytes": 54468983,
-      "sha256": "f42d72ec4b6a1534a6edd151452f86e039825f3d773f4a3be2d49f4b0cc8e38d"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-pink.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-pink.native-part-2.igmpz",
+      "bytes": 104536802,
+      "sha256": "2e022fd268dddbd9eb6ae1cb90c0ab72981fc574fc63ec542abb55c1de71c1d7"
     },
-    "catalog/data/meshes/ignis.mesh.tree.birch-0.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-0.igmpz",
-      "bytes": 11079999,
-      "sha256": "6c59cfde1ae3c7545b064dbed6690bad9da3cf049d39afee841b1a2b6a03c48b"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white.native-part-0.igmpz",
+      "bytes": 143510666,
+      "sha256": "378426ef02328955c862ccd855e74836804369721ec6a66bdff1c7607f69be95"
     },
-    "catalog/data/meshes/ignis.mesh.tree.birch-1.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-1.igmpz",
-      "bytes": 11071558,
-      "sha256": "c5d6668c866c00a1207a3549f319af3c18219d12fea6d57d27762dbc437d97cd"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white.native-part-1.igmpz",
+      "bytes": 80025868,
+      "sha256": "a8c30e71c324748b400bf2c11af9adbb1ad483b7ded032c7c113c46b4cabdf44"
     },
-    "catalog/data/meshes/ignis.mesh.tree.birch-2.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-2.igmpz",
-      "bytes": 11085268,
-      "sha256": "4fa8c0e9feba09b36edb4036fc0a2b9d7b5427e384163bdc5cba0559cbf70e4f"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white.native-part-2.igmpz",
+      "bytes": 143890366,
+      "sha256": "5839f16ce81f77a7a85a4e4f6e7d85b8e31f609cca3448a81320e1532eb98343"
     },
-    "catalog/data/meshes/ignis.mesh.tree.cuihua-0.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/cuihua-v1.2.0/ignis.mesh.tree.cuihua-0.igmpz",
-      "bytes": 54492118,
-      "sha256": "2c43ef315903aa33f082ffb99279475100cb5aa4bd176ca5eba938152435dfa2"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-41.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-41.native-part-0.igmpz",
+      "bytes": 118624417,
+      "sha256": "397abcc3df44a7c7fd7813098f70a0a6432ea7069635cd229ae12dd12e47fd37"
     },
-    "catalog/data/meshes/ignis.mesh.tree.cuihua-1.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/cuihua-v1.2.0/ignis.mesh.tree.cuihua-1.igmpz",
-      "bytes": 54481582,
-      "sha256": "b051293acb451fe4cc7c33e1fcedb940d79aba10394302d2271a00aac78d93e0"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-41.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-41.native-part-1.igmpz",
+      "bytes": 76855161,
+      "sha256": "9275628813eb8c6e67d18def5924aec75a5b38a72598389c924db2f75b816532"
     },
-    "catalog/data/meshes/ignis.mesh.tree.cuihua-2.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/cuihua-v1.2.0/ignis.mesh.tree.cuihua-2.igmpz",
-      "bytes": 54498632,
-      "sha256": "884c9a118da18ddda82e04ca8fec3a15cbdc6ea2df63a5fb4e9109b0a6e176d3"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-41.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-41.native-part-2.igmpz",
+      "bytes": 149084672,
+      "sha256": "71210ddd192cc5c1fbb6b0b4f1a0933bb5a7950a311b0f4df3037c016d581d24"
     },
-    "catalog/data/meshes/ignis.mesh.tree.eucalipto.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.eucalipto.igmpz",
-      "bytes": 21266400,
-      "sha256": "1be809da529f5cc6695df25d37f9ece1eae34cc370aea7b3d6f8840061329f55"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-42.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-42.native-part-0.igmpz",
+      "bytes": 113378894,
+      "sha256": "6b9f5e8871c2e9bc0a3b2cb37a3db64e6dd23e82db7cc92f59ca91cafafbef4d"
     },
-    "catalog/data/meshes/ignis.mesh.tree.figueira.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira.igmpz",
-      "bytes": 42203940,
-      "sha256": "e840b18469d6945c723969625c83143baaa8448eac7c180d89038dafa5f9f2c1"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-42.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-42.native-part-1.igmpz",
+      "bytes": 70584901,
+      "sha256": "9224ed59813d4a670ff015d6d872a59313e34d85ed8593fc9bbf71caac310c63"
     },
-    "catalog/data/meshes/ignis.mesh.tree.figueira-rs.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira-rs.igmpz",
-      "bytes": 41451657,
-      "sha256": "17cf5108730adf0f80858c834a0cf71b5f0afb36d390b8e3c31c5a959850b0cb"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-42.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-42.native-part-2.igmpz",
+      "bytes": 148123526,
+      "sha256": "efd9fbd1a9eeb44f940d7668eccfe2b0ad582af181533ebcff793ca1200375a9"
     },
-    "catalog/data/meshes/ignis.mesh.tree.palmeirinha.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/palmeirinha-v1.1.0/ignis.mesh.tree.palmeirinha.igmpz",
-      "bytes": 1440564,
-      "sha256": "037e0d03ff4ebc618ca6a5cb70bdd84bfd7542f3b396e75ce0d197656dde6ef1"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-wine.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-wine.native-part-0.igmpz",
+      "bytes": 100037197,
+      "sha256": "2c46c7cc4c4f362ec978cce6f3824fff3e96672d4e3d2cee0b0f8dedae88e4a8"
     },
-    "catalog/data/meshes/ignis.mesh.tree.platano.igmpz": {
-      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.platano.igmpz",
-      "bytes": 58192692,
-      "sha256": "c1ff602b0db6b376a5bfb8b23cacb99a5d1a89979e55b829ab62b73c2142abaa"
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-wine.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-wine.native-part-1.igmpz",
+      "bytes": 57615004,
+      "sha256": "8029e6573ca2124c6c2f475e678ba358bd958ff7d7ad36e136e2dd31b3883422"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-wine.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-wine.native-part-2.igmpz",
+      "bytes": 145159611,
+      "sha256": "d7af179699e0908f27700245d2a5cb62f9337fa5cabe649c02ddac04749d542e"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-0.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-0.native-part-0.igmpz",
+      "bytes": 5412913,
+      "sha256": "0c881529b871ca2edf7aa4bcf0b5797b72b481a991bc85af21e4008fad5b1d75"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-0.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-0.native-part-1.igmpz",
+      "bytes": 12391450,
+      "sha256": "cf60ef2c3d7553e5afbdf01e0872b523fe983c8e38c783ed78ef7f814ca2cdcb"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-1.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-1.native-part-0.igmpz",
+      "bytes": 5405988,
+      "sha256": "37553c53c8d14d976a3a9f69919b527abee921def4fe8405e797ec0a0348b08a"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-1.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-1.native-part-1.igmpz",
+      "bytes": 12385234,
+      "sha256": "a4f1c939da1921b686cbc7e2336bd7135a02b75c4a92f8c0d7d66c31f6fe5f34"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-2.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-2.native-part-0.igmpz",
+      "bytes": 5419219,
+      "sha256": "a33922e85301ad1e9dd6dbbcf6b9c91b7d1e623e7745849f85c8ca690ba58e8b"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.birch-2.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-2.native-part-1.igmpz",
+      "bytes": 12394873,
+      "sha256": "11712474deda19a459c3e5b3842eaaa36c3c42f77cf40df7bf88777fdeacbda4"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-0.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-0.igmpz",
+      "bytes": 13882794,
+      "sha256": "931e2872b370471787adfb414383b4f5ccc254ba0749accfb4807a14fdc16b21"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-0.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-1.igmpz",
+      "bytes": 71988162,
+      "sha256": "f2952a044165e456606125254820e0221fe1220104ccbb53c76444599aca557f"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-0.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-2.igmpz",
+      "bytes": 439,
+      "sha256": "4aee60f682659e5e76b4f58d21c91c54ea24ae0584d5da2f8ee5e8dc3eb2783d"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-0.native-part-3.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-3.igmpz",
+      "bytes": 449,
+      "sha256": "95caaa48166563cf3c86420ce795bbb8b9c22dcf0c3de54fa77f1205ab5e61cb"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-0.native-part-4.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-4.igmpz",
+      "bytes": 7950,
+      "sha256": "3272795b4bc62d995aeaa15263dc029ccee091be5e58392466e1846089a0a27c"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-1.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-0.igmpz",
+      "bytes": 13859922,
+      "sha256": "1a7df707dbdd81825a0e4684ebb984ef038ea37c180f09f21c90ab928e785eea"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-1.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-1.igmpz",
+      "bytes": 71994114,
+      "sha256": "9fe457dae431e73fa7a67be0a2e93bcc7fb34758e8bfa7c39e5e2f8d9d48b18e"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-1.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-2.igmpz",
+      "bytes": 439,
+      "sha256": "abc8aec9291864a74857dcaba0a4d8b3747add3f4eefe2ee5fa9b2882b92aee7"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-1.native-part-3.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-3.igmpz",
+      "bytes": 448,
+      "sha256": "3b4323f35f8747e438ac9ec305ac4fcfaeefc9bb64393048f3c629b6459f21d6"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-1.native-part-4.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-4.igmpz",
+      "bytes": 7908,
+      "sha256": "a9f94db1b079a4570cf58806f7b9a28b689011d3fef3d01b5b9f31c51366ee8e"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-2.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-0.igmpz",
+      "bytes": 13869477,
+      "sha256": "bf19df5627b3ba0b5ab799a8c9e339ca57ed9d0ea6408f3441c76749dba47317"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-2.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-1.igmpz",
+      "bytes": 72014385,
+      "sha256": "3cc53bdbe5b28978f0074fbf53e7040286c7e7bed021fe2d1f99162131f3339f"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-2.native-part-2.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-2.igmpz",
+      "bytes": 438,
+      "sha256": "62528f3d14988b52ff7734a4af20ad78eac3659d49661084af0f72b0b9f6f844"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-2.native-part-3.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-3.igmpz",
+      "bytes": 448,
+      "sha256": "002d282b418053742c2582817c51f1a80820fa9c8c873d1fea245db3e5dede34"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.cuihua-2.native-part-4.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-4.igmpz",
+      "bytes": 8028,
+      "sha256": "93257a1331ba0fcb521ee0071187b0bfccc5cbb6bc2f441102ada99e305295a1"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.eucalipto.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.eucalipto.native-part-0.igmpz",
+      "bytes": 22671323,
+      "sha256": "3505e7a5c4722cd7345c94beea0732309b16e127b6652e538fa7ac7fa402b6dd"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.eucalipto.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.eucalipto.native-part-1.igmpz",
+      "bytes": 39245161,
+      "sha256": "b00b7fb2d49244db75e0e3c3141dc4dab190305c535e8972cc69e41d8646ca4a"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.figueira.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira.native-part-0.igmpz",
+      "bytes": 35325580,
+      "sha256": "a6d3939530574a71ee565a69a06c833e7d282872071f0ab0a11f09124fd6722d"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.figueira.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira.native-part-1.igmpz",
+      "bytes": 51154286,
+      "sha256": "3ecdeeb2c10f58567eb0a1137c3f0d20097570a2bbda90ec6b375856a074a965"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.figueira-rs.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira-rs.native-part-0.igmpz",
+      "bytes": 78551188,
+      "sha256": "4f3e9f088c8647ef841e612cb1e89e9a9b449c6b1cd5bfc16cb846605f246d58"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.figueira-rs.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira-rs.native-part-1.igmpz",
+      "bytes": 39285715,
+      "sha256": "8d3a9eca96c44dd7dce6424f5cc50c4fcb703c822db1bf9731e568d1e7bbebca"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.palmeirinha.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.palmeirinha.native-part-0.igmpz",
+      "bytes": 584928,
+      "sha256": "682e9702663133c8837dbad4d4deba9adf27dbb13ccce25814781d5e77d1091b"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.palmeirinha.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.palmeirinha.native-part-1.igmpz",
+      "bytes": 6738923,
+      "sha256": "f3de0781d780d5754d71a93441e9455d6dea5ee035dc7625cb17c5ae4a153e21"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.platano.native-part-0.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.platano.native-part-0.igmpz",
+      "bytes": 11752849,
+      "sha256": "c99a61d3ef337c448983b16f2817d4a83ae312d0b4826e8f145377132dd6a3d2"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.platano.native-part-1.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.platano.native-part-1.igmpz",
+      "bytes": 82223799,
+      "sha256": "7c577aa571ee60ab131d6d385ad06939a2e999e71e69e4919e7f5d58264f0052"
     }
   }
 }

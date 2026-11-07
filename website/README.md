@@ -97,10 +97,25 @@ depth precision. The distant limit is 32 radii.
 
 Surface focus samples a single visible depth with an on-demand compute dispatch and
 four-byte readback. It keeps no CPU copy of tree geometry and adds no continuous readback
-or animation. Background double-clicks leave the camera unchanged. Material/shadow
-shader packets and downloadable assets are unchanged. Controls and instructions are
+or animation. Background double-clicks leave the camera unchanged. Camera controls do not alter downloadable assets. Controls and instructions are
 available in English and Portuguese.
 
 Direct browser inspection covered the complete ancestral mesh, root and leaf close-ups,
 surface focus, pan, zoom buttons, keyboard reset and the ceramic material preview.
 Touch gestures are implemented but have not been inspected on a physical touch device.
+
+## Faithful asset previews
+
+Current catalog publication requires `full-native` IGMP2 previews for every mesh.
+The original scene from each published source ZIP supplies all triangles, native
+materials, texture samples, rest coordinates and moss edges. No tessellation or
+color substitute is allowed. The web host uses native prepared anatomical charts,
+material specialization, a native prefiltered inspection environment, real mesh
+shadows, 4x MSAA and the existing close-up controls. Source archives and their older
+portable GLB compatibility notes remain unchanged.
+
+See `docs/catalog-fidelity.md` for authoring and publication. Large runtime parts
+are hash-pinned Release assets served from the canonical Firebase origin; the
+Pages portal references the same bytes through `runtime_base`. Its workflow checks
+the manifest without duplicating the large payload library. Deployment integrity
+checks cover all canonical files and all mirrored portal files.

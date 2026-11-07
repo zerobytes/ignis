@@ -48,7 +48,7 @@
         "thumbnail_source": "artifacts/material-recipes/artifacts/detail-ceramic.png",
         "thumbnail_source_sha256": "a39898f41c568ffe6edb6be337af2bb370e9d4c858d6a09e010e99e23533d91d",
         "thumbnail_sha256": "66299bfba16e728391e439be0527981abbb1f8890a03c8ed78ff47510d88254f",
-        "packet_sha256": "a23c2c76f9c57af106e0d5c622da7a2703f0428b1a76bb9612e04159bb55f8b5",
+        "packet_sha256": "c0a6b7bf2269851d9a9fa933b54604d6e5002a509cca7ab94ef509a87606f018",
         "packet_bytes": 1696
       }
     },
@@ -98,7 +98,7 @@
         "thumbnail_source": "artifacts/material-recipes/artifacts/detail-painted_metal.png",
         "thumbnail_source_sha256": "e42c5a15788cbda95605fa4fb7c3c01a16674ed7fb36db5da967e31bd914f2e7",
         "thumbnail_sha256": "8a99e6f710813ed0cc1184acdaecf6ea6da6a9f7bea0307655a4d9fa6b3f1463",
-        "packet_sha256": "03b2f10d375f7822aa541fce8524107403e33fd9c5cfc023b4c956b0e2c6f3ec",
+        "packet_sha256": "416a54268ab611700aac805ed6b181411f33591639e8bd780038cb2730bc206f",
         "packet_bytes": 1696
       }
     },
@@ -148,7 +148,7 @@
         "thumbnail_source": "artifacts/material-recipes/artifacts/detail-stone.png",
         "thumbnail_source_sha256": "cf0b87fba185f4b63601fabd77ab7067294063a0a2900a19126d1655f91a809b",
         "thumbnail_sha256": "2999cbd92d4021abb3a3f9cc7d53740a74c9f4ea8a5cbd17528b1c977330687a",
-        "packet_sha256": "a4008a67cf1c8adeecfca64482b181a9eeff9b15049d5efa35b94b525335c982",
+        "packet_sha256": "93fb60917d882175541e3174c7a70eaedcde79f6dcfdb1d66d48ec19af101b00",
         "packet_bytes": 1696
       }
     },
@@ -198,7 +198,7 @@
         "thumbnail_source": "artifacts/material-recipes/artifacts/detail-wood.png",
         "thumbnail_source_sha256": "d27da4bf7159a65cd5fb3abd79bb2b8cf583eb89949f9516ce91eaa10b10cd11",
         "thumbnail_sha256": "c5ce0c148f009b487e1c4d7e0a44920672d6f7f7b34b8857e4c524f3c73e12fe",
-        "packet_sha256": "33655ed616add0acdfbfef037b44bad9d67a4e777c6abae55ed96efd3a044b36",
+        "packet_sha256": "79edc4b73220c6b0e2c0a54ae07d9cb1e0b761b81ad68af4dd02ec7cae3c02b1",
         "packet_bytes": 1696
       }
     },
@@ -1054,31 +1054,54 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "material_appearance": "representative-pbr-colors",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "moss_mesh_edge_m": 0.25,
-          "sides": 6
-        },
-        "decoded_bytes": 102135484,
-        "decoded_sha256": "6750c6bdf54f14b266c1d6827f5871278e84df46801193c84afcc9ea4c81349c",
-        "vertices": 2215362,
-        "triangles": 4080063,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-blue-lilac.native-part-0.igmpz",
+            "packet_bytes": 112183882,
+            "packet_sha256": "73918c058868553e4c55f858ecc139409d32daad136fc2826202ef70c7df9fda",
+            "decoded_bytes": 248660920,
+            "decoded_sha256": "2ea4e0b672108bd2f5a2f14dce881e1ed320ca9af7e6c1fe6b6054413edfb308",
+            "vertices": 1119894,
+            "triangles": 1175532
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-blue-lilac.native-part-1.igmpz",
+            "packet_bytes": 70142985,
+            "packet_sha256": "c9d86ea9442962645bdb88132c5a298f279475217129c47d30f64bcea9bbaae6",
+            "decoded_bytes": 120390656,
+            "decoded_sha256": "5c4a98396851a766770e6066b0b124882a3a78e2a59f9693212b8b38fc96dea3",
+            "vertices": 1724316,
+            "triangles": 3135120
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-blue-lilac.native-part-2.igmpz",
+            "packet_bytes": 133701508,
+            "packet_sha256": "5cc415befd5996f5f8e6d352e73bfc4d5b1ff6580b42553cf3cfcfc12a1257c5",
+            "decoded_bytes": 244788072,
+            "decoded_sha256": "8b915241ede814303112b776a571166277c136ab2ae91bf590b0dc8ce75990b6",
+            "vertices": 2492747,
+            "triangles": 4835434
+          }
+        ],
+        "vertices": 5336957,
+        "triangles": 9146086,
         "bounds": {
+          "min": [
+            -40.50604248046875,
+            -2.3343749046325684,
+            -38.92499923706055
+          ],
           "max": [
             39.009376525878906,
-            48.007328033447266,
-            38.477962493896484
-          ],
-          "min": [
-            -40.43267822265625,
-            -2.3414063453674316,
-            -38.92499923706055
+            48.14469909667969,
+            38.528682708740234
           ]
-        }
+        },
+        "source_sha256": "a2a445997639f6c9de7fddb880066b276082152eaa28c63e21d2d68e79199366",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1090,26 +1113,68 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 62431072,
-          "sha256": "f2b1dd91c2e972d73b6efde8bf98afdceacfd8de04287ee2b4f471cbcd2c92ff",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-blue-lilac.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 25179,
           "sha256": "2d3039e8598f24279f2fa22cf9c31929078905d7e6c28c31b31b896b3e24bf9e",
           "path": "assets/meshes/trees/ancestral-blue-lilac/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 112183882,
+          "sha256": "73918c058868553e4c55f858ecc139409d32daad136fc2826202ef70c7df9fda",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-blue-lilac.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 70142985,
+          "sha256": "c9d86ea9442962645bdb88132c5a298f279475217129c47d30f64bcea9bbaae6",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-blue-lilac.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 133701508,
+          "sha256": "5cc415befd5996f5f8e6d352e73bfc4d5b1ff6580b42553cf3cfcfc12a1257c5",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-blue-lilac.native-part-2.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/ancestral-blue-lilac/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.ancestral-blue-lilac.igmpz",
-        "packet_bytes": 62431072,
-        "packet_sha256": "f2b1dd91c2e972d73b6efde8bf98afdceacfd8de04287ee2b4f471cbcd2c92ff",
-        "decoded_bytes": 102135484,
-        "decoded_sha256": "6750c6bdf54f14b266c1d6827f5871278e84df46801193c84afcc9ea4c81349c",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-blue-lilac.native-part-0.igmpz",
+            "packet_bytes": 112183882,
+            "packet_sha256": "73918c058868553e4c55f858ecc139409d32daad136fc2826202ef70c7df9fda",
+            "decoded_bytes": 248660920,
+            "decoded_sha256": "2ea4e0b672108bd2f5a2f14dce881e1ed320ca9af7e6c1fe6b6054413edfb308",
+            "vertices": 1119894,
+            "triangles": 1175532,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-blue-lilac.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-blue-lilac.native-part-1.igmpz",
+            "packet_bytes": 70142985,
+            "packet_sha256": "c9d86ea9442962645bdb88132c5a298f279475217129c47d30f64bcea9bbaae6",
+            "decoded_bytes": 120390656,
+            "decoded_sha256": "5c4a98396851a766770e6066b0b124882a3a78e2a59f9693212b8b38fc96dea3",
+            "vertices": 1724316,
+            "triangles": 3135120,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-blue-lilac.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-blue-lilac.native-part-2.igmpz",
+            "packet_bytes": 133701508,
+            "packet_sha256": "5cc415befd5996f5f8e6d352e73bfc4d5b1ff6580b42553cf3cfcfc12a1257c5",
+            "decoded_bytes": 244788072,
+            "decoded_sha256": "8b915241ede814303112b776a571166277c136ab2ae91bf590b0dc8ce75990b6",
+            "vertices": 2492747,
+            "triangles": 4835434,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-blue-lilac.native-part-2.igmpz"
+          }
+        ],
+        "packet_bytes": 316028375,
         "thumbnail_sha256": "2d3039e8598f24279f2fa22cf9c31929078905d7e6c28c31b31b896b3e24bf9e"
       }
     },
@@ -1165,31 +1230,54 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "material_appearance": "representative-pbr-colors",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "moss_mesh_edge_m": 0.25,
-          "sides": 6
-        },
-        "decoded_bytes": 74710580,
-        "decoded_sha256": "03bb08dbc79007173be071f1c1a614d023f349e0e33f2d165975d4359a5a20b5",
-        "vertices": 1619337,
-        "triangles": 2986706,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-pink.native-part-0.igmpz",
+            "packet_bytes": 89747060,
+            "packet_sha256": "2fdc6fdc5650da2edf1a7ef34ea37854f16ffc88dad8c66d969cf631aa96c077",
+            "decoded_bytes": 199241760,
+            "decoded_sha256": "e4c3dde36bb02b8a9698164e1daf6f227db90ee9e2e26d1d827a35d700f405af",
+            "vertices": 811968,
+            "triangles": 860904
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-pink.native-part-1.igmpz",
+            "packet_bytes": 51233338,
+            "packet_sha256": "f9961ee481ca345c1ad510aaa4f5a7004e413ca11a4cc55a9cd89638a99d274c",
+            "decoded_bytes": 87919612,
+            "decoded_sha256": "0ed8d3ecc4682b56c777a8e698b925ea86d96faa34a3c4228818fc9e99184f0d",
+            "vertices": 1259236,
+            "triangles": 2289520
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-pink.native-part-2.igmpz",
+            "packet_bytes": 104536802,
+            "packet_sha256": "2e022fd268dddbd9eb6ae1cb90c0ab72981fc574fc63ec542abb55c1de71c1d7",
+            "decoded_bytes": 194214596,
+            "decoded_sha256": "ae8c3619ea91f84ef6e4993bd5c563f0f278cfce5f4f5624a89c724fb5d6ccf1",
+            "vertices": 1780852,
+            "triangles": 3468558
+          }
+        ],
+        "vertices": 3852056,
+        "triangles": 6618982,
         "bounds": {
+          "min": [
+            -40.099578857421875,
+            -1.992508053779602,
+            -39.67343521118164
+          ],
           "max": [
             34.256248474121094,
-            55.9216194152832,
-            38.37583923339844
-          ],
-          "min": [
-            -40.13241195678711,
-            -1.9932043552398682,
-            -40.02192306518555
+            55.951499938964844,
+            38.65791320800781
           ]
-        }
+        },
+        "source_sha256": "992a0d8d2e23cd1f98784cd405d90be5917af3fa5b0fb2d633b7e2c2f9d9d99d",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1201,26 +1289,68 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 45666960,
-          "sha256": "c44584964de0ab937f94a3d5bb8d6ea50567e7d9521d84b3848a837ee1bf3ed3",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-pink.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 26303,
           "sha256": "b820f82a34362264c611628af262474c043a855b072b7742b9bf500715c66691",
           "path": "assets/meshes/trees/ancestral-pink/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 89747060,
+          "sha256": "2fdc6fdc5650da2edf1a7ef34ea37854f16ffc88dad8c66d969cf631aa96c077",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-pink.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 51233338,
+          "sha256": "f9961ee481ca345c1ad510aaa4f5a7004e413ca11a4cc55a9cd89638a99d274c",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-pink.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 104536802,
+          "sha256": "2e022fd268dddbd9eb6ae1cb90c0ab72981fc574fc63ec542abb55c1de71c1d7",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-pink.native-part-2.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/ancestral-pink/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.ancestral-pink.igmpz",
-        "packet_bytes": 45666960,
-        "packet_sha256": "c44584964de0ab937f94a3d5bb8d6ea50567e7d9521d84b3848a837ee1bf3ed3",
-        "decoded_bytes": 74710580,
-        "decoded_sha256": "03bb08dbc79007173be071f1c1a614d023f349e0e33f2d165975d4359a5a20b5",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-pink.native-part-0.igmpz",
+            "packet_bytes": 89747060,
+            "packet_sha256": "2fdc6fdc5650da2edf1a7ef34ea37854f16ffc88dad8c66d969cf631aa96c077",
+            "decoded_bytes": 199241760,
+            "decoded_sha256": "e4c3dde36bb02b8a9698164e1daf6f227db90ee9e2e26d1d827a35d700f405af",
+            "vertices": 811968,
+            "triangles": 860904,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-pink.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-pink.native-part-1.igmpz",
+            "packet_bytes": 51233338,
+            "packet_sha256": "f9961ee481ca345c1ad510aaa4f5a7004e413ca11a4cc55a9cd89638a99d274c",
+            "decoded_bytes": 87919612,
+            "decoded_sha256": "0ed8d3ecc4682b56c777a8e698b925ea86d96faa34a3c4228818fc9e99184f0d",
+            "vertices": 1259236,
+            "triangles": 2289520,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-pink.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-pink.native-part-2.igmpz",
+            "packet_bytes": 104536802,
+            "packet_sha256": "2e022fd268dddbd9eb6ae1cb90c0ab72981fc574fc63ec542abb55c1de71c1d7",
+            "decoded_bytes": 194214596,
+            "decoded_sha256": "ae8c3619ea91f84ef6e4993bd5c563f0f278cfce5f4f5624a89c724fb5d6ccf1",
+            "vertices": 1780852,
+            "triangles": 3468558,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-pink.native-part-2.igmpz"
+          }
+        ],
+        "packet_bytes": 245517200,
         "thumbnail_sha256": "b820f82a34362264c611628af262474c043a855b072b7742b9bf500715c66691"
       }
     },
@@ -1276,31 +1406,54 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "material_appearance": "representative-pbr-colors",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "moss_mesh_edge_m": 0.25,
-          "sides": 6
-        },
-        "decoded_bytes": 114815496,
-        "decoded_sha256": "1f086382524ee44104e976cad96bfd882aa264342ab4500ec2d51e397c85e335",
-        "vertices": 2473855,
-        "triangles": 4619744,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-white.native-part-0.igmpz",
+            "packet_bytes": 143510666,
+            "packet_sha256": "378426ef02328955c862ccd855e74836804369721ec6a66bdff1c7607f69be95",
+            "decoded_bytes": 323679920,
+            "decoded_sha256": "7993e224beb2d5db32cbf97960049ad490a8d0aec61e0b1dcf3e48fe0f34f97a",
+            "vertices": 1622478,
+            "triangles": 1502723
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white.native-part-1.igmpz",
+            "packet_bytes": 80025868,
+            "packet_sha256": "a8c30e71c324748b400bf2c11af9adbb1ad483b7ded032c7c113c46b4cabdf44",
+            "decoded_bytes": 132675588,
+            "decoded_sha256": "bebbe0da96fd0ef7f584c380c0558f8da632e3f5aa3891bb77ef4cb26a35193d",
+            "vertices": 1873920,
+            "triangles": 3560448
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white.native-part-2.igmpz",
+            "packet_bytes": 143890366,
+            "packet_sha256": "5839f16ce81f77a7a85a4e4f6e7d85b8e31f609cca3448a81320e1532eb98343",
+            "decoded_bytes": 270990556,
+            "decoded_sha256": "afb42e68c1fb9dc430b2c4ba265c006f3a7cc3fa14723d474ae5537f29741173",
+            "vertices": 2868757,
+            "triangles": 5514934
+          }
+        ],
+        "vertices": 6365155,
+        "triangles": 10578105,
         "bounds": {
-          "max": [
-            37.44562530517578,
-            32.5057487487793,
-            37.08281326293945
-          ],
           "min": [
-            -35.941131591796875,
+            -35.94331359863281,
             -2.252812385559082,
-            -31.674375534057617
+            -31.657499313354492
+          ],
+          "max": [
+            37.34678649902344,
+            32.53374481201172,
+            37.08281326293945
           ]
-        }
+        },
+        "source_sha256": "7e9e65cdb5a5115efbc093dbb9709a9d32b868a33cf59c73148fe93b267b996d",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1312,26 +1465,68 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 69056384,
-          "sha256": "6f40dcd8a7b56bf6c3f8e9273801673847e1bf171f15a53b11ecf52c6d91498b",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 18009,
           "sha256": "498cd4d85166e71833ec10371ae621027ed3f80e3d648f6eab28d2f83d40c14c",
           "path": "assets/meshes/trees/ancestral-white/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 143510666,
+          "sha256": "378426ef02328955c862ccd855e74836804369721ec6a66bdff1c7607f69be95",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 80025868,
+          "sha256": "a8c30e71c324748b400bf2c11af9adbb1ad483b7ded032c7c113c46b4cabdf44",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 143890366,
+          "sha256": "5839f16ce81f77a7a85a4e4f6e7d85b8e31f609cca3448a81320e1532eb98343",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white.native-part-2.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/ancestral-white/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.ancestral-white.igmpz",
-        "packet_bytes": 69056384,
-        "packet_sha256": "6f40dcd8a7b56bf6c3f8e9273801673847e1bf171f15a53b11ecf52c6d91498b",
-        "decoded_bytes": 114815496,
-        "decoded_sha256": "1f086382524ee44104e976cad96bfd882aa264342ab4500ec2d51e397c85e335",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-white.native-part-0.igmpz",
+            "packet_bytes": 143510666,
+            "packet_sha256": "378426ef02328955c862ccd855e74836804369721ec6a66bdff1c7607f69be95",
+            "decoded_bytes": 323679920,
+            "decoded_sha256": "7993e224beb2d5db32cbf97960049ad490a8d0aec61e0b1dcf3e48fe0f34f97a",
+            "vertices": 1622478,
+            "triangles": 1502723,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white.native-part-1.igmpz",
+            "packet_bytes": 80025868,
+            "packet_sha256": "a8c30e71c324748b400bf2c11af9adbb1ad483b7ded032c7c113c46b4cabdf44",
+            "decoded_bytes": 132675588,
+            "decoded_sha256": "bebbe0da96fd0ef7f584c380c0558f8da632e3f5aa3891bb77ef4cb26a35193d",
+            "vertices": 1873920,
+            "triangles": 3560448,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white.native-part-2.igmpz",
+            "packet_bytes": 143890366,
+            "packet_sha256": "5839f16ce81f77a7a85a4e4f6e7d85b8e31f609cca3448a81320e1532eb98343",
+            "decoded_bytes": 270990556,
+            "decoded_sha256": "afb42e68c1fb9dc430b2c4ba265c006f3a7cc3fa14723d474ae5537f29741173",
+            "vertices": 2868757,
+            "triangles": 5514934,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white.native-part-2.igmpz"
+          }
+        ],
+        "packet_bytes": 367426900,
         "thumbnail_sha256": "498cd4d85166e71833ec10371ae621027ed3f80e3d648f6eab28d2f83d40c14c"
       }
     },
@@ -1387,31 +1582,54 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "material_appearance": "representative-pbr-colors",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "moss_mesh_edge_m": 0.25,
-          "sides": 6
-        },
-        "decoded_bytes": 114638932,
-        "decoded_sha256": "db5173a6c256d747ac9fadcb39a4bf79db9f44c7fc5c8a38975b54cb047a0ec2",
-        "vertices": 2488713,
-        "triangles": 4575316,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-white-41.native-part-0.igmpz",
+            "packet_bytes": 118624417,
+            "packet_sha256": "397abcc3df44a7c7fd7813098f70a0a6432ea7069635cd229ae12dd12e47fd37",
+            "decoded_bytes": 262964032,
+            "decoded_sha256": "ffac1756a9bd283a88c1ce1d3ac3fc39604f5d93cb8501196efee593901b995c",
+            "vertices": 1207369,
+            "triangles": 1282236
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-41.native-part-1.igmpz",
+            "packet_bytes": 76855161,
+            "packet_sha256": "9275628813eb8c6e67d18def5924aec75a5b38a72598389c924db2f75b816532",
+            "decoded_bytes": 131941376,
+            "decoded_sha256": "05e7c18a4342f3dfc2b44c4c1d55ad891bde207ed7a55e909f132154e2965b67",
+            "vertices": 1889756,
+            "triangles": 3435920
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-41.native-part-2.igmpz",
+            "packet_bytes": 149084672,
+            "packet_sha256": "71210ddd192cc5c1fbb6b0b4f1a0933bb5a7950a311b0f4df3037c016d581d24",
+            "decoded_bytes": 275327884,
+            "decoded_sha256": "4937346228161e6654f187da25dbc774263fd4727227262e755ede3b9f385a91",
+            "vertices": 2933229,
+            "triangles": 5618490
+          }
+        ],
+        "vertices": 6030354,
+        "triangles": 10336646,
         "bounds": {
-          "max": [
-            43.78910446166992,
-            53.98173904418945,
-            42.60541534423828
-          ],
           "min": [
             -40.04999923706055,
             -2.28515625,
-            -43.61155319213867
+            -43.655521392822266
+          ],
+          "max": [
+            43.790184020996094,
+            53.924373626708984,
+            42.6243782043457
           ]
-        }
+        },
+        "source_sha256": "349939ac134ee68ffad127842b7ff25856a96f4845a793bd17cce6f33e68a208",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1423,26 +1641,68 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 70131394,
-          "sha256": "01b180f74bdf2f8cb340269a06b4e06f04a33697b8536df4a9eb596b8f274535",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-41.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 27540,
           "sha256": "c743bcf90aad8be05964d27e9bc57a2173f085f493ed0b00bb7c64e6b630888c",
           "path": "assets/meshes/trees/ancestral-white-41/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 118624417,
+          "sha256": "397abcc3df44a7c7fd7813098f70a0a6432ea7069635cd229ae12dd12e47fd37",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-41.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 76855161,
+          "sha256": "9275628813eb8c6e67d18def5924aec75a5b38a72598389c924db2f75b816532",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-41.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 149084672,
+          "sha256": "71210ddd192cc5c1fbb6b0b4f1a0933bb5a7950a311b0f4df3037c016d581d24",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-41.native-part-2.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/ancestral-white-41/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.ancestral-white-41.igmpz",
-        "packet_bytes": 70131394,
-        "packet_sha256": "01b180f74bdf2f8cb340269a06b4e06f04a33697b8536df4a9eb596b8f274535",
-        "decoded_bytes": 114638932,
-        "decoded_sha256": "db5173a6c256d747ac9fadcb39a4bf79db9f44c7fc5c8a38975b54cb047a0ec2",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-white-41.native-part-0.igmpz",
+            "packet_bytes": 118624417,
+            "packet_sha256": "397abcc3df44a7c7fd7813098f70a0a6432ea7069635cd229ae12dd12e47fd37",
+            "decoded_bytes": 262964032,
+            "decoded_sha256": "ffac1756a9bd283a88c1ce1d3ac3fc39604f5d93cb8501196efee593901b995c",
+            "vertices": 1207369,
+            "triangles": 1282236,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white-41.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-41.native-part-1.igmpz",
+            "packet_bytes": 76855161,
+            "packet_sha256": "9275628813eb8c6e67d18def5924aec75a5b38a72598389c924db2f75b816532",
+            "decoded_bytes": 131941376,
+            "decoded_sha256": "05e7c18a4342f3dfc2b44c4c1d55ad891bde207ed7a55e909f132154e2965b67",
+            "vertices": 1889756,
+            "triangles": 3435920,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white-41.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-41.native-part-2.igmpz",
+            "packet_bytes": 149084672,
+            "packet_sha256": "71210ddd192cc5c1fbb6b0b4f1a0933bb5a7950a311b0f4df3037c016d581d24",
+            "decoded_bytes": 275327884,
+            "decoded_sha256": "4937346228161e6654f187da25dbc774263fd4727227262e755ede3b9f385a91",
+            "vertices": 2933229,
+            "triangles": 5618490,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white-41.native-part-2.igmpz"
+          }
+        ],
+        "packet_bytes": 344564250,
         "thumbnail_sha256": "c743bcf90aad8be05964d27e9bc57a2173f085f493ed0b00bb7c64e6b630888c"
       }
     },
@@ -1498,31 +1758,54 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "material_appearance": "representative-pbr-colors",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "moss_mesh_edge_m": 0.25,
-          "sides": 6
-        },
-        "decoded_bytes": 105662020,
-        "decoded_sha256": "c900dcfb43d6fa9796bd2427a2aad11d90a7f466176b04c17aa28ce0c32a19d5",
-        "vertices": 2291499,
-        "triangles": 4221669,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-white-42.native-part-0.igmpz",
+            "packet_bytes": 113378894,
+            "packet_sha256": "6b9f5e8871c2e9bc0a3b2cb37a3db64e6dd23e82db7cc92f59ca91cafafbef4d",
+            "decoded_bytes": 251472360,
+            "decoded_sha256": "9e81410bd6a878b50636098a70dc7f3661b80a5ca369194d4b94b416052011c6",
+            "vertices": 1138821,
+            "triangles": 1182976
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-42.native-part-1.igmpz",
+            "packet_bytes": 70584901,
+            "packet_sha256": "9224ed59813d4a670ff015d6d872a59313e34d85ed8593fc9bbf71caac310c63",
+            "decoded_bytes": 121215488,
+            "decoded_sha256": "b92cad915e9289ac54cfebde8bbfe700860357be316fe26420de566957e04fd1",
+            "vertices": 1736130,
+            "triangles": 3156600
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-42.native-part-2.igmpz",
+            "packet_bytes": 148123526,
+            "packet_sha256": "efd9fbd1a9eeb44f940d7668eccfe2b0ad582af181533ebcff793ca1200375a9",
+            "decoded_bytes": 276214820,
+            "decoded_sha256": "90b4ffe9d8feedb239b213401c04a7aab7d5622609056be44c09ab5aefee9b90",
+            "vertices": 2935864,
+            "triangles": 5681862
+          }
+        ],
+        "vertices": 5810815,
+        "triangles": 10021438,
         "bounds": {
-          "max": [
-            44.25468826293945,
-            47.06587219238281,
-            41.90625
-          ],
           "min": [
             -45.337501525878906,
             -2.6015625,
-            -38.152862548828125
+            -38.330177307128906
+          ],
+          "max": [
+            44.26874923706055,
+            47.013954162597656,
+            41.90625
           ]
-        }
+        },
+        "source_sha256": "40834284794f126144478335435155bde3edabc41168c3e443768cbe96e1b4a3",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1534,26 +1817,68 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 64603081,
-          "sha256": "30c5100eb9c3ffe05c9c94949315825b8be73c382a4b8bfed1c0facae0e537c0",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-42.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 21631,
           "sha256": "d8c789668b9c65db467c4a0d4264d323001979c39493c09ee850dd247a38f564",
           "path": "assets/meshes/trees/ancestral-white-42/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 113378894,
+          "sha256": "6b9f5e8871c2e9bc0a3b2cb37a3db64e6dd23e82db7cc92f59ca91cafafbef4d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-42.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 70584901,
+          "sha256": "9224ed59813d4a670ff015d6d872a59313e34d85ed8593fc9bbf71caac310c63",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-42.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 148123526,
+          "sha256": "efd9fbd1a9eeb44f940d7668eccfe2b0ad582af181533ebcff793ca1200375a9",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-white-42.native-part-2.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/ancestral-white-42/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.ancestral-white-42.igmpz",
-        "packet_bytes": 64603081,
-        "packet_sha256": "30c5100eb9c3ffe05c9c94949315825b8be73c382a4b8bfed1c0facae0e537c0",
-        "decoded_bytes": 105662020,
-        "decoded_sha256": "c900dcfb43d6fa9796bd2427a2aad11d90a7f466176b04c17aa28ce0c32a19d5",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-white-42.native-part-0.igmpz",
+            "packet_bytes": 113378894,
+            "packet_sha256": "6b9f5e8871c2e9bc0a3b2cb37a3db64e6dd23e82db7cc92f59ca91cafafbef4d",
+            "decoded_bytes": 251472360,
+            "decoded_sha256": "9e81410bd6a878b50636098a70dc7f3661b80a5ca369194d4b94b416052011c6",
+            "vertices": 1138821,
+            "triangles": 1182976,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white-42.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-42.native-part-1.igmpz",
+            "packet_bytes": 70584901,
+            "packet_sha256": "9224ed59813d4a670ff015d6d872a59313e34d85ed8593fc9bbf71caac310c63",
+            "decoded_bytes": 121215488,
+            "decoded_sha256": "b92cad915e9289ac54cfebde8bbfe700860357be316fe26420de566957e04fd1",
+            "vertices": 1736130,
+            "triangles": 3156600,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white-42.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-white-42.native-part-2.igmpz",
+            "packet_bytes": 148123526,
+            "packet_sha256": "efd9fbd1a9eeb44f940d7668eccfe2b0ad582af181533ebcff793ca1200375a9",
+            "decoded_bytes": 276214820,
+            "decoded_sha256": "90b4ffe9d8feedb239b213401c04a7aab7d5622609056be44c09ab5aefee9b90",
+            "vertices": 2935864,
+            "triangles": 5681862,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-white-42.native-part-2.igmpz"
+          }
+        ],
+        "packet_bytes": 332087321,
         "thumbnail_sha256": "d8c789668b9c65db467c4a0d4264d323001979c39493c09ee850dd247a38f564"
       }
     },
@@ -1609,31 +1934,54 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "material_appearance": "representative-pbr-colors",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "moss_mesh_edge_m": 0.25,
-          "sides": 6
-        },
-        "decoded_bytes": 88957864,
-        "decoded_sha256": "3a16363bdfd2505cb6de893590ca88538551dc1892af92494f4a2d55f1ff9504",
-        "vertices": 1926812,
-        "triangles": 3559032,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-wine.native-part-0.igmpz",
+            "packet_bytes": 100037197,
+            "packet_sha256": "2c46c7cc4c4f362ec978cce6f3824fff3e96672d4e3d2cee0b0f8dedae88e4a8",
+            "decoded_bytes": 222189664,
+            "decoded_sha256": "c827a85eb073ed6909f1d00512e8f7375c15674903a9c2d4dc8188e5ecc2b014",
+            "vertices": 957961,
+            "triangles": 983276
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-wine.native-part-1.igmpz",
+            "packet_bytes": 57615004,
+            "packet_sha256": "8029e6573ca2124c6c2f475e678ba358bd958ff7d7ad36e136e2dd31b3883422",
+            "decoded_bytes": 98857464,
+            "decoded_sha256": "cef0bd929a6bbd8e4f68b0c24afb71e4c9b6d8fbe1394d3c3e5b352a47c9dda5",
+            "vertices": 1415898,
+            "triangles": 2574360
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-wine.native-part-2.igmpz",
+            "packet_bytes": 145159611,
+            "packet_sha256": "d7af179699e0908f27700245d2a5cb62f9337fa5cabe649c02ddac04749d542e",
+            "decoded_bytes": 266375672,
+            "decoded_sha256": "c038db1a10317ac3efbd4979b39b177d57ef24258e1982b8f45ae8b32536ae8e",
+            "vertices": 2792086,
+            "triangles": 5437045
+          }
+        ],
+        "vertices": 5165945,
+        "triangles": 8994681,
         "bounds": {
-          "max": [
-            42.693748474121094,
-            48.48615646362305,
-            41.09062576293945
-          ],
           "min": [
             -44.39531326293945,
             -2.629687547683716,
-            -39.26953125
+            -39.27656173706055
+          ],
+          "max": [
+            42.70781326293945,
+            48.50996398925781,
+            41.09062576293945
           ]
-        }
+        },
+        "source_sha256": "b77dbbaa4511ad9b7dff9b7ec0febeeb9f43dd14d3c52e467ee810e7ce0bfa02",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1645,26 +1993,68 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 54468983,
-          "sha256": "f42d72ec4b6a1534a6edd151452f86e039825f3d773f4a3be2d49f4b0cc8e38d",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-wine.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 18798,
           "sha256": "87130b468506d25587bb6ad6b87bf4004ae9a3092f18cb1e85e8e63083687d87",
           "path": "assets/meshes/trees/ancestral-wine/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 100037197,
+          "sha256": "2c46c7cc4c4f362ec978cce6f3824fff3e96672d4e3d2cee0b0f8dedae88e4a8",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-wine.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 57615004,
+          "sha256": "8029e6573ca2124c6c2f475e678ba358bd958ff7d7ad36e136e2dd31b3883422",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-wine.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 145159611,
+          "sha256": "d7af179699e0908f27700245d2a5cb62f9337fa5cabe649c02ddac04749d542e",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.ancestral-wine.native-part-2.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/ancestral-wine/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.ancestral-wine.igmpz",
-        "packet_bytes": 54468983,
-        "packet_sha256": "f42d72ec4b6a1534a6edd151452f86e039825f3d773f4a3be2d49f4b0cc8e38d",
-        "decoded_bytes": 88957864,
-        "decoded_sha256": "3a16363bdfd2505cb6de893590ca88538551dc1892af92494f4a2d55f1ff9504",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.ancestral-wine.native-part-0.igmpz",
+            "packet_bytes": 100037197,
+            "packet_sha256": "2c46c7cc4c4f362ec978cce6f3824fff3e96672d4e3d2cee0b0f8dedae88e4a8",
+            "decoded_bytes": 222189664,
+            "decoded_sha256": "c827a85eb073ed6909f1d00512e8f7375c15674903a9c2d4dc8188e5ecc2b014",
+            "vertices": 957961,
+            "triangles": 983276,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-wine.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-wine.native-part-1.igmpz",
+            "packet_bytes": 57615004,
+            "packet_sha256": "8029e6573ca2124c6c2f475e678ba358bd958ff7d7ad36e136e2dd31b3883422",
+            "decoded_bytes": 98857464,
+            "decoded_sha256": "cef0bd929a6bbd8e4f68b0c24afb71e4c9b6d8fbe1394d3c3e5b352a47c9dda5",
+            "vertices": 1415898,
+            "triangles": 2574360,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-wine.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.ancestral-wine.native-part-2.igmpz",
+            "packet_bytes": 145159611,
+            "packet_sha256": "d7af179699e0908f27700245d2a5cb62f9337fa5cabe649c02ddac04749d542e",
+            "decoded_bytes": 266375672,
+            "decoded_sha256": "c038db1a10317ac3efbd4979b39b177d57ef24258e1982b8f45ae8b32536ae8e",
+            "vertices": 2792086,
+            "triangles": 5437045,
+            "path": "data/meshes/ignis.mesh.tree.ancestral-wine.native-part-2.igmpz"
+          }
+        ],
+        "packet_bytes": 302811812,
         "thumbnail_sha256": "87130b468506d25587bb6ad6b87bf4004ae9a3092f18cb1e85e8e63083687d87"
       }
     },
@@ -1717,29 +2107,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 22664648,
-        "decoded_sha256": "b5ec0da772128fb9569a13d3185e7879ae7ecc2ead789acb46cb0dfab2969ac9",
-        "vertices": 305180,
-        "triangles": 578964,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.birch-0.native-part-0.igmpz",
+            "packet_bytes": 5412913,
+            "packet_sha256": "0c881529b871ca2edf7aa4bcf0b5797b72b481a991bc85af21e4008fad5b1d75",
+            "decoded_bytes": 12080224,
+            "decoded_sha256": "fa3bdf86797e228d921bf94bc736657c994c0142932752530cee7ccbf8a008bb",
+            "vertices": 109498,
+            "triangles": 218992
+          },
+          {
+            "file": "ignis.mesh.tree.birch-0.native-part-1.igmpz",
+            "packet_bytes": 12391450,
+            "packet_sha256": "cf60ef2c3d7553e5afbdf01e0872b523fe983c8e38c783ed78ef7f814ca2cdcb",
+            "decoded_bytes": 23031616,
+            "decoded_sha256": "8ed13d9a1e722addf2132d475285fd1dd96115ac2f4eb57db7c3056ea8d12da4",
+            "vertices": 266832,
+            "triangles": 502272
+          }
+        ],
+        "vertices": 376330,
+        "triangles": 721264,
         "bounds": {
-          "max": [
-            2.265087842941284,
-            8.353787422180176,
-            1.8066389560699463
-          ],
           "min": [
-            -1.9761958122253418,
+            -1.9761940240859985,
             -0.0003055271226912737,
-            -2.3683876991271973
+            -2.368387460708618
+          ],
+          "max": [
+            2.2650840282440186,
+            8.353785514831543,
+            1.806638240814209
           ]
-        }
+        },
+        "source_sha256": "5eea56623cf920f8bc84441e2f9d46f2be07d98810b3ad82d84bf922e734eb6a",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1751,26 +2157,51 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 11079999,
-          "sha256": "6c59cfde1ae3c7545b064dbed6690bad9da3cf049d39afee841b1a2b6a03c48b",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-0.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 19931,
           "sha256": "f940ab6510c71a364ddf2696b47edc24fc5284280208bdb720d7203ad46a44ee",
           "path": "assets/meshes/trees/birch-0/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 5412913,
+          "sha256": "0c881529b871ca2edf7aa4bcf0b5797b72b481a991bc85af21e4008fad5b1d75",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-0.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 12391450,
+          "sha256": "cf60ef2c3d7553e5afbdf01e0872b523fe983c8e38c783ed78ef7f814ca2cdcb",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-0.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/birch-0/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.birch-0.igmpz",
-        "packet_bytes": 11079999,
-        "packet_sha256": "6c59cfde1ae3c7545b064dbed6690bad9da3cf049d39afee841b1a2b6a03c48b",
-        "decoded_bytes": 22664648,
-        "decoded_sha256": "b5ec0da772128fb9569a13d3185e7879ae7ecc2ead789acb46cb0dfab2969ac9",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.birch-0.native-part-0.igmpz",
+            "packet_bytes": 5412913,
+            "packet_sha256": "0c881529b871ca2edf7aa4bcf0b5797b72b481a991bc85af21e4008fad5b1d75",
+            "decoded_bytes": 12080224,
+            "decoded_sha256": "fa3bdf86797e228d921bf94bc736657c994c0142932752530cee7ccbf8a008bb",
+            "vertices": 109498,
+            "triangles": 218992,
+            "path": "data/meshes/ignis.mesh.tree.birch-0.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.birch-0.native-part-1.igmpz",
+            "packet_bytes": 12391450,
+            "packet_sha256": "cf60ef2c3d7553e5afbdf01e0872b523fe983c8e38c783ed78ef7f814ca2cdcb",
+            "decoded_bytes": 23031616,
+            "decoded_sha256": "8ed13d9a1e722addf2132d475285fd1dd96115ac2f4eb57db7c3056ea8d12da4",
+            "vertices": 266832,
+            "triangles": 502272,
+            "path": "data/meshes/ignis.mesh.tree.birch-0.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 17804363,
         "thumbnail_sha256": "f940ab6510c71a364ddf2696b47edc24fc5284280208bdb720d7203ad46a44ee"
       }
     },
@@ -1823,29 +2254,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 22663492,
-        "decoded_sha256": "bd14a74843f6ce87cf7045e6f51bf05c5b0a2284780794f5363d0418f4eb02b5",
-        "vertices": 305156,
-        "triangles": 578916,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.birch-1.native-part-0.igmpz",
+            "packet_bytes": 5405988,
+            "packet_sha256": "37553c53c8d14d976a3a9f69919b527abee921def4fe8405e797ec0a0348b08a",
+            "decoded_bytes": 12073892,
+            "decoded_sha256": "95183c2f352d474053c74a9b78731b4082e2b7bc5e6c0a3d6d81bc2737faa3a7",
+            "vertices": 109410,
+            "triangles": 218816
+          },
+          {
+            "file": "ignis.mesh.tree.birch-1.native-part-1.igmpz",
+            "packet_bytes": 12385234,
+            "packet_sha256": "a4f1c939da1921b686cbc7e2336bd7135a02b75c4a92f8c0d7d66c31f6fe5f34",
+            "decoded_bytes": 23031616,
+            "decoded_sha256": "6ea96fe3a2e82accab82bc048b04f30a9deaec1c37341260821f1cd314cd11ec",
+            "vertices": 266832,
+            "triangles": 502272
+          }
+        ],
+        "vertices": 376242,
+        "triangles": 721088,
         "bounds": {
-          "max": [
-            2.276395559310913,
-            7.440781593322754,
-            2.51518177986145
-          ],
           "min": [
-            -2.452303647994995,
+            -2.452301025390625,
             -0.0005466574802994728,
-            -2.3752944469451904
+            -2.375291585922241
+          ],
+          "max": [
+            2.276397705078125,
+            7.440774440765381,
+            2.515186309814453
           ]
-        }
+        },
+        "source_sha256": "2aa8bf5732f0866fbf12612cd6431714639893de6d28b257c6e3362cdf40bd39",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1857,26 +2304,51 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 11071558,
-          "sha256": "c5d6668c866c00a1207a3549f319af3c18219d12fea6d57d27762dbc437d97cd",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-1.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 18929,
           "sha256": "f81696af389f522d4d10d660d2a9610ad56613fe35726170451d8e3453677316",
           "path": "assets/meshes/trees/birch-1/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 5405988,
+          "sha256": "37553c53c8d14d976a3a9f69919b527abee921def4fe8405e797ec0a0348b08a",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-1.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 12385234,
+          "sha256": "a4f1c939da1921b686cbc7e2336bd7135a02b75c4a92f8c0d7d66c31f6fe5f34",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-1.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/birch-1/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.birch-1.igmpz",
-        "packet_bytes": 11071558,
-        "packet_sha256": "c5d6668c866c00a1207a3549f319af3c18219d12fea6d57d27762dbc437d97cd",
-        "decoded_bytes": 22663492,
-        "decoded_sha256": "bd14a74843f6ce87cf7045e6f51bf05c5b0a2284780794f5363d0418f4eb02b5",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.birch-1.native-part-0.igmpz",
+            "packet_bytes": 5405988,
+            "packet_sha256": "37553c53c8d14d976a3a9f69919b527abee921def4fe8405e797ec0a0348b08a",
+            "decoded_bytes": 12073892,
+            "decoded_sha256": "95183c2f352d474053c74a9b78731b4082e2b7bc5e6c0a3d6d81bc2737faa3a7",
+            "vertices": 109410,
+            "triangles": 218816,
+            "path": "data/meshes/ignis.mesh.tree.birch-1.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.birch-1.native-part-1.igmpz",
+            "packet_bytes": 12385234,
+            "packet_sha256": "a4f1c939da1921b686cbc7e2336bd7135a02b75c4a92f8c0d7d66c31f6fe5f34",
+            "decoded_bytes": 23031616,
+            "decoded_sha256": "6ea96fe3a2e82accab82bc048b04f30a9deaec1c37341260821f1cd314cd11ec",
+            "vertices": 266832,
+            "triangles": 502272,
+            "path": "data/meshes/ignis.mesh.tree.birch-1.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 17791222,
         "thumbnail_sha256": "f81696af389f522d4d10d660d2a9610ad56613fe35726170451d8e3453677316"
       }
     },
@@ -1929,29 +2401,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 22664932,
-        "decoded_sha256": "606e5fbb11c9587f65c6e3e178259eb49c45eb490a54fafa978fb93ec8c69062",
-        "vertices": 305186,
-        "triangles": 578976,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.birch-2.native-part-0.igmpz",
+            "packet_bytes": 5419219,
+            "packet_sha256": "a33922e85301ad1e9dd6dbbcf6b9c91b7d1e623e7745849f85c8ca690ba58e8b",
+            "decoded_bytes": 12087136,
+            "decoded_sha256": "9dde4a486cc9cc5e99548b3b48aeaec7e628af21a702bbbcc26e9d5a3715cd5c",
+            "vertices": 109594,
+            "triangles": 219184
+          },
+          {
+            "file": "ignis.mesh.tree.birch-2.native-part-1.igmpz",
+            "packet_bytes": 12394873,
+            "packet_sha256": "11712474deda19a459c3e5b3842eaaa36c3c42f77cf40df7bf88777fdeacbda4",
+            "decoded_bytes": 23031620,
+            "decoded_sha256": "526f2f87efcb1d3e43570803b2f81ee1325df943373ae73bcce8e317f47d1bc8",
+            "vertices": 266832,
+            "triangles": 502272
+          }
+        ],
+        "vertices": 376426,
+        "triangles": 721456,
         "bounds": {
-          "max": [
-            1.9690403938293457,
-            8.825498580932617,
-            2.073091983795166
-          ],
           "min": [
-            -2.0068132877349854,
+            -2.0068182945251465,
             -0.0005342367803677917,
-            -2.120788335800171
+            -2.1207854747772217
+          ],
+          "max": [
+            1.9690372943878174,
+            8.825493812561035,
+            2.0730960369110107
           ]
-        }
+        },
+        "source_sha256": "7feacd401e2e2ba3d9192fd357c7e3c85f9faf10b1f2c26188e3195ba118064d",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -1963,26 +2451,51 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 11085268,
-          "sha256": "4fa8c0e9feba09b36edb4036fc0a2b9d7b5427e384163bdc5cba0559cbf70e4f",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-2.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 18091,
           "sha256": "4d8fe7877fb148e1fadef631c4ae826c72015c6ae137f47e5676eaf2dc91310f",
           "path": "assets/meshes/trees/birch-2/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 5419219,
+          "sha256": "a33922e85301ad1e9dd6dbbcf6b9c91b7d1e623e7745849f85c8ca690ba58e8b",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-2.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 12394873,
+          "sha256": "11712474deda19a459c3e5b3842eaaa36c3c42f77cf40df7bf88777fdeacbda4",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.birch-2.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/birch-2/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.birch-2.igmpz",
-        "packet_bytes": 11085268,
-        "packet_sha256": "4fa8c0e9feba09b36edb4036fc0a2b9d7b5427e384163bdc5cba0559cbf70e4f",
-        "decoded_bytes": 22664932,
-        "decoded_sha256": "606e5fbb11c9587f65c6e3e178259eb49c45eb490a54fafa978fb93ec8c69062",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.birch-2.native-part-0.igmpz",
+            "packet_bytes": 5419219,
+            "packet_sha256": "a33922e85301ad1e9dd6dbbcf6b9c91b7d1e623e7745849f85c8ca690ba58e8b",
+            "decoded_bytes": 12087136,
+            "decoded_sha256": "9dde4a486cc9cc5e99548b3b48aeaec7e628af21a702bbbcc26e9d5a3715cd5c",
+            "vertices": 109594,
+            "triangles": 219184,
+            "path": "data/meshes/ignis.mesh.tree.birch-2.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.birch-2.native-part-1.igmpz",
+            "packet_bytes": 12394873,
+            "packet_sha256": "11712474deda19a459c3e5b3842eaaa36c3c42f77cf40df7bf88777fdeacbda4",
+            "decoded_bytes": 23031620,
+            "decoded_sha256": "526f2f87efcb1d3e43570803b2f81ee1325df943373ae73bcce8e317f47d1bc8",
+            "vertices": 266832,
+            "triangles": 502272,
+            "path": "data/meshes/ignis.mesh.tree.birch-2.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 17814092,
         "thumbnail_sha256": "4d8fe7877fb148e1fadef631c4ae826c72015c6ae137f47e5676eaf2dc91310f"
       }
     },
@@ -2041,29 +2554,72 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 94514640,
-        "decoded_sha256": "97e627e505ae36c8ffc414173f60e97cd2398e636ddd4f1b12076f109b134d30",
-        "vertices": 1846598,
-        "triangles": 3483166,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-0.igmpz",
+            "packet_bytes": 13882794,
+            "packet_sha256": "931e2872b370471787adfb414383b4f5ccc254ba0749accfb4807a14fdc16b21",
+            "decoded_bytes": 26481572,
+            "decoded_sha256": "a724717576409a9dcec97115c694b25fd40c796ed38eb413ec5e40ecba5084fd",
+            "vertices": 310372,
+            "triangles": 615608
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-1.igmpz",
+            "packet_bytes": 71988162,
+            "packet_sha256": "f2952a044165e456606125254820e0221fe1220104ccbb53c76444599aca557f",
+            "decoded_bytes": 127119620,
+            "decoded_sha256": "cb2233cf930a4246a433cd52cad6c88fa365ac9841e405cd62a467071f37cbb2",
+            "vertices": 1741412,
+            "triangles": 3277952
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-2.igmpz",
+            "packet_bytes": 439,
+            "packet_sha256": "4aee60f682659e5e76b4f58d21c91c54ea24ae0584d5da2f8ee5e8dc3eb2783d",
+            "decoded_bytes": 2124,
+            "decoded_sha256": "88f14d8a11c0e0f04b6162c7ffed816c7f7f963ed459884b73e73fd54646ad96",
+            "vertices": 3,
+            "triangles": 1
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-3.igmpz",
+            "packet_bytes": 449,
+            "packet_sha256": "95caaa48166563cf3c86420ce795bbb8b9c22dcf0c3de54fa77f1205ab5e61cb",
+            "decoded_bytes": 2128,
+            "decoded_sha256": "3e8c5949d26a5645b74929c3e4460ef51598fe7e9a20843c0d0e13d20c45b0d5",
+            "vertices": 3,
+            "triangles": 1
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-4.igmpz",
+            "packet_bytes": 7950,
+            "packet_sha256": "3272795b4bc62d995aeaa15263dc029ccee091be5e58392466e1846089a0a27c",
+            "decoded_bytes": 20468,
+            "decoded_sha256": "1f46c6c9af980cb713be99d5cabb0452588e5a3609f5ab5672ed767b139d518d",
+            "vertices": 258,
+            "triangles": 504
+          }
+        ],
+        "vertices": 2052048,
+        "triangles": 3894066,
         "bounds": {
-          "max": [
-            3.391157627105713,
-            5.175771713256836,
-            2.430943012237549
-          ],
           "min": [
-            -2.6588222980499268,
+            -2.658820867538452,
             -0.004757711663842201,
-            -2.684323310852051
+            -2.6843180656433105
+          ],
+          "max": [
+            3.391152858734131,
+            5.175766944885254,
+            2.4309470653533936
           ]
-        }
+        },
+        "source_sha256": "ba8fb6f32384e3560a412b63c3f7e9b2267ba7fcc32930f5e5dd1966a592f489",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2075,17 +2631,45 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 54492118,
-          "sha256": "2c43ef315903aa33f082ffb99279475100cb5aa4bd176ca5eba938152435dfa2",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/cuihua-v1.2.0/ignis.mesh.tree.cuihua-0.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 11183,
           "sha256": "9bd7c42f2939be876c3484cc058074afcbe8ae859f8a9d5f44362b99419323f9",
           "path": "assets/meshes/trees/cuihua-0/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 13882794,
+          "sha256": "931e2872b370471787adfb414383b4f5ccc254ba0749accfb4807a14fdc16b21",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 71988162,
+          "sha256": "f2952a044165e456606125254820e0221fe1220104ccbb53c76444599aca557f",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 439,
+          "sha256": "4aee60f682659e5e76b4f58d21c91c54ea24ae0584d5da2f8ee5e8dc3eb2783d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-2.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 449,
+          "sha256": "95caaa48166563cf3c86420ce795bbb8b9c22dcf0c3de54fa77f1205ab5e61cb",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-3.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 7950,
+          "sha256": "3272795b4bc62d995aeaa15263dc029ccee091be5e58392466e1846089a0a27c",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-0.native-part-4.igmpz"
         }
       ],
       "botanical_lods": {
@@ -2123,11 +2707,59 @@
       },
       "manifest": "assets/meshes/trees/cuihua-0/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.cuihua-0.igmpz",
-        "packet_bytes": 54492118,
-        "packet_sha256": "2c43ef315903aa33f082ffb99279475100cb5aa4bd176ca5eba938152435dfa2",
-        "decoded_bytes": 94514640,
-        "decoded_sha256": "97e627e505ae36c8ffc414173f60e97cd2398e636ddd4f1b12076f109b134d30",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-0.igmpz",
+            "packet_bytes": 13882794,
+            "packet_sha256": "931e2872b370471787adfb414383b4f5ccc254ba0749accfb4807a14fdc16b21",
+            "decoded_bytes": 26481572,
+            "decoded_sha256": "a724717576409a9dcec97115c694b25fd40c796ed38eb413ec5e40ecba5084fd",
+            "vertices": 310372,
+            "triangles": 615608,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-0.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-1.igmpz",
+            "packet_bytes": 71988162,
+            "packet_sha256": "f2952a044165e456606125254820e0221fe1220104ccbb53c76444599aca557f",
+            "decoded_bytes": 127119620,
+            "decoded_sha256": "cb2233cf930a4246a433cd52cad6c88fa365ac9841e405cd62a467071f37cbb2",
+            "vertices": 1741412,
+            "triangles": 3277952,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-0.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-2.igmpz",
+            "packet_bytes": 439,
+            "packet_sha256": "4aee60f682659e5e76b4f58d21c91c54ea24ae0584d5da2f8ee5e8dc3eb2783d",
+            "decoded_bytes": 2124,
+            "decoded_sha256": "88f14d8a11c0e0f04b6162c7ffed816c7f7f963ed459884b73e73fd54646ad96",
+            "vertices": 3,
+            "triangles": 1,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-0.native-part-2.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-3.igmpz",
+            "packet_bytes": 449,
+            "packet_sha256": "95caaa48166563cf3c86420ce795bbb8b9c22dcf0c3de54fa77f1205ab5e61cb",
+            "decoded_bytes": 2128,
+            "decoded_sha256": "3e8c5949d26a5645b74929c3e4460ef51598fe7e9a20843c0d0e13d20c45b0d5",
+            "vertices": 3,
+            "triangles": 1,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-0.native-part-3.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-0.native-part-4.igmpz",
+            "packet_bytes": 7950,
+            "packet_sha256": "3272795b4bc62d995aeaa15263dc029ccee091be5e58392466e1846089a0a27c",
+            "decoded_bytes": 20468,
+            "decoded_sha256": "1f46c6c9af980cb713be99d5cabb0452588e5a3609f5ab5672ed767b139d518d",
+            "vertices": 258,
+            "triangles": 504,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-0.native-part-4.igmpz"
+          }
+        ],
+        "packet_bytes": 85879794,
         "thumbnail_sha256": "9bd7c42f2939be876c3484cc058074afcbe8ae859f8a9d5f44362b99419323f9"
       }
     },
@@ -2186,29 +2818,72 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 94514068,
-        "decoded_sha256": "70bbbec35679b0a629c96231fc23221d96c347c812d1bc802ef4b0f00e02626c",
-        "vertices": 1846586,
-        "triangles": 3483142,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-0.igmpz",
+            "packet_bytes": 13859922,
+            "packet_sha256": "1a7df707dbdd81825a0e4684ebb984ef038ea37c180f09f21c90ab928e785eea",
+            "decoded_bytes": 26471204,
+            "decoded_sha256": "5a9a86a8964da64f8e6a0bd2166e93355563617a96068cdc03c8b4697444c4c3",
+            "vertices": 310228,
+            "triangles": 615320
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-1.igmpz",
+            "packet_bytes": 71994114,
+            "packet_sha256": "9fe457dae431e73fa7a67be0a2e93bcc7fb34758e8bfa7c39e5e2f8d9d48b18e",
+            "decoded_bytes": 127119620,
+            "decoded_sha256": "7d08afa2a9a99b2c06f09ef1447944076d9557a7aaad12fdcca17d427b92e9c4",
+            "vertices": 1741412,
+            "triangles": 3277952
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-2.igmpz",
+            "packet_bytes": 439,
+            "packet_sha256": "abc8aec9291864a74857dcaba0a4d8b3747add3f4eefe2ee5fa9b2882b92aee7",
+            "decoded_bytes": 2124,
+            "decoded_sha256": "b3339ce16daa0b049edcc9dd9aa1a4c33d26bcd2f08692108a7a173cb1832f0b",
+            "vertices": 3,
+            "triangles": 1
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-3.igmpz",
+            "packet_bytes": 448,
+            "packet_sha256": "3b4323f35f8747e438ac9ec305ac4fcfaeefc9bb64393048f3c629b6459f21d6",
+            "decoded_bytes": 2128,
+            "decoded_sha256": "3d4611ee2d39bd5e4863c5965ef33090721d59970b9a68d0a1136f23e76885d2",
+            "vertices": 3,
+            "triangles": 1
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-4.igmpz",
+            "packet_bytes": 7908,
+            "packet_sha256": "a9f94db1b079a4570cf58806f7b9a28b689011d3fef3d01b5b9f31c51366ee8e",
+            "decoded_bytes": 20468,
+            "decoded_sha256": "008a5acf817f4e6d8b56af737e9ad24cf7a8784481bc62ffb3dfbe7f42252cb2",
+            "vertices": 258,
+            "triangles": 504
+          }
+        ],
+        "vertices": 2051904,
+        "triangles": 3893778,
         "bounds": {
-          "max": [
-            2.656851053237915,
-            5.341111183166504,
-            2.4004855155944824
-          ],
           "min": [
-            -2.942620277404785,
+            -2.9426217079162598,
             -0.006667543668299913,
-            -2.4760525226593018
+            -2.476052761077881
+          ],
+          "max": [
+            2.656848669052124,
+            5.341108322143555,
+            2.4004769325256348
           ]
-        }
+        },
+        "source_sha256": "135cffe8438af54acb2bf5e7b3227366e5555f08378dbd4018b547ea085461a8",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2220,17 +2895,45 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 54481582,
-          "sha256": "b051293acb451fe4cc7c33e1fcedb940d79aba10394302d2271a00aac78d93e0",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/cuihua-v1.2.0/ignis.mesh.tree.cuihua-1.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 11214,
           "sha256": "2357be1a4fda4891f7cc2201f08bb8a29b0fa111f9c1acdb37200047d37adac4",
           "path": "assets/meshes/trees/cuihua-1/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 13859922,
+          "sha256": "1a7df707dbdd81825a0e4684ebb984ef038ea37c180f09f21c90ab928e785eea",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 71994114,
+          "sha256": "9fe457dae431e73fa7a67be0a2e93bcc7fb34758e8bfa7c39e5e2f8d9d48b18e",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 439,
+          "sha256": "abc8aec9291864a74857dcaba0a4d8b3747add3f4eefe2ee5fa9b2882b92aee7",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-2.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 448,
+          "sha256": "3b4323f35f8747e438ac9ec305ac4fcfaeefc9bb64393048f3c629b6459f21d6",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-3.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 7908,
+          "sha256": "a9f94db1b079a4570cf58806f7b9a28b689011d3fef3d01b5b9f31c51366ee8e",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-1.native-part-4.igmpz"
         }
       ],
       "botanical_lods": {
@@ -2268,11 +2971,59 @@
       },
       "manifest": "assets/meshes/trees/cuihua-1/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.cuihua-1.igmpz",
-        "packet_bytes": 54481582,
-        "packet_sha256": "b051293acb451fe4cc7c33e1fcedb940d79aba10394302d2271a00aac78d93e0",
-        "decoded_bytes": 94514068,
-        "decoded_sha256": "70bbbec35679b0a629c96231fc23221d96c347c812d1bc802ef4b0f00e02626c",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-0.igmpz",
+            "packet_bytes": 13859922,
+            "packet_sha256": "1a7df707dbdd81825a0e4684ebb984ef038ea37c180f09f21c90ab928e785eea",
+            "decoded_bytes": 26471204,
+            "decoded_sha256": "5a9a86a8964da64f8e6a0bd2166e93355563617a96068cdc03c8b4697444c4c3",
+            "vertices": 310228,
+            "triangles": 615320,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-1.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-1.igmpz",
+            "packet_bytes": 71994114,
+            "packet_sha256": "9fe457dae431e73fa7a67be0a2e93bcc7fb34758e8bfa7c39e5e2f8d9d48b18e",
+            "decoded_bytes": 127119620,
+            "decoded_sha256": "7d08afa2a9a99b2c06f09ef1447944076d9557a7aaad12fdcca17d427b92e9c4",
+            "vertices": 1741412,
+            "triangles": 3277952,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-1.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-2.igmpz",
+            "packet_bytes": 439,
+            "packet_sha256": "abc8aec9291864a74857dcaba0a4d8b3747add3f4eefe2ee5fa9b2882b92aee7",
+            "decoded_bytes": 2124,
+            "decoded_sha256": "b3339ce16daa0b049edcc9dd9aa1a4c33d26bcd2f08692108a7a173cb1832f0b",
+            "vertices": 3,
+            "triangles": 1,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-1.native-part-2.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-3.igmpz",
+            "packet_bytes": 448,
+            "packet_sha256": "3b4323f35f8747e438ac9ec305ac4fcfaeefc9bb64393048f3c629b6459f21d6",
+            "decoded_bytes": 2128,
+            "decoded_sha256": "3d4611ee2d39bd5e4863c5965ef33090721d59970b9a68d0a1136f23e76885d2",
+            "vertices": 3,
+            "triangles": 1,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-1.native-part-3.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-1.native-part-4.igmpz",
+            "packet_bytes": 7908,
+            "packet_sha256": "a9f94db1b079a4570cf58806f7b9a28b689011d3fef3d01b5b9f31c51366ee8e",
+            "decoded_bytes": 20468,
+            "decoded_sha256": "008a5acf817f4e6d8b56af737e9ad24cf7a8784481bc62ffb3dfbe7f42252cb2",
+            "vertices": 258,
+            "triangles": 504,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-1.native-part-4.igmpz"
+          }
+        ],
+        "packet_bytes": 85862831,
         "thumbnail_sha256": "2357be1a4fda4891f7cc2201f08bb8a29b0fa111f9c1acdb37200047d37adac4"
       }
     },
@@ -2331,29 +3082,72 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 94515504,
-        "decoded_sha256": "69a7e0d9b5953dec281b6c2de463b8419eef6c5e28020d52077b9eebcdb3a5b9",
-        "vertices": 1846616,
-        "triangles": 3483202,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-0.igmpz",
+            "packet_bytes": 13869477,
+            "packet_sha256": "bf19df5627b3ba0b5ab799a8c9e339ca57ed9d0ea6408f3441c76749dba47317",
+            "decoded_bytes": 26484452,
+            "decoded_sha256": "7392dd65c68dccb3fbb375668e1ab833b92d569a86cb400b20e3f7a732b22e84",
+            "vertices": 310412,
+            "triangles": 615688
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-1.igmpz",
+            "packet_bytes": 72014385,
+            "packet_sha256": "3cc53bdbe5b28978f0074fbf53e7040286c7e7bed021fe2d1f99162131f3339f",
+            "decoded_bytes": 127119620,
+            "decoded_sha256": "73ed9506b93087419d826fbc60a0da91b8d2727fe0d356ac6746bbeacded976a",
+            "vertices": 1741412,
+            "triangles": 3277952
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-2.igmpz",
+            "packet_bytes": 438,
+            "packet_sha256": "62528f3d14988b52ff7734a4af20ad78eac3659d49661084af0f72b0b9f6f844",
+            "decoded_bytes": 2124,
+            "decoded_sha256": "8a05e3dc1169175b6dee993657adb7ec1d8807d81f71f10322506079233a9aad",
+            "vertices": 3,
+            "triangles": 1
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-3.igmpz",
+            "packet_bytes": 448,
+            "packet_sha256": "002d282b418053742c2582817c51f1a80820fa9c8c873d1fea245db3e5dede34",
+            "decoded_bytes": 2128,
+            "decoded_sha256": "35a08f96add11258f43c2e033c22998af807dee553ee20e487caab9137e92f4b",
+            "vertices": 3,
+            "triangles": 1
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-4.igmpz",
+            "packet_bytes": 8028,
+            "packet_sha256": "93257a1331ba0fcb521ee0071187b0bfccc5cbb6bc2f441102ada99e305295a1",
+            "decoded_bytes": 20468,
+            "decoded_sha256": "8b1e9983a73a60989f8dbded97db55a25a989ffdb13a32d1e54724af950f5e94",
+            "vertices": 258,
+            "triangles": 504
+          }
+        ],
+        "vertices": 2052088,
+        "triangles": 3894146,
         "bounds": {
-          "max": [
-            3.419158697128296,
-            5.004640579223633,
-            2.9833340644836426
-          ],
           "min": [
-            -2.561704158782959,
+            -2.5617125034332275,
             -0.011616240255534649,
-            -2.770878791809082
+            -2.77087664604187
+          ],
+          "max": [
+            3.4191577434539795,
+            5.004638195037842,
+            2.9833271503448486
           ]
-        }
+        },
+        "source_sha256": "fc25e13af2b80a4c3e6ca3d03e65d1fe67412f9ee317fb347a887f97532edf18",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2365,17 +3159,45 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 54498632,
-          "sha256": "884c9a118da18ddda82e04ca8fec3a15cbdc6ea2df63a5fb4e9109b0a6e176d3",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/cuihua-v1.2.0/ignis.mesh.tree.cuihua-2.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 10261,
           "sha256": "27365507c026c566d15d574193f071ce5f5719d4cfb571ce700b9e99b0ab53f9",
           "path": "assets/meshes/trees/cuihua-2/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 13869477,
+          "sha256": "bf19df5627b3ba0b5ab799a8c9e339ca57ed9d0ea6408f3441c76749dba47317",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 72014385,
+          "sha256": "3cc53bdbe5b28978f0074fbf53e7040286c7e7bed021fe2d1f99162131f3339f",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-1.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 438,
+          "sha256": "62528f3d14988b52ff7734a4af20ad78eac3659d49661084af0f72b0b9f6f844",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-2.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 448,
+          "sha256": "002d282b418053742c2582817c51f1a80820fa9c8c873d1fea245db3e5dede34",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-3.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 8028,
+          "sha256": "93257a1331ba0fcb521ee0071187b0bfccc5cbb6bc2f441102ada99e305295a1",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.cuihua-2.native-part-4.igmpz"
         }
       ],
       "botanical_lods": {
@@ -2413,11 +3235,59 @@
       },
       "manifest": "assets/meshes/trees/cuihua-2/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.cuihua-2.igmpz",
-        "packet_bytes": 54498632,
-        "packet_sha256": "884c9a118da18ddda82e04ca8fec3a15cbdc6ea2df63a5fb4e9109b0a6e176d3",
-        "decoded_bytes": 94515504,
-        "decoded_sha256": "69a7e0d9b5953dec281b6c2de463b8419eef6c5e28020d52077b9eebcdb3a5b9",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-0.igmpz",
+            "packet_bytes": 13869477,
+            "packet_sha256": "bf19df5627b3ba0b5ab799a8c9e339ca57ed9d0ea6408f3441c76749dba47317",
+            "decoded_bytes": 26484452,
+            "decoded_sha256": "7392dd65c68dccb3fbb375668e1ab833b92d569a86cb400b20e3f7a732b22e84",
+            "vertices": 310412,
+            "triangles": 615688,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-2.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-1.igmpz",
+            "packet_bytes": 72014385,
+            "packet_sha256": "3cc53bdbe5b28978f0074fbf53e7040286c7e7bed021fe2d1f99162131f3339f",
+            "decoded_bytes": 127119620,
+            "decoded_sha256": "73ed9506b93087419d826fbc60a0da91b8d2727fe0d356ac6746bbeacded976a",
+            "vertices": 1741412,
+            "triangles": 3277952,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-2.native-part-1.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-2.igmpz",
+            "packet_bytes": 438,
+            "packet_sha256": "62528f3d14988b52ff7734a4af20ad78eac3659d49661084af0f72b0b9f6f844",
+            "decoded_bytes": 2124,
+            "decoded_sha256": "8a05e3dc1169175b6dee993657adb7ec1d8807d81f71f10322506079233a9aad",
+            "vertices": 3,
+            "triangles": 1,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-2.native-part-2.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-3.igmpz",
+            "packet_bytes": 448,
+            "packet_sha256": "002d282b418053742c2582817c51f1a80820fa9c8c873d1fea245db3e5dede34",
+            "decoded_bytes": 2128,
+            "decoded_sha256": "35a08f96add11258f43c2e033c22998af807dee553ee20e487caab9137e92f4b",
+            "vertices": 3,
+            "triangles": 1,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-2.native-part-3.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.cuihua-2.native-part-4.igmpz",
+            "packet_bytes": 8028,
+            "packet_sha256": "93257a1331ba0fcb521ee0071187b0bfccc5cbb6bc2f441102ada99e305295a1",
+            "decoded_bytes": 20468,
+            "decoded_sha256": "8b1e9983a73a60989f8dbded97db55a25a989ffdb13a32d1e54724af950f5e94",
+            "vertices": 258,
+            "triangles": 504,
+            "path": "data/meshes/ignis.mesh.tree.cuihua-2.native-part-4.igmpz"
+          }
+        ],
+        "packet_bytes": 85892776,
         "thumbnail_sha256": "27365507c026c566d15d574193f071ce5f5719d4cfb571ce700b9e99b0ab53f9"
       }
     },
@@ -2470,29 +3340,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 35460592,
-        "decoded_sha256": "f5cb818f06293f65dda779859f4e994982c3ea3b8c25d070d8383e7924978225",
-        "vertices": 756438,
-        "triangles": 1441832,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.eucalipto.native-part-0.igmpz",
+            "packet_bytes": 22671323,
+            "packet_sha256": "3505e7a5c4722cd7345c94beea0732309b16e127b6652e538fa7ac7fa402b6dd",
+            "decoded_bytes": 39831096,
+            "decoded_sha256": "df2664372e3b75976f4656cf18f03a3a46ac7ae6dfbba33a5a4e3f4eb487680a",
+            "vertices": 553182,
+            "triangles": 1106360
+          },
+          {
+            "file": "ignis.mesh.tree.eucalipto.native-part-1.igmpz",
+            "packet_bytes": 39245161,
+            "packet_sha256": "b00b7fb2d49244db75e0e3c3141dc4dab190305c535e8972cc69e41d8646ca4a",
+            "decoded_bytes": 68200440,
+            "decoded_sha256": "e8eb1ddf585dfe2c9c6bb933cc32643b400aebd09fa88f44beecf175094dfce8",
+            "vertices": 959040,
+            "triangles": 1847040
+          }
+        ],
+        "vertices": 1512222,
+        "triangles": 2953400,
         "bounds": {
-          "max": [
-            8.026850700378418,
-            22.90592384338379,
-            8.635483741760254
-          ],
           "min": [
-            -8.994643211364746,
+            -8.994375228881836,
             -0.013933655805885792,
-            -9.185460090637207
+            -9.187928199768066
+          ],
+          "max": [
+            8.037596702575684,
+            22.904958724975586,
+            8.63642406463623
           ]
-        }
+        },
+        "source_sha256": "149b7d38f66ca7fa8b5ecf97d9d4e2dad6f486a4e1ce9b97637374431ca8c2fb",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2504,26 +3390,51 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 21266400,
-          "sha256": "1be809da529f5cc6695df25d37f9ece1eae34cc370aea7b3d6f8840061329f55",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.eucalipto.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 11837,
           "sha256": "d7c94144ba76f70d09b18523ecc6a27d40a160d277a1e38babd541ac01d77676",
           "path": "assets/meshes/trees/eucalipto/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 22671323,
+          "sha256": "3505e7a5c4722cd7345c94beea0732309b16e127b6652e538fa7ac7fa402b6dd",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.eucalipto.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 39245161,
+          "sha256": "b00b7fb2d49244db75e0e3c3141dc4dab190305c535e8972cc69e41d8646ca4a",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.eucalipto.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/eucalipto/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.eucalipto.igmpz",
-        "packet_bytes": 21266400,
-        "packet_sha256": "1be809da529f5cc6695df25d37f9ece1eae34cc370aea7b3d6f8840061329f55",
-        "decoded_bytes": 35460592,
-        "decoded_sha256": "f5cb818f06293f65dda779859f4e994982c3ea3b8c25d070d8383e7924978225",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.eucalipto.native-part-0.igmpz",
+            "packet_bytes": 22671323,
+            "packet_sha256": "3505e7a5c4722cd7345c94beea0732309b16e127b6652e538fa7ac7fa402b6dd",
+            "decoded_bytes": 39831096,
+            "decoded_sha256": "df2664372e3b75976f4656cf18f03a3a46ac7ae6dfbba33a5a4e3f4eb487680a",
+            "vertices": 553182,
+            "triangles": 1106360,
+            "path": "data/meshes/ignis.mesh.tree.eucalipto.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.eucalipto.native-part-1.igmpz",
+            "packet_bytes": 39245161,
+            "packet_sha256": "b00b7fb2d49244db75e0e3c3141dc4dab190305c535e8972cc69e41d8646ca4a",
+            "decoded_bytes": 68200440,
+            "decoded_sha256": "e8eb1ddf585dfe2c9c6bb933cc32643b400aebd09fa88f44beecf175094dfce8",
+            "vertices": 959040,
+            "triangles": 1847040,
+            "path": "data/meshes/ignis.mesh.tree.eucalipto.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 61916484,
         "thumbnail_sha256": "d7c94144ba76f70d09b18523ecc6a27d40a160d277a1e38babd541ac01d77676"
       }
     },
@@ -2576,29 +3487,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 70144920,
-        "decoded_sha256": "b2f8641303176c02fd8fc12b1b4c693f19f9679dcc7d25b4de37a68c9a233e70",
-        "vertices": 1498388,
-        "triangles": 2848292,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.figueira.native-part-0.igmpz",
+            "packet_bytes": 35325580,
+            "packet_sha256": "a6d3939530574a71ee565a69a06c833e7d282872071f0ab0a11f09124fd6722d",
+            "decoded_bytes": 61813276,
+            "decoded_sha256": "127160fc87ed8949b394d2dfbe94f60dd12d8f57ea0b7a6ce6a90185e2c965da",
+            "vertices": 858490,
+            "triangles": 1716976
+          },
+          {
+            "file": "ignis.mesh.tree.figueira.native-part-1.igmpz",
+            "packet_bytes": 51154286,
+            "packet_sha256": "3ecdeeb2c10f58567eb0a1137c3f0d20097570a2bbda90ec6b375856a074a965",
+            "decoded_bytes": 89090048,
+            "decoded_sha256": "fd2ee136ba6f77d8f6b13c6dd5a7893929b2913c66da38812fccc9614487a881",
+            "vertices": 1262080,
+            "triangles": 2375680
+          }
+        ],
+        "vertices": 2120570,
+        "triangles": 4092656,
         "bounds": {
-          "max": [
-            13.573077201843262,
-            12.909526824951172,
-            11.861016273498535
-          ],
           "min": [
-            -13.948681831359863,
-            -2.1016979217529297,
-            -11.964497566223145
+            -13.949251174926758,
+            -2.1016080379486084,
+            -11.965088844299316
+          ],
+          "max": [
+            13.571788787841797,
+            12.919195175170898,
+            11.864731788635254
           ]
-        }
+        },
+        "source_sha256": "1c05eea7ef5a03defbfb8024f290e50266e216d2755fc82b28fbf29e07c19e6d",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2610,26 +3537,51 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 42203940,
-          "sha256": "e840b18469d6945c723969625c83143baaa8448eac7c180d89038dafa5f9f2c1",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 12736,
           "sha256": "4ff2e64fddd3187d959000230fa4c8dcb82918141edb67d4ed1f4cb6167b4b1d",
           "path": "assets/meshes/trees/figueira/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 35325580,
+          "sha256": "a6d3939530574a71ee565a69a06c833e7d282872071f0ab0a11f09124fd6722d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 51154286,
+          "sha256": "3ecdeeb2c10f58567eb0a1137c3f0d20097570a2bbda90ec6b375856a074a965",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/figueira/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.figueira.igmpz",
-        "packet_bytes": 42203940,
-        "packet_sha256": "e840b18469d6945c723969625c83143baaa8448eac7c180d89038dafa5f9f2c1",
-        "decoded_bytes": 70144920,
-        "decoded_sha256": "b2f8641303176c02fd8fc12b1b4c693f19f9679dcc7d25b4de37a68c9a233e70",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.figueira.native-part-0.igmpz",
+            "packet_bytes": 35325580,
+            "packet_sha256": "a6d3939530574a71ee565a69a06c833e7d282872071f0ab0a11f09124fd6722d",
+            "decoded_bytes": 61813276,
+            "decoded_sha256": "127160fc87ed8949b394d2dfbe94f60dd12d8f57ea0b7a6ce6a90185e2c965da",
+            "vertices": 858490,
+            "triangles": 1716976,
+            "path": "data/meshes/ignis.mesh.tree.figueira.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.figueira.native-part-1.igmpz",
+            "packet_bytes": 51154286,
+            "packet_sha256": "3ecdeeb2c10f58567eb0a1137c3f0d20097570a2bbda90ec6b375856a074a965",
+            "decoded_bytes": 89090048,
+            "decoded_sha256": "fd2ee136ba6f77d8f6b13c6dd5a7893929b2913c66da38812fccc9614487a881",
+            "vertices": 1262080,
+            "triangles": 2375680,
+            "path": "data/meshes/ignis.mesh.tree.figueira.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 86479866,
         "thumbnail_sha256": "4ff2e64fddd3187d959000230fa4c8dcb82918141edb67d4ed1f4cb6167b4b1d"
       }
     },
@@ -2682,29 +3634,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 69144220,
-        "decoded_sha256": "a9eb38a4a6fbf5030c7addeca45e4af28bed9ef931472ef9a27ef67535fa2d10",
-        "vertices": 1471716,
-        "triangles": 2818244,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.figueira-rs.native-part-0.igmpz",
+            "packet_bytes": 78551188,
+            "packet_sha256": "4f3e9f088c8647ef841e612cb1e89e9a9b449c6b1cd5bfc16cb846605f246d58",
+            "decoded_bytes": 138007424,
+            "decoded_sha256": "eaca1e45dbeb0667b4cd0d5f245cbf30cf2a705a4490ed0423f250bc29b14162",
+            "vertices": 1918662,
+            "triangles": 3825800
+          },
+          {
+            "file": "ignis.mesh.tree.figueira-rs.native-part-1.igmpz",
+            "packet_bytes": 39285715,
+            "packet_sha256": "8d3a9eca96c44dd7dce6424f5cc50c4fcb703c822db1bf9731e568d1e7bbebca",
+            "decoded_bytes": 68200448,
+            "decoded_sha256": "6de767819185bd3784d5e8d50fa41596e32b95382d9729909671042391ea661e",
+            "vertices": 966144,
+            "triangles": 1818624
+          }
+        ],
+        "vertices": 2884806,
+        "triangles": 5644424,
         "bounds": {
-          "max": [
-            14.447172164916992,
-            15.574305534362793,
-            15.518535614013672
-          ],
           "min": [
             -12.110258102416992,
-            -1.3071134090423584,
-            -14.364788055419922
+            -1.3071138858795166,
+            -14.375956535339355
+          ],
+          "max": [
+            14.4595365524292,
+            15.566461563110352,
+            15.569226264953613
           ]
-        }
+        },
+        "source_sha256": "ae9c7b23322075328aff6241b6a294eaf63822911a7108e444753c6093e33ccb",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2716,26 +3684,51 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 41451657,
-          "sha256": "17cf5108730adf0f80858c834a0cf71b5f0afb36d390b8e3c31c5a959850b0cb",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.figueira-rs.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 11508,
           "sha256": "6428fe76faf46f6034559547f8cd8497018504518689ea5866f61ceaa7e19695",
           "path": "assets/meshes/trees/figueira-rs/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 78551188,
+          "sha256": "4f3e9f088c8647ef841e612cb1e89e9a9b449c6b1cd5bfc16cb846605f246d58",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira-rs.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 39285715,
+          "sha256": "8d3a9eca96c44dd7dce6424f5cc50c4fcb703c822db1bf9731e568d1e7bbebca",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.figueira-rs.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/figueira-rs/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.figueira-rs.igmpz",
-        "packet_bytes": 41451657,
-        "packet_sha256": "17cf5108730adf0f80858c834a0cf71b5f0afb36d390b8e3c31c5a959850b0cb",
-        "decoded_bytes": 69144220,
-        "decoded_sha256": "a9eb38a4a6fbf5030c7addeca45e4af28bed9ef931472ef9a27ef67535fa2d10",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.figueira-rs.native-part-0.igmpz",
+            "packet_bytes": 78551188,
+            "packet_sha256": "4f3e9f088c8647ef841e612cb1e89e9a9b449c6b1cd5bfc16cb846605f246d58",
+            "decoded_bytes": 138007424,
+            "decoded_sha256": "eaca1e45dbeb0667b4cd0d5f245cbf30cf2a705a4490ed0423f250bc29b14162",
+            "vertices": 1918662,
+            "triangles": 3825800,
+            "path": "data/meshes/ignis.mesh.tree.figueira-rs.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.figueira-rs.native-part-1.igmpz",
+            "packet_bytes": 39285715,
+            "packet_sha256": "8d3a9eca96c44dd7dce6424f5cc50c4fcb703c822db1bf9731e568d1e7bbebca",
+            "decoded_bytes": 68200448,
+            "decoded_sha256": "6de767819185bd3784d5e8d50fa41596e32b95382d9729909671042391ea661e",
+            "vertices": 966144,
+            "triangles": 1818624,
+            "path": "data/meshes/ignis.mesh.tree.figueira-rs.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 117836903,
         "thumbnail_sha256": "6428fe76faf46f6034559547f8cd8497018504518689ea5866f61ceaa7e19695"
       }
     },
@@ -2790,29 +3783,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 2380092,
-        "decoded_sha256": "930a4b878ec7920254f3ecbd128193950b373a99cf67c2804afe99cd40be4979",
-        "vertices": 50976,
-        "triangles": 96048,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.palmeirinha.native-part-0.igmpz",
+            "packet_bytes": 584928,
+            "packet_sha256": "682e9702663133c8837dbad4d4deba9adf27dbb13ccce25814781d5e77d1091b",
+            "decoded_bytes": 1031928,
+            "decoded_sha256": "307090e0795391b8fe94b82b0a75842214794a6569a987f5dcb1770a0a49adfe",
+            "vertices": 14328,
+            "triangles": 28512
+          },
+          {
+            "file": "ignis.mesh.tree.palmeirinha.native-part-1.igmpz",
+            "packet_bytes": 6738923,
+            "packet_sha256": "f3de0781d780d5754d71a93441e9455d6dea5ee035dc7625cb17c5ae4a153e21",
+            "decoded_bytes": 11752444,
+            "decoded_sha256": "2a5493994b42643937a9de69544f98c39f4aec183b9fb158d97d7688ad6ee9c4",
+            "vertices": 164160,
+            "triangles": 322560
+          }
+        ],
+        "vertices": 178488,
+        "triangles": 351072,
         "bounds": {
-          "max": [
-            2.668865203857422,
-            3.0923542976379395,
-            2.175877571105957
-          ],
           "min": [
-            -2.0829925537109375,
+            -2.083073854446411,
             -0.0010521708754822612,
             -2.288318157196045
+          ],
+          "max": [
+            2.668865203857422,
+            3.091585397720337,
+            2.1759469509124756
           ]
-        }
+        },
+        "source_sha256": "2eed345b2b76617d85500df898c7af9237cd53c9f3fdcddca964bad497024233",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2824,26 +3833,51 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 1440564,
-          "sha256": "037e0d03ff4ebc618ca6a5cb70bdd84bfd7542f3b396e75ce0d197656dde6ef1",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/palmeirinha-v1.1.0/ignis.mesh.tree.palmeirinha.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 8024,
           "sha256": "4018cca5d7d2fcc0d71dd6bdbec7015284ad2ba7db1c7ad561ffdb2a493a544a",
           "path": "assets/meshes/trees/palmeirinha/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 584928,
+          "sha256": "682e9702663133c8837dbad4d4deba9adf27dbb13ccce25814781d5e77d1091b",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.palmeirinha.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 6738923,
+          "sha256": "f3de0781d780d5754d71a93441e9455d6dea5ee035dc7625cb17c5ae4a153e21",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.palmeirinha.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/palmeirinha/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.palmeirinha.igmpz",
-        "packet_bytes": 1440564,
-        "packet_sha256": "037e0d03ff4ebc618ca6a5cb70bdd84bfd7542f3b396e75ce0d197656dde6ef1",
-        "decoded_bytes": 2380092,
-        "decoded_sha256": "930a4b878ec7920254f3ecbd128193950b373a99cf67c2804afe99cd40be4979",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.palmeirinha.native-part-0.igmpz",
+            "packet_bytes": 584928,
+            "packet_sha256": "682e9702663133c8837dbad4d4deba9adf27dbb13ccce25814781d5e77d1091b",
+            "decoded_bytes": 1031928,
+            "decoded_sha256": "307090e0795391b8fe94b82b0a75842214794a6569a987f5dcb1770a0a49adfe",
+            "vertices": 14328,
+            "triangles": 28512,
+            "path": "data/meshes/ignis.mesh.tree.palmeirinha.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.palmeirinha.native-part-1.igmpz",
+            "packet_bytes": 6738923,
+            "packet_sha256": "f3de0781d780d5754d71a93441e9455d6dea5ee035dc7625cb17c5ae4a153e21",
+            "decoded_bytes": 11752444,
+            "decoded_sha256": "2a5493994b42643937a9de69544f98c39f4aec183b9fb158d97d7688ad6ee9c4",
+            "vertices": 164160,
+            "triangles": 322560,
+            "path": "data/meshes/ignis.mesh.tree.palmeirinha.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 7323851,
         "thumbnail_sha256": "4018cca5d7d2fcc0d71dd6bdbec7015284ad2ba7db1c7ad561ffdb2a493a544a"
       }
     },
@@ -2896,29 +3930,45 @@
         }
       },
       "native_preview": {
-        "format": "IGMP1+gzip",
-        "quality": "reduced-tessellation",
-        "tessellation": {
-          "axis_samples": 8,
-          "blade_samples": 4,
-          "sides": 6
-        },
-        "decoded_bytes": 102003916,
-        "decoded_sha256": "57732e04bde3b5c3f23c82244a0d0cc8028f72ca5885d190ba6cacdb7fae52d9",
-        "vertices": 2130310,
-        "triangles": 4239368,
+        "format": "IGMP2+gzip-parts",
+        "quality": "full-native",
+        "material_appearance": "native-materials",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.platano.native-part-0.igmpz",
+            "packet_bytes": 11752849,
+            "packet_sha256": "c99a61d3ef337c448983b16f2817d4a83ae312d0b4826e8f145377132dd6a3d2",
+            "decoded_bytes": 20544888,
+            "decoded_sha256": "595872949fbf01368bee0f11c02bf0ebebf3ad6c6479d0de84646a0fd8ef8ee4",
+            "vertices": 285318,
+            "triangles": 570632
+          },
+          {
+            "file": "ignis.mesh.tree.platano.native-part-1.igmpz",
+            "packet_bytes": 82223799,
+            "packet_sha256": "7c577aa571ee60ab131d6d385ad06939a2e999e71e69e4919e7f5d58264f0052",
+            "decoded_bytes": 147378168,
+            "decoded_sha256": "398b1b2353f25deeb9222d63e6fdb4fec530bc61ab00f09b67646630096bf8f1",
+            "vertices": 2050432,
+            "triangles": 4079616
+          }
+        ],
+        "vertices": 2335750,
+        "triangles": 4650248,
         "bounds": {
-          "max": [
-            8.015301704406738,
-            18.56914520263672,
-            8.496986389160156
-          ],
           "min": [
-            -7.820223331451416,
+            -7.824755668640137,
             -0.04086841642856598,
-            -8.5431547164917
+            -8.54809856414795
+          ],
+          "max": [
+            8.01821517944336,
+            18.563261032104492,
+            8.500114440917969
           ]
-        }
+        },
+        "source_sha256": "2538de82b6e7b4b18b373c41cf45bf46299b8954d149324b2cc2e576c29852a0",
+        "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8"
       },
       "files": [
         {
@@ -2930,47 +3980,105 @@
         },
         {
           "role": "preview",
-          "media_type": "application/vnd.ignis.mesh-preview+gzip",
-          "bytes": 58192692,
-          "sha256": "c1ff602b0db6b376a5bfb8b23cacb99a5d1a89979e55b829ab62b73c2142abaa",
-          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.platano.igmpz"
-        },
-        {
-          "role": "preview",
           "media_type": "image/jpeg",
           "bytes": 13318,
           "sha256": "a849b65f230a2abf8251fa1069c133233a7a77b673155b2b0019e5477678240a",
           "path": "assets/meshes/trees/platano/thumbnail.jpg"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 11752849,
+          "sha256": "c99a61d3ef337c448983b16f2817d4a83ae312d0b4826e8f145377132dd6a3d2",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.platano.native-part-0.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 82223799,
+          "sha256": "7c577aa571ee60ab131d6d385ad06939a2e999e71e69e4919e7f5d58264f0052",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/native-previews-v2/ignis.mesh.tree.platano.native-part-1.igmpz"
         }
       ],
       "manifest": "assets/meshes/trees/platano/asset.json",
       "preview": {
-        "path": "data/meshes/ignis.mesh.tree.platano.igmpz",
-        "packet_bytes": 58192692,
-        "packet_sha256": "c1ff602b0db6b376a5bfb8b23cacb99a5d1a89979e55b829ab62b73c2142abaa",
-        "decoded_bytes": 102003916,
-        "decoded_sha256": "57732e04bde3b5c3f23c82244a0d0cc8028f72ca5885d190ba6cacdb7fae52d9",
+        "parts": [
+          {
+            "file": "ignis.mesh.tree.platano.native-part-0.igmpz",
+            "packet_bytes": 11752849,
+            "packet_sha256": "c99a61d3ef337c448983b16f2817d4a83ae312d0b4826e8f145377132dd6a3d2",
+            "decoded_bytes": 20544888,
+            "decoded_sha256": "595872949fbf01368bee0f11c02bf0ebebf3ad6c6479d0de84646a0fd8ef8ee4",
+            "vertices": 285318,
+            "triangles": 570632,
+            "path": "data/meshes/ignis.mesh.tree.platano.native-part-0.igmpz"
+          },
+          {
+            "file": "ignis.mesh.tree.platano.native-part-1.igmpz",
+            "packet_bytes": 82223799,
+            "packet_sha256": "7c577aa571ee60ab131d6d385ad06939a2e999e71e69e4919e7f5d58264f0052",
+            "decoded_bytes": 147378168,
+            "decoded_sha256": "398b1b2353f25deeb9222d63e6fdb4fec530bc61ab00f09b67646630096bf8f1",
+            "vertices": 2050432,
+            "triangles": 4079616,
+            "path": "data/meshes/ignis.mesh.tree.platano.native-part-1.igmpz"
+          }
+        ],
+        "packet_bytes": 93976648,
         "thumbnail_sha256": "a849b65f230a2abf8251fa1069c133233a7a77b673155b2b0019e5477678240a"
       }
     }
   ],
-  "source_revision": "d5ec9de07e824d3276fe7a619e4e2de75fd1a504",
+  "environment": {
+    "specular": [
+      {
+        "path": "data/environment-specular-0.bin",
+        "sha256": "d82e5e47f0438235d6feca18c13cf949e70871bf53584996f23047966952de35"
+      },
+      {
+        "path": "data/environment-specular-1.bin",
+        "sha256": "4af86ddc3e52455222551a6f408095a52e3a72e437d84644377fa45b254aff20"
+      },
+      {
+        "path": "data/environment-specular-2.bin",
+        "sha256": "732bc4442605300507c9295d79ebf49b3e421f47b4689ff3f856b0bd406ff57f"
+      },
+      {
+        "path": "data/environment-specular-3.bin",
+        "sha256": "a1a444ab09ad8eab06cd5a14afa2d68c4da4a190981098425db10835c3f541b1"
+      },
+      {
+        "path": "data/environment-specular-4.bin",
+        "sha256": "2b4fe57f789203fe41d36cbd909da0002b03e04442e1071164fed9c790062158"
+      },
+      {
+        "path": "data/environment-specular-5.bin",
+        "sha256": "6108fc33dddcf6337172fdc4521d6609ac4a8227bd4be62593d2060200e564b4"
+      },
+      {
+        "path": "data/environment-specular-6.bin",
+        "sha256": "f3bc9b549f5e7634b3cafd6beb8275d7e27047e07af0dc6f29daa00be565e108"
+      }
+    ],
+    "diffuse": {
+      "path": "data/environment-diffuse.bin",
+      "sha256": "5f98129ce11ec05f9d76d12fd5e6ddb3ecb3ae12196bd93af7731084c4d4296e"
+    },
+    "lut": {
+      "path": "data/environment-lut.bin",
+      "sha256": "479bae6410595ba23b34bd542ee3770c02c14156bd6421cb8c6588fab8f43f22"
+    }
+  },
+  "runtime_base": "https://ignis.web.app/",
+  "source_revision": "bb0c91c07b687fec214e5fbf45eb69b41b4040f3",
   "source_repository": "https://github.com/zerobytes/ignis-catalog",
-  "shader_sha256": "ccc2fb2fa5da33b3a416230cdd6917ad3370d6a9548fb1ddde28bc33329db55e",
+  "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8",
   "renderer_source": {
     "repository": "https://github.com/zerobytes/ignis",
-    "local_snapshot": "852a3959708977773d372a1cd5ce08eeb5dbf726",
-    "source_state": "working-tree",
-    "source_sha256": {
-      "src/meshes/preview.rs": "38a52b1ddb1c39efae0980288775eb67dfce1507b97b39da27b0b0301dc1d132",
-      "src/materials.rs": "092b4cbaf3ae81146c94781cc0fc4a88bb0048b6d52468c6c9cdd12a1138cfb1",
-      "src/materials/preview.rs": "70f11faf3419d55b86d057d02bef82b6b0fca70d136b9e5aabd10ad27c78a6b2",
-      "src/materials/recipe.rs": "437a2504b4815bd310b43c8df267078e144279731d332d905d8abbf3148d6d21",
-      "src/materials/marble.rs": "1c19011fc5d3e09dd09544fb1d1bcaf61fc4a9a414ae63dddaf019e220ac1d59",
-      "src/materials/rock.rs": "c980db17301e2600a2571739f8b79ace46a8029381aadd488ae97ece1da286cb",
-      "src/scene.wgsl": "f6a32e167f6dfd1bd58ecb68cb13e2755672bb839c7a499a8d97c3e77c81e111",
-      "src/particles.wgsl": "d9ce4a54ce7002590d8f044790cb0df9c02f5e1ef680eebbe5a2183836f96d15"
-    },
+    "local_snapshot": "ddecbc85ab1c9d18d2e14409b36f5c0bf8c5611d",
+    "source_state": "exporter-build",
+    "exporter_sha256": "2cd5893001687e98fea2ef776c532d11f21ea9b0d0d027461f7647e363da1592",
+    "shader_sha256": "021c016da051695b9cf1b4ba295788e39e18e29ca841503922e2d7d7c380c2c8",
     "scope": "native-material-and-static-mesh-shader-webgpu-host"
   }
 }

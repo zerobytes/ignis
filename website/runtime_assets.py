@@ -18,19 +18,22 @@ def declarations(root):
     if data.get('version') != 1 or not isinstance(data.get('files'), dict):
         raise RuntimeError('Unsupported runtime asset manifest')
     total = 0
+    legacy_total = 0
     for name, item in data['files'].items():
         path = PurePosixPath(name)
         url = urlsplit(item['url'])
+        native = re.fullmatch(r'catalog/data/meshes/[a-z0-9.-]+\.native-part-\d+\.igmpz',name) is not None
         if (str(path) != name or '..' in path.parts or '\\' in name
                 or not name.startswith('catalog/data/meshes/') or not name.endswith('.igmpz')
                 or url.scheme != 'https' or url.netloc != 'github.com' or url.query or url.fragment
                 or not url.path.startswith('/zerobytes/ignis-catalog/releases/download/')
                 or '/latest/' in url.path or not re.fullmatch('[a-f0-9]{64}', item['sha256'])
-                or type(item['bytes']) is not int or not 0 < item['bytes'] <= 96 * 1024 * 1024):
+                or type(item['bytes']) is not int or not 0 < item['bytes'] <= (256 if native else 96) * 1024 * 1024):
             raise RuntimeError(f'Invalid runtime preview declaration: {name}')
         total += item['bytes']
-    if total > 768 * 1024 * 1024:
-        raise RuntimeError('Runtime preview snapshot exceeds768MiB')
+        if not native: legacy_total += item['bytes']
+    if legacy_total > 768 * 1024 * 1024 or total > 4 * 1024 * 1024 * 1024:
+        raise RuntimeError('Runtime preview snapshot exceeds its legacy/native byte budget')
     return data['files']
 
 
@@ -73,4 +76,8 @@ def materialize(root):
 
 
 if __name__ == '__main__':
-    materialize(Path(__file__).resolve().parent / 'dist')
+    import sys
+    if '--manifest-only' in sys.argv:
+        print(f'Validated shared runtime declarations: {len(declarations(Path(__file__).resolve().parent / "dist"))}')
+    else:
+        materialize(Path(__file__).resolve().parent / 'dist')
