@@ -48,7 +48,7 @@ class RuntimeAssetsTests(unittest.TestCase):
             runtime.declarations(self.root)
 
     def test_oversized_preview_rejected(self):
-        self.item['bytes'] = 65 * 1024 * 1024
+        self.item['bytes'] = 97 * 1024 * 1024
         self.write()
         with self.assertRaisesRegex(RuntimeError, 'declaration'):
             runtime.declarations(self.root)
