@@ -84,3 +84,23 @@ From this checkout run `python3 website/deploy.py` (or `python3 deploy.py` insid
 First run `--prepare`, commit the intended website files and push them to the public `main` through the normal Git workflow. The command captures the static bytes once and requires **website/dist/** in public `main` to match exactly. It then dispatches/awaits the existing Pages workflow and publishes the same bytes to Firebase through an automatically removed staging directory. A source mismatch stops deployment before either destination is published. The command creates no remote-only source commits and does not push unrelated local changes. No credentials are written to source.
 
 Completion requires matching version.json and SHA256 of every served file on both domains; cache propagation retries are bounded. A failed destination is reported as incomplete, and rerunning reconciles the same snapshot. Publication across two services is sequential, not an atomic distributed transaction. Use this paired command for normal releases; the Firebase-only command is reserved for explicit destination-specific recovery.
+
+## Catalog detail camera
+
+The catalog viewer supports close surface inspection for both meshes and material samples:
+scroll/pinch or the zoom buttons change distance exponentially; drag orbits; Shift-drag,
+right-drag, the Move mode, or Shift+arrows pan. Two fingers pan and pinch. Double-click
+visible geometry to place the orbit/zoom target on that surface. R or Reset restores the
+asset bounds. The closest distance is 0.0005 times the asset radius (formerly 2.3), with
+an adaptive near plane and floating-point reverse depth so thin bark/moss layers retain
+depth precision. The distant limit is 32 radii.
+
+Surface focus samples a single visible depth with an on-demand compute dispatch and
+four-byte readback. It keeps no CPU copy of tree geometry and adds no continuous readback
+or animation. Background double-clicks leave the camera unchanged. Material/shadow
+shader packets and downloadable assets are unchanged. Controls and instructions are
+available in English and Portuguese.
+
+Direct browser inspection covered the complete ancestral mesh, root and leaf close-ups,
+surface focus, pan, zoom buttons, keyboard reset and the ceramic material preview.
+Touch gestures are implemented but have not been inspected on a physical touch device.
