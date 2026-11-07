@@ -1004,6 +1004,672 @@
     },
     {
       "format_version": 1,
+      "id": "ignis.mesh.tree.ancestral-blue-lilac",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Ancestral tree — Blue-lilac crown",
+      "summary": "Editable ancestral fantasy tree with continuous root/trunk/branch cords and independently prepared moss.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Ancestral tree — Blue-lilac crown by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "ancestral",
+        "moss",
+        "ancestral-blue-lilac"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis-catalog",
+        "commit": "6c5076a5faabab570db0d8e164eae7e95c4df588",
+        "path": "recipes/ancestral/authoring.json",
+        "source_sha256": "56cfb776635c8117ce0f951d6741a790459807982036c847f96f71749602c66b",
+        "availability": "versioned-download",
+        "note": "Tracked compact authoring profile and input hashes; complete exact prepared botanical snapshot and native scene included in the release ZIP. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "botany_recipe_version": 34,
+        "minimum_scene_version": 138,
+        "runtime_validation": "Native source bake, explicit world moss preparation, scene validation and native renderer capture. Static snapshots; no FPS certification."
+      },
+      "mesh": {
+        "vertices": 4804855,
+        "triangles": 9146086,
+        "bounds": {
+          "max": [
+            39.009376525878906,
+            48.14469909667969,
+            38.528682708740234
+          ],
+          "min": [
+            -40.50604248046875,
+            -2.3343749046325684,
+            -38.92499923706055
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "material_appearance": "representative-pbr-colors",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "moss_mesh_edge_m": 0.25,
+          "sides": 6
+        },
+        "decoded_bytes": 102135484,
+        "decoded_sha256": "6750c6bdf54f14b266c1d6827f5871278e84df46801193c84afcc9ea4c81349c",
+        "vertices": 2215362,
+        "triangles": 4080063,
+        "bounds": {
+          "max": [
+            39.009376525878906,
+            48.007328033447266,
+            38.477962493896484
+          ],
+          "min": [
+            -40.43267822265625,
+            -2.3414063453674316,
+            -38.92499923706055
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 422287234,
+          "sha256": "a2a445997639f6c9de7fddb880066b276082152eaa28c63e21d2d68e79199366",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-blue-lilac.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 62431072,
+          "sha256": "f2b1dd91c2e972d73b6efde8bf98afdceacfd8de04287ee2b4f471cbcd2c92ff",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-blue-lilac.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 25179,
+          "sha256": "2d3039e8598f24279f2fa22cf9c31929078905d7e6c28c31b31b896b3e24bf9e",
+          "path": "assets/meshes/trees/ancestral-blue-lilac/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/ancestral-blue-lilac/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.ancestral-blue-lilac.igmpz",
+        "packet_bytes": 62431072,
+        "packet_sha256": "f2b1dd91c2e972d73b6efde8bf98afdceacfd8de04287ee2b4f471cbcd2c92ff",
+        "decoded_bytes": 102135484,
+        "decoded_sha256": "6750c6bdf54f14b266c1d6827f5871278e84df46801193c84afcc9ea4c81349c",
+        "thumbnail_sha256": "2d3039e8598f24279f2fa22cf9c31929078905d7e6c28c31b31b896b3e24bf9e"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.ancestral-pink",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Ancestral tree — Pink crown",
+      "summary": "Editable ancestral fantasy tree with continuous root/trunk/branch cords and independently prepared moss.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Ancestral tree — Pink crown by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "ancestral",
+        "moss",
+        "ancestral-pink"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis-catalog",
+        "commit": "6c5076a5faabab570db0d8e164eae7e95c4df588",
+        "path": "recipes/ancestral/authoring.json",
+        "source_sha256": "2c6172b9fdb1022a27ccf0c610d3e19eefede6f03d4177f21521e7160e760821",
+        "availability": "versioned-download",
+        "note": "Tracked compact authoring profile and input hashes; complete exact prepared botanical snapshot and native scene included in the release ZIP. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "botany_recipe_version": 34,
+        "minimum_scene_version": 138,
+        "runtime_validation": "Native source bake, explicit world moss preparation, scene validation and native renderer capture. Static snapshots; no FPS certification."
+      },
+      "mesh": {
+        "vertices": 3470542,
+        "triangles": 6618982,
+        "bounds": {
+          "max": [
+            34.256248474121094,
+            55.951499938964844,
+            38.65791320800781
+          ],
+          "min": [
+            -40.099578857421875,
+            -1.992508053779602,
+            -39.67343521118164
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "material_appearance": "representative-pbr-colors",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "moss_mesh_edge_m": 0.25,
+          "sides": 6
+        },
+        "decoded_bytes": 74710580,
+        "decoded_sha256": "03bb08dbc79007173be071f1c1a614d023f349e0e33f2d165975d4359a5a20b5",
+        "vertices": 1619337,
+        "triangles": 2986706,
+        "bounds": {
+          "max": [
+            34.256248474121094,
+            55.9216194152832,
+            38.37583923339844
+          ],
+          "min": [
+            -40.13241195678711,
+            -1.9932043552398682,
+            -40.02192306518555
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 328093352,
+          "sha256": "992a0d8d2e23cd1f98784cd405d90be5917af3fa5b0fb2d633b7e2c2f9d9d99d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-pink.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 45666960,
+          "sha256": "c44584964de0ab937f94a3d5bb8d6ea50567e7d9521d84b3848a837ee1bf3ed3",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-pink.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 26303,
+          "sha256": "b820f82a34362264c611628af262474c043a855b072b7742b9bf500715c66691",
+          "path": "assets/meshes/trees/ancestral-pink/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/ancestral-pink/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.ancestral-pink.igmpz",
+        "packet_bytes": 45666960,
+        "packet_sha256": "c44584964de0ab937f94a3d5bb8d6ea50567e7d9521d84b3848a837ee1bf3ed3",
+        "decoded_bytes": 74710580,
+        "decoded_sha256": "03bb08dbc79007173be071f1c1a614d023f349e0e33f2d165975d4359a5a20b5",
+        "thumbnail_sha256": "b820f82a34362264c611628af262474c043a855b072b7742b9bf500715c66691"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.ancestral-white",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Ancestral tree — Original white crown",
+      "summary": "Editable ancestral fantasy tree with continuous root/trunk/branch cords and independently prepared moss.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Ancestral tree — Original white crown by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "ancestral",
+        "moss",
+        "ancestral-white"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis-catalog",
+        "commit": "6c5076a5faabab570db0d8e164eae7e95c4df588",
+        "path": "recipes/ancestral/authoring.json",
+        "source_sha256": "35c675cbd5ade9e07002444a43451a5539b9fc7d50b9a1d6461ff8b4b4726583",
+        "availability": "versioned-download",
+        "note": "Tracked compact authoring profile and input hashes; complete exact prepared botanical snapshot and native scene included in the release ZIP. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "botany_recipe_version": 34,
+        "minimum_scene_version": 138,
+        "runtime_validation": "Native source bake, explicit world moss preparation, scene validation and native renderer capture. Static snapshots; no FPS certification."
+      },
+      "mesh": {
+        "vertices": 5498763,
+        "triangles": 10578105,
+        "bounds": {
+          "max": [
+            37.34678649902344,
+            32.53374481201172,
+            37.08281326293945
+          ],
+          "min": [
+            -35.94331359863281,
+            -2.252812385559082,
+            -31.657499313354492
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "material_appearance": "representative-pbr-colors",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "moss_mesh_edge_m": 0.25,
+          "sides": 6
+        },
+        "decoded_bytes": 114815496,
+        "decoded_sha256": "1f086382524ee44104e976cad96bfd882aa264342ab4500ec2d51e397c85e335",
+        "vertices": 2473855,
+        "triangles": 4619744,
+        "bounds": {
+          "max": [
+            37.44562530517578,
+            32.5057487487793,
+            37.08281326293945
+          ],
+          "min": [
+            -35.941131591796875,
+            -2.252812385559082,
+            -31.674375534057617
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 423571510,
+          "sha256": "7e9e65cdb5a5115efbc093dbb9709a9d32b868a33cf59c73148fe93b267b996d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 69056384,
+          "sha256": "6f40dcd8a7b56bf6c3f8e9273801673847e1bf171f15a53b11ecf52c6d91498b",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 18009,
+          "sha256": "498cd4d85166e71833ec10371ae621027ed3f80e3d648f6eab28d2f83d40c14c",
+          "path": "assets/meshes/trees/ancestral-white/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/ancestral-white/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.ancestral-white.igmpz",
+        "packet_bytes": 69056384,
+        "packet_sha256": "6f40dcd8a7b56bf6c3f8e9273801673847e1bf171f15a53b11ecf52c6d91498b",
+        "decoded_bytes": 114815496,
+        "decoded_sha256": "1f086382524ee44104e976cad96bfd882aa264342ab4500ec2d51e397c85e335",
+        "thumbnail_sha256": "498cd4d85166e71833ec10371ae621027ed3f80e3d648f6eab28d2f83d40c14c"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.ancestral-white-41",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Ancestral tree — White crown, individual 41",
+      "summary": "Editable ancestral fantasy tree with continuous root/trunk/branch cords and independently prepared moss.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Ancestral tree — White crown, individual 41 by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "ancestral",
+        "moss",
+        "ancestral-white-41"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis-catalog",
+        "commit": "6c5076a5faabab570db0d8e164eae7e95c4df588",
+        "path": "recipes/ancestral/authoring.json",
+        "source_sha256": "b7ce2c7979ebb476dc303fcffbb1d6022f63e0dfdc5dd319a06ec36c743c0a42",
+        "availability": "versioned-download",
+        "note": "Tracked compact authoring profile and input hashes; complete exact prepared botanical snapshot and native scene included in the release ZIP. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "botany_recipe_version": 34,
+        "minimum_scene_version": 138,
+        "runtime_validation": "Native source bake, explicit world moss preparation, scene validation and native renderer capture. Static snapshots; no FPS certification."
+      },
+      "mesh": {
+        "vertices": 5464115,
+        "triangles": 10336646,
+        "bounds": {
+          "max": [
+            43.790184020996094,
+            53.924373626708984,
+            42.6243782043457
+          ],
+          "min": [
+            -40.04999923706055,
+            -2.28515625,
+            -43.655521392822266
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "material_appearance": "representative-pbr-colors",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "moss_mesh_edge_m": 0.25,
+          "sides": 6
+        },
+        "decoded_bytes": 114638932,
+        "decoded_sha256": "db5173a6c256d747ac9fadcb39a4bf79db9f44c7fc5c8a38975b54cb047a0ec2",
+        "vertices": 2488713,
+        "triangles": 4575316,
+        "bounds": {
+          "max": [
+            43.78910446166992,
+            53.98173904418945,
+            42.60541534423828
+          ],
+          "min": [
+            -40.04999923706055,
+            -2.28515625,
+            -43.61155319213867
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 464215276,
+          "sha256": "349939ac134ee68ffad127842b7ff25856a96f4845a793bd17cce6f33e68a208",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-41.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 70131394,
+          "sha256": "01b180f74bdf2f8cb340269a06b4e06f04a33697b8536df4a9eb596b8f274535",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-41.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 27540,
+          "sha256": "c743bcf90aad8be05964d27e9bc57a2173f085f493ed0b00bb7c64e6b630888c",
+          "path": "assets/meshes/trees/ancestral-white-41/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/ancestral-white-41/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.ancestral-white-41.igmpz",
+        "packet_bytes": 70131394,
+        "packet_sha256": "01b180f74bdf2f8cb340269a06b4e06f04a33697b8536df4a9eb596b8f274535",
+        "decoded_bytes": 114638932,
+        "decoded_sha256": "db5173a6c256d747ac9fadcb39a4bf79db9f44c7fc5c8a38975b54cb047a0ec2",
+        "thumbnail_sha256": "c743bcf90aad8be05964d27e9bc57a2173f085f493ed0b00bb7c64e6b630888c"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.ancestral-white-42",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Ancestral tree — White crown, individual 42",
+      "summary": "Editable ancestral fantasy tree with continuous root/trunk/branch cords and independently prepared moss.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Ancestral tree — White crown, individual 42 by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "ancestral",
+        "moss",
+        "ancestral-white-42"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis-catalog",
+        "commit": "6c5076a5faabab570db0d8e164eae7e95c4df588",
+        "path": "recipes/ancestral/authoring.json",
+        "source_sha256": "5b69d29022b598da6d556e42551feff3dddc41adade4a75db2d7613fd3558f93",
+        "availability": "versioned-download",
+        "note": "Tracked compact authoring profile and input hashes; complete exact prepared botanical snapshot and native scene included in the release ZIP. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "botany_recipe_version": 34,
+        "minimum_scene_version": 138,
+        "runtime_validation": "Native source bake, explicit world moss preparation, scene validation and native renderer capture. Static snapshots; no FPS certification."
+      },
+      "mesh": {
+        "vertices": 5263458,
+        "triangles": 10021438,
+        "bounds": {
+          "max": [
+            44.26874923706055,
+            47.013954162597656,
+            41.90625
+          ],
+          "min": [
+            -45.337501525878906,
+            -2.6015625,
+            -38.330177307128906
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "material_appearance": "representative-pbr-colors",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "moss_mesh_edge_m": 0.25,
+          "sides": 6
+        },
+        "decoded_bytes": 105662020,
+        "decoded_sha256": "c900dcfb43d6fa9796bd2427a2aad11d90a7f466176b04c17aa28ce0c32a19d5",
+        "vertices": 2291499,
+        "triangles": 4221669,
+        "bounds": {
+          "max": [
+            44.25468826293945,
+            47.06587219238281,
+            41.90625
+          ],
+          "min": [
+            -45.337501525878906,
+            -2.6015625,
+            -38.152862548828125
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 448440382,
+          "sha256": "40834284794f126144478335435155bde3edabc41168c3e443768cbe96e1b4a3",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-42.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 64603081,
+          "sha256": "30c5100eb9c3ffe05c9c94949315825b8be73c382a4b8bfed1c0facae0e537c0",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-42.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 21631,
+          "sha256": "d8c789668b9c65db467c4a0d4264d323001979c39493c09ee850dd247a38f564",
+          "path": "assets/meshes/trees/ancestral-white-42/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/ancestral-white-42/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.ancestral-white-42.igmpz",
+        "packet_bytes": 64603081,
+        "packet_sha256": "30c5100eb9c3ffe05c9c94949315825b8be73c382a4b8bfed1c0facae0e537c0",
+        "decoded_bytes": 105662020,
+        "decoded_sha256": "c900dcfb43d6fa9796bd2427a2aad11d90a7f466176b04c17aa28ce0c32a19d5",
+        "thumbnail_sha256": "d8c789668b9c65db467c4a0d4264d323001979c39493c09ee850dd247a38f564"
+      }
+    },
+    {
+      "format_version": 1,
+      "id": "ignis.mesh.tree.ancestral-wine",
+      "version": "1.0.0",
+      "kind": "mesh",
+      "name": "Ancestral tree — Wine crown",
+      "summary": "Editable ancestral fantasy tree with continuous root/trunk/branch cords and independently prepared moss.",
+      "author": {
+        "name": "Guilherme Oliveira / Zerobytes",
+        "url": "https://github.com/zerobytes"
+      },
+      "license": "CC-BY-4.0",
+      "attribution": "Ancestral tree — Wine crown by Guilherme Oliveira / Zerobytes — CC BY 4.0 — https://github.com/zerobytes/ignis-catalog",
+      "tags": [
+        "trees",
+        "mesh",
+        "botany",
+        "ancestral",
+        "moss",
+        "ancestral-wine"
+      ],
+      "provenance": {
+        "repository": "https://github.com/zerobytes/ignis-catalog",
+        "commit": "6c5076a5faabab570db0d8e164eae7e95c4df588",
+        "path": "recipes/ancestral/authoring.json",
+        "source_sha256": "1f10db06b82b81b2af9f0025106ac82ded6c2220a49b28b31878c43499113bf5",
+        "availability": "versioned-download",
+        "note": "Tracked compact authoring profile and input hashes; complete exact prepared botanical snapshot and native scene included in the release ZIP. No reference images included."
+      },
+      "compatibility": {
+        "engine": "ignis",
+        "botany_recipe_version": 34,
+        "minimum_scene_version": 138,
+        "runtime_validation": "Native source bake, explicit world moss preparation, scene validation and native renderer capture. Static snapshots; no FPS certification."
+      },
+      "mesh": {
+        "vertices": 4699600,
+        "triangles": 8994681,
+        "bounds": {
+          "max": [
+            42.70781326293945,
+            48.50996398925781,
+            41.09062576293945
+          ],
+          "min": [
+            -44.39531326293945,
+            -2.629687547683716,
+            -39.27656173706055
+          ]
+        }
+      },
+      "native_preview": {
+        "format": "IGMP1+gzip",
+        "quality": "reduced-tessellation",
+        "material_appearance": "representative-pbr-colors",
+        "tessellation": {
+          "axis_samples": 8,
+          "blade_samples": 4,
+          "moss_mesh_edge_m": 0.25,
+          "sides": 6
+        },
+        "decoded_bytes": 88957864,
+        "decoded_sha256": "3a16363bdfd2505cb6de893590ca88538551dc1892af92494f4a2d55f1ff9504",
+        "vertices": 1926812,
+        "triangles": 3559032,
+        "bounds": {
+          "max": [
+            42.693748474121094,
+            48.48615646362305,
+            41.09062576293945
+          ],
+          "min": [
+            -44.39531326293945,
+            -2.629687547683716,
+            -39.26953125
+          ]
+        }
+      },
+      "files": [
+        {
+          "role": "source",
+          "media_type": "application/zip",
+          "bytes": 410391880,
+          "sha256": "b77dbbaa4511ad9b7dff9b7ec0febeeb9f43dd14d3c52e467ee810e7ce0bfa02",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-wine.zip"
+        },
+        {
+          "role": "preview",
+          "media_type": "application/vnd.ignis.mesh-preview+gzip",
+          "bytes": 54468983,
+          "sha256": "f42d72ec4b6a1534a6edd151452f86e039825f3d773f4a3be2d49f4b0cc8e38d",
+          "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-wine.igmpz"
+        },
+        {
+          "role": "preview",
+          "media_type": "image/jpeg",
+          "bytes": 18798,
+          "sha256": "87130b468506d25587bb6ad6b87bf4004ae9a3092f18cb1e85e8e63083687d87",
+          "path": "assets/meshes/trees/ancestral-wine/thumbnail.jpg"
+        }
+      ],
+      "manifest": "assets/meshes/trees/ancestral-wine/asset.json",
+      "preview": {
+        "path": "data/meshes/ignis.mesh.tree.ancestral-wine.igmpz",
+        "packet_bytes": 54468983,
+        "packet_sha256": "f42d72ec4b6a1534a6edd151452f86e039825f3d773f4a3be2d49f4b0cc8e38d",
+        "decoded_bytes": 88957864,
+        "decoded_sha256": "3a16363bdfd2505cb6de893590ca88538551dc1892af92494f4a2d55f1ff9504",
+        "thumbnail_sha256": "87130b468506d25587bb6ad6b87bf4004ae9a3092f18cb1e85e8e63083687d87"
+      }
+    },
+    {
+      "format_version": 1,
       "id": "ignis.mesh.tree.birch-0",
       "version": "1.0.0",
       "kind": "mesh",
@@ -2288,7 +2954,7 @@
       }
     }
   ],
-  "source_revision": "fbd39766c74514ea13dfc5967447799256b219f3",
+  "source_revision": "d5ec9de07e824d3276fe7a619e4e2de75fd1a504",
   "source_repository": "https://github.com/zerobytes/ignis-catalog",
   "shader_sha256": "ccc2fb2fa5da33b3a416230cdd6917ad3370d6a9548fb1ddde28bc33329db55e",
   "renderer_source": {

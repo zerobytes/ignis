@@ -1,6 +1,36 @@
 {
   "version": 1,
   "files": {
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-blue-lilac.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-blue-lilac.igmpz",
+      "bytes": 62431072,
+      "sha256": "f2b1dd91c2e972d73b6efde8bf98afdceacfd8de04287ee2b4f471cbcd2c92ff"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-pink.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-pink.igmpz",
+      "bytes": 45666960,
+      "sha256": "c44584964de0ab937f94a3d5bb8d6ea50567e7d9521d84b3848a837ee1bf3ed3"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white.igmpz",
+      "bytes": 69056384,
+      "sha256": "6f40dcd8a7b56bf6c3f8e9273801673847e1bf171f15a53b11ecf52c6d91498b"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-41.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-41.igmpz",
+      "bytes": 70131394,
+      "sha256": "01b180f74bdf2f8cb340269a06b4e06f04a33697b8536df4a9eb596b8f274535"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-white-42.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-white-42.igmpz",
+      "bytes": 64603081,
+      "sha256": "30c5100eb9c3ffe05c9c94949315825b8be73c382a4b8bfed1c0facae0e537c0"
+    },
+    "catalog/data/meshes/ignis.mesh.tree.ancestral-wine.igmpz": {
+      "url": "https://github.com/zerobytes/ignis-catalog/releases/download/ancestral-v1.0.0/ignis.mesh.tree.ancestral-wine.igmpz",
+      "bytes": 54468983,
+      "sha256": "f42d72ec4b6a1534a6edd151452f86e039825f3d773f4a3be2d49f4b0cc8e38d"
+    },
     "catalog/data/meshes/ignis.mesh.tree.birch-0.igmpz": {
       "url": "https://github.com/zerobytes/ignis-catalog/releases/download/trees-v1.0.0/ignis.mesh.tree.birch-0.igmpz",
       "bytes": 11079999,

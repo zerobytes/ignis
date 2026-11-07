@@ -14,11 +14,48 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def refresh_meshes(catalog, data, revision, cache):
+    """Preserve a deployed material/shader snapshot while adding mesh releases."""
+    destination=ROOT/'website/dist/catalog/data'
+    previous=json.loads((destination/'catalog.json').read_text())
+    old={a['id']:a for a in previous['assets']}
+    fresh_materials={a['id'] for a in data['assets'] if a['kind']=='material'}
+    if fresh_materials!={a['id'] for a in previous['assets'] if a['kind']=='material'}:
+        raise RuntimeError('Material set changed; use a full catalog build')
+    records=[];runtime={}
+    for asset in data['assets']:
+        if asset['kind']=='material':
+            prior=old[asset['id']].copy();prior.pop('preview',None)
+            if prior!=asset:raise RuntimeError('Material metadata changed; use a full catalog build')
+            records.append(old[asset['id']]);continue
+        if asset['kind']!='mesh' or asset['native_preview']['format']!='IGMP1+gzip':
+            raise RuntimeError('Unsupported mesh-only catalog record')
+        packet=next(f for f in asset['files'] if f['media_type']=='application/vnd.ignis.mesh-preview+gzip')
+        thumb=next(f for f in asset['files'] if f['media_type']=='image/jpeg')
+        payload=(catalog/thumb['path']).read_bytes()
+        if len(payload)!=thumb['bytes'] or sha(payload)!=thumb['sha256']:raise RuntimeError('Thumbnail integrity failure')
+        (destination/'thumbs'/f"{asset['id']}.jpg").write_bytes(payload)
+        relative=f"catalog/data/meshes/{asset['id']}.igmpz"
+        runtime[relative]={k:packet[k] for k in ['url','bytes','sha256']}
+        asset['preview']=dict(path=f"data/meshes/{asset['id']}.igmpz",packet_bytes=packet['bytes'],packet_sha256=packet['sha256'],decoded_bytes=asset['native_preview']['decoded_bytes'],decoded_sha256=asset['native_preview']['decoded_sha256'],thumbnail_sha256=thumb['sha256'])
+        if cache and (cache/f"{asset['id']}.igmpz").is_file():
+            local=cache/f"{asset['id']}.igmpz"
+            if local.stat().st_size!=packet['bytes'] or sha(local.read_bytes())!=packet['sha256']:raise RuntimeError('Mesh cache integrity failure')
+            (destination/'meshes').mkdir(exist_ok=True)
+            shutil.copyfile(local,destination/'meshes'/local.name)
+        records.append(asset)
+    previous.update(assets=records,source_revision=revision,source_repository='https://github.com/zerobytes/ignis-catalog')
+    (destination/'runtime-files.json').write_text(json.dumps(dict(version=1,files=runtime),indent=2)+'\n')
+    (destination/'catalog.json').write_text(json.dumps(previous,indent=2,ensure_ascii=False)+'\n')
+    print(f'Refreshed {len(runtime)} mesh records; existing material packets and renderer shader preserved')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--catalog', type=Path, required=True)
     parser.add_argument('--mesh-cache', type=Path, help='Verified local release packets; otherwise hydrate from public Releases')
     parser.add_argument('--exporter', type=Path, default=ROOT / 'target/release/examples/export_web_materials')
+    parser.add_argument('--meshes-only',action='store_true',help='Refresh mesh releases while preserving deployed material packets and shader')
     args = parser.parse_args()
     catalog = args.catalog.resolve()
     subprocess.run(['python3', str(catalog / 'tools/catalog.py'), 'build', '--check'], check=True)
@@ -29,6 +66,9 @@ def main():
     records = data['assets']
     if not 1 <= len(records) <= 500:
         raise RuntimeError('Unsupported catalog size')
+    if args.meshes_only:
+        refresh_meshes(catalog,data,revision,args.mesh_cache)
+        return
     stage = ROOT / 'website/.catalog-stage'
     stage.mkdir()  # Stable staging path also refuses overlapping builders.
     try:

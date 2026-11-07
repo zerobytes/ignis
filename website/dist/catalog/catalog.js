@@ -17,6 +17,16 @@ const familyOf=asset=>asset.tags.find(t=>['trees','objects','marble','rock','bas
 const names={pt:{'Emerald Gold':'Esmeralda · ouro','Emerald White Gold':'Esmeralda · branco e ouro','Verde Breccia':'Verde brechado','Alpine':'Alpina','Fractured':'Fraturada','Ochre':'Ocre','Sedimentary':'Sedimentar','Ceramic':'Cerâmica','Painted Metal':'Metal pintado','Stone':'Pedra','Wood':'Madeira'}};
 Object.assign(names.pt,{'Areca palm':'Palmeirinha','Plane tree':'Plátano','Eucalyptus':'Eucalipto','Broad-crown fig':'Figueira de copa ampla','Countryside fig':'Figueira campestre','Golden birch — Golden spire':'Bétula dourada — copa alongada','Golden birch — Broad golden crown':'Bétula dourada — copa ampla','Golden birch — Slender leaning crown':'Bétula dourada — copa inclinada'});
 Object.assign(names.pt,{'Cuihua-inspired fruit tree — Rounded orchard crown':'Cuihua — copa arredondada','Cuihua-inspired fruit tree — Upright fruit crown':'Cuihua — copa ereta','Cuihua-inspired fruit tree — Broad leaning orchard':'Cuihua — copa ampla inclinada'});
+Object.assign(names.pt,{
+ 'Ancestral tree — Original white crown':'Árvore ancestral — copa branca original',
+ 'Ancestral tree — White crown, individual 41':'Árvore ancestral — copa branca, indivíduo 41',
+ 'Ancestral tree — White crown, individual 42':'Árvore ancestral — copa branca, indivíduo 42',
+ 'Ancestral tree — Blue-lilac crown':'Árvore ancestral — copa azul-lilás',
+ 'Ancestral tree — Wine crown':'Árvore ancestral — copa vinho',
+ 'Ancestral tree — Pink crown':'Árvore ancestral — copa rosa'
+});
+Object.assign(copy.en,{portableTreePreview:'This lighter browser preview uses representative PBR colors and reduced tree/moss tessellation. Native bark/moss textures and border shading are preserved in the full editable Ignis scene in the download. The portable GLB also approximates those materials with colors. No botanical growth or physics runs in this preview.'});
+Object.assign(copy.pt,{portableTreePreview:'Esta prévia mais leve usa cores PBR aproximadas e tesselação reduzida da árvore e do musgo. As texturas nativas da casca e do musgo, incluindo suas bordas, estão preservadas na cena Ignis completa e editável do download. O GLB portátil também aproxima esses materiais com cores. A prévia não executa crescimento ou física botânica.'});
 const name=asset=>names[language]?.[asset.name]||asset.name;
 function feedback(){const key=phase==='live'?'hintLive':phase==='loading'?'loading':lastError?.message==='WEBGPU_UNAVAILABLE'?'unsupported':lastError?'previewError':'hintStart';$('viewer-status').textContent=d()[key];$('renderer-mode').textContent=d()[phase==='live'?'live':'nativeImage'];$('start-preview').querySelector('[data-text]').textContent=d()[lastError?'retry':'activate'];}
 function setLanguage(next,persist=true){
@@ -33,8 +43,9 @@ function selectionUI(){
  $('selected-description').textContent=d()[`${type}Description`];$('selected-version').textContent=selected.version;$('selected-size').textContent=mesh?`${(source.bytes/1024/1024).toFixed(1)} MiB · ZIP`:`${(source.bytes/1024).toFixed(1)} KiB · .ignis-material`;
  $('mesh-facts').hidden=!mesh;$('shape-controls').hidden=mesh;
  if(mesh){$('selected-geometry').textContent=d().meshStats(selected.mesh.vertices,selected.mesh.triangles);$('preview-quality').textContent=language==='pt'?`Prévia: ${selected.native_preview.triangles.toLocaleString('pt-BR')} triângulos · tesselação reduzida · ${(selected.preview.packet_bytes/1024/1024).toFixed(1)} MiB sob demanda`:`Preview: ${selected.native_preview.triangles.toLocaleString('en')} triangles · reduced tessellation · ${(selected.preview.packet_bytes/1024/1024).toFixed(1)} MiB on demand`;}
+ if(mesh&&selected.native_preview.material_appearance==='representative-pbr-colors')$('preview-quality').textContent+=language==='pt'?' · cores aproximadas':' · approximate colors';
  $('preview-quality').hidden=!mesh;
- $('download').querySelector('[data-text]').textContent=d()[mesh?(type==='trees'?'meshDownload':'genericMeshDownload'):'download'];$('recipe-note').textContent=d()[mesh?'meshNote':'recipeNote'];document.querySelector('.technical p').textContent=d()[mesh?'meshPreviewNote':'previewNote'];
+ $('download').querySelector('[data-text]').textContent=d()[mesh?(type==='trees'?'meshDownload':'genericMeshDownload'):'download'];$('recipe-note').textContent=d()[mesh?'meshNote':'recipeNote'];document.querySelector('.technical p').textContent=d()[mesh?(selected.native_preview.material_appearance==='representative-pbr-colors'?'portableTreePreview':'meshPreviewNote'):'previewNote'];
  $('fallback').src=`data/thumbs/${selected.id}.jpg`;$('fallback').alt=`${name(selected)} — ${d().nativeImage.toLowerCase()}`;
  $('download').href=mesh?source.url:`data/sources/${selected.id}.ignis-material`;$('download').download=mesh?`${selected.id}.zip`:`${selected.id}.ignis-material`;
  $('asset-source').href=`https://github.com/zerobytes/ignis-catalog/blob/${catalog.source_revision}/${selected.manifest}`;

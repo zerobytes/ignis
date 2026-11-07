@@ -142,3 +142,21 @@ botanical LOD sidecars loaded explicitly after the source/scene. Browser preview
 and GLB remain static; native LOD selection does not run in the browser. Fruit
 uses a generic red ellipsoid, not an exact Sunsettia sculpture. Reference fidelity
 remains subject to artistic review.
+
+## Prepared ancestral tree collection
+
+The ancestral collection adds six independently editable native tree packages.
+Their browser and portable GLB appearances use representative PBR colors;
+`native_preview.material_appearance` marks this explicitly in the portal. Native
+scenes retain texture maps, support coordinates, border shading and prepared
+moss geometry. The compact species/authoring definitions live in ignis-catalog,
+while complete generated sources/meshes remain versioned release downloads.
+
+The current17-mesh pinned preview set totals727,622,284compressed bytes. Runtime
+assembly accepts up to96MiB per compressed packet and768MiB for the complete
+pinned set, reserving space below Pages'1GiB site envelope for other static files.
+The browser's192MiB decoded packet guard is unchanged, as are exact transfer
+sizes, hashes, finite ranges and GPU-layout checks. Packets are fetched only when
+activated. These limits describe preview delivery, not artistic plant limits or
+an FPS guarantee. `build_web_catalog.py --meshes-only` preserves already deployed
+material packets/shader bytes and refuses material metadata changes.

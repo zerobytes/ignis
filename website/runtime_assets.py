@@ -26,11 +26,11 @@ def declarations(root):
                 or url.scheme != 'https' or url.netloc != 'github.com' or url.query or url.fragment
                 or not url.path.startswith('/zerobytes/ignis-catalog/releases/download/')
                 or '/latest/' in url.path or not re.fullmatch('[a-f0-9]{64}', item['sha256'])
-                or type(item['bytes']) is not int or not 0 < item['bytes'] <= 64 * 1024 * 1024):
+                or type(item['bytes']) is not int or not 0 < item['bytes'] <= 96 * 1024 * 1024):
             raise RuntimeError(f'Invalid runtime preview declaration: {name}')
         total += item['bytes']
-    if total > 384 * 1024 * 1024:
-        raise RuntimeError('Runtime preview snapshot exceeds384MiB')
+    if total > 768 * 1024 * 1024:
+        raise RuntimeError('Runtime preview snapshot exceeds768MiB')
     return data['files']
 
 
