@@ -1,6 +1,6 @@
 // Browser surface host for the unmodified Ignis scene shader and native GPU packets.
 // This host does not implement a second material evaluator or approximate the recipe.
-const cap = 560_000;
+const cap = 4_000_000;
 const normalize = a => {const n=Math.hypot(...a); return a.map(v=>v/n);};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const dot=(a,b)=>a.reduce((n,v,i)=>n+v*b[i],0);
@@ -16,6 +16,13 @@ function camera(yaw,pitch,distance,aspect,center=[0,0,0],radius=1){
  const projection=new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,n/(far-n),-1,0,0,n*far/(far-n),0]);
  return {matrix:multiply(projection,view),eye,x,y,z,n,far,f,aspect};
 }
+function shadowCamera(direction,center,radius){
+ const z=normalize(direction.map(v=>-v)),x=normalize(cross(Math.abs(z[1])>.95?[0,0,1]:[0,1,0],z)),y=cross(z,x);
+ const eye=center.map((v,i)=>v+z[i]*2.1*radius),extent=radius*1.05,n=.001*radius,far=4.2*radius;
+ const view=new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1]);
+ const projection=new Float32Array([1/extent,0,0,0,0,1/extent,0,0,0,0,1/(n-far),0,0,0,n/(n-far),1]);return multiply(projection,view);
+}
+
 function geometry(shape,plane){
  const vertices=[],indices=[];
  const vertex=(p,n,u,v)=>{const rest=plane==='xz'?[u,0,v]:plane==='yz'?[0,u,v]:[u,v,0];vertices.push(...p,...n,1,1,1,...rest,0,0,0,0);};
@@ -35,7 +42,8 @@ function geometry(shape,plane){
  return {vertices:data,indices:new Uint32Array(indices)};
 }
 async function verified(url,hash,signal,expected=null,max=1024*1024){
- const response=await fetch(url,{signal});if(!response.ok)throw new Error(`HTTP ${response.status}`);
+ const resource=new URL(url,import.meta.url);resource.searchParams.set('sha256',hash);
+ const response=await fetch(resource,{signal});if(!response.ok)throw new Error(`HTTP ${response.status}`);
  const length=Number(response.headers.get('content-length'));
  if(length>max)throw new Error('Preview resource exceeds budget');
  const reader=response.body.getReader(),chunks=[];let size=0;
@@ -51,26 +59,33 @@ export class IgnisPreview{
   if(!navigator.gpu)throw new Error('WEBGPU_UNAVAILABLE');
   const adapter=await navigator.gpu.requestAdapter({powerPreference:'low-power'});
   if(!adapter)throw new Error('WEBGPU_UNAVAILABLE');
-  const device=await adapter.requestDevice();
+  const device=await adapter.requestDevice({requiredLimits:{maxBufferSize:Math.min(adapter.limits.maxBufferSize,1024*1024*1024),maxStorageBufferBindingSize:adapter.limits.maxStorageBufferBindingSize}});
   let host;
   try{
    host=new IgnisPreview(canvas,device,onError);
    const bytes=await verified(new URL('data/ignis.wgsl',import.meta.url),manifest.shader_sha256);
-   const shader=device.createShaderModule({label:'Ignis native scene shader',code:new TextDecoder().decode(bytes)});
+   const shader=device.createShaderModule({label:'Ignis native scene shader',code:'diagnostic(off, derivative_uniformity);\n'+new TextDecoder().decode(bytes)});
    const compilation=await shader.getCompilationInfo();const errors=compilation.messages.filter(m=>m.type==='error');
    if(errors.length)throw new Error(errors.map(m=>`${m.lineNum}:${m.linePos} ${m.message}`).join('\n'));
    const format=navigator.gpu.getPreferredCanvasFormat();host.format=`${format}-srgb`;
    host.context.configure({device,format,viewFormats:[host.format],alphaMode:'opaque'});
-   host.shader=shader;
-   host.pipeline=await device.createRenderPipelineAsync({label:'Ignis material preview',layout:'auto',vertex:{module:shader,entryPoint:'vs_main',buffers:[{arrayStride:64,attributes:[{shaderLocation:0,offset:0,format:'float32x3'},{shaderLocation:1,offset:12,format:'float32x3'},{shaderLocation:2,offset:24,format:'float32x3'},{shaderLocation:3,offset:36,format:'float32x3'},{shaderLocation:4,offset:48,format:'uint32'},{shaderLocation:5,offset:52,format:'float32x3'}]}]},fragment:{module:shader,entryPoint:'fs_main',targets:[{format:host.format}]},primitive:{topology:'triangle-list',cullMode:'none'},depthStencil:{format:'depth32float',depthWriteEnabled:true,depthCompare:'greater'}});
+   host.shader=shader;host.shaderHash=manifest.shader_sha256;host.runtimeBase=manifest.runtime_base?new URL('catalog/',manifest.runtime_base):new URL('.',import.meta.url);
+   if(manifest.environment)await host.loadEnvironment(manifest.environment);
+
+   host.pipeline=await device.createRenderPipelineAsync({label:'Ignis material preview',layout:host.layout,vertex:{module:shader,entryPoint:'vs_main',buffers:[{arrayStride:64,attributes:[{shaderLocation:0,offset:0,format:'float32x3'},{shaderLocation:1,offset:12,format:'float32x3'},{shaderLocation:2,offset:24,format:'float32x3'},{shaderLocation:3,offset:36,format:'float32x3'},{shaderLocation:4,offset:48,format:'uint32'},{shaderLocation:5,offset:52,format:'float32x3'}]}]},fragment:{module:shader,entryPoint:'fs_main',constants:{anatomical_material:false},targets:[{format:host.format}]},primitive:{topology:'triangle-list',cullMode:'none'},multisample:{count:4},depthStencil:{format:'depth32float',depthWriteEnabled:true,depthCompare:'greater'}});
    return host;
   }catch(error){if(host)host.destroy();else device.destroy();throw error;}
  }
  constructor(canvas,device,onError){
   this.canvas=canvas;this.device=device;this.context=canvas.getContext('webgpu');if(!this.context)throw new Error('WEBGPU_UNAVAILABLE');
+  const visibility=GPUShaderStage.FRAGMENT;
+  const bindings=[{binding:0,visibility:visibility|GPUShaderStage.VERTEX,buffer:{type:'uniform'}},{binding:1,visibility,texture:{sampleType:'depth'}},{binding:2,visibility,sampler:{type:'comparison'}},{binding:3,visibility,buffer:{type:'read-only-storage'}},...([4,5].map(binding=>({binding,visibility,texture:{sampleType:'float',viewDimension:'cube'}}))),{binding:6,visibility,texture:{sampleType:'float'}},{binding:7,visibility,sampler:{type:'filtering'}},{binding:8,visibility,buffer:{type:'read-only-storage'}}];
+  this.layout=device.createPipelineLayout({bindGroupLayouts:[device.createBindGroupLayout({entries:bindings})]});
+  this.shadowLayout=device.createPipelineLayout({bindGroupLayouts:[device.createBindGroupLayout({entries:[bindings[0],bindings[3],bindings[8]]})]});
+  this.exactPipelines=new Map();this.shadowPipelines=new Map();
   this.onError=onError;this.yaw=.35;this.pitch=.12;this.distance=3.6;this.light=35;this.shape='sphere';this.plane='xy';this.frame=0;this.disposed=false;this.visible=true;this.resources=[];this.parts=[];this.center=[0,0,0];this.radius=1;this.mode='material';this.target=[0,0,0];this.navigation='rotate';
   this.uniform=device.createBuffer({size:464,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
-  this.shadow=device.createTexture({size:[1,1],format:'depth32float',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.RENDER_ATTACHMENT});
+  this.shadow=device.createTexture({size:[2048,2048],format:'depth32float',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.RENDER_ATTACHMENT});
   this.cube=device.createTexture({size:[1,1,6],format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING});
   this.lut=device.createTexture({size:[1,1],format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING});
   this.abort=new AbortController();const options={signal:this.abort.signal};const pointers=new Map();
@@ -106,11 +121,22 @@ export class IgnisPreview{
   device.lost.then(info=>{if(!this.disposed){this.destroy();onError(new Error(`GPU_DEVICE_LOST: ${info.reason}`));}});
   device.addEventListener('uncapturederror',event=>{event.preventDefault();if(!this.disposed){this.destroy();onError(event.error);}},{signal:this.abort.signal});
  }
+ async loadEnvironment(environment){
+  if(environment.specular?.length!==7)throw new Error('Invalid native environment');
+  this.cube.destroy();this.lut.destroy();
+  this.cube=this.device.createTexture({size:[64,64,6],mipLevelCount:7,format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST});
+  this.diffuse=this.device.createTexture({size:[8,8,6],format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST});
+  this.lut=this.device.createTexture({size:[64,64],format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST});
+  for(let i=0;i<7;i++){const entry=environment.specular[i],size=64>>i;const data=await verified(new URL(entry.path,import.meta.url),entry.sha256,undefined,size*size*24);this.device.queue.writeTexture({texture:this.cube,mipLevel:i},data,{bytesPerRow:size*4,rowsPerImage:size},[size,size,6]);}
+  for(const [entry,texture,size,layers] of [[environment.diffuse,this.diffuse,8,6],[environment.lut,this.lut,64,1]]){const data=await verified(new URL(entry.path,import.meta.url),entry.sha256,undefined,size*size*4*layers);this.device.queue.writeTexture({texture},data,{bytesPerRow:size*4,rowsPerImage:size},[size,size,layers]);}
+  this.environmentIntensity=.45;
+ }
  buffer(data,usage){const b=this.device.createBuffer({size:data.byteLength,usage:usage|GPUBufferUsage.COPY_DST});this.device.queue.writeBuffer(b,0,data);return b;}
- groupFor(pipeline,material,fields){return this.device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.uniform}},{binding:1,resource:this.shadow.createView()},{binding:2,resource:this.device.createSampler({compare:'less-equal'})},{binding:3,resource:{buffer:material}},{binding:4,resource:this.cube.createView({dimension:'cube'})},{binding:5,resource:this.cube.createView({dimension:'cube'})},{binding:6,resource:this.lut.createView()},{binding:7,resource:this.device.createSampler({magFilter:'linear',minFilter:'linear'})},{binding:8,resource:{buffer:fields}}]});}
+ groupFor(pipeline,material,fields){return this.device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.uniform}},{binding:1,resource:this.shadow.createView()},{binding:2,resource:this.device.createSampler({compare:'less-equal'})},{binding:3,resource:{buffer:material}},{binding:4,resource:this.cube.createView({dimension:'cube'})},{binding:5,resource:(this.diffuse||this.cube).createView({dimension:'cube'})},{binding:6,resource:this.lut.createView()},{binding:7,resource:this.device.createSampler({magFilter:'linear',minFilter:'linear',mipmapFilter:'linear'})},{binding:8,resource:{buffer:fields}}]});}
  async selectMesh(asset,signal){
+  if(asset.preview.parts)return this.selectExactMesh(asset,signal);
   const preview=asset.preview;
-  const compressed=await verified(new URL(preview.path,import.meta.url),preview.packet_sha256,signal,preview.packet_bytes,96*1024*1024);
+  const compressed=await verified(new URL(preview.path,this.runtimeBase),preview.packet_sha256,signal,preview.packet_bytes,96*1024*1024);
   if(!('DecompressionStream' in window))throw new Error('GZIP_UNAVAILABLE');
   if(!Number.isInteger(preview.decoded_bytes)||preview.decoded_bytes<16||preview.decoded_bytes>192*1024*1024)throw new Error('Mesh size outside budget');
   const packet=new Uint8Array(preview.decoded_bytes);let size=0;
@@ -127,7 +153,7 @@ export class IgnisPreview{
   if(!Array.isArray(min)||!Array.isArray(max)||min.length!==3||max.length!==3||min.some((v,i)=>!Number.isFinite(v)||!Number.isFinite(max[i])||v>max[i]))throw new Error('Invalid mesh bounds');
   const center=min.map((v,i)=>(v+max[i])/2),radius=Math.hypot(...min.map((v,i)=>(max[i]-v)/2));
   if(!Number.isFinite(radius)||radius<=0)throw new Error('Empty mesh bounds');
-  if(!this.meshPipeline)this.meshPipeline=await this.device.createRenderPipelineAsync({label:'Ignis static mesh preview',layout:'auto',vertex:{module:this.shader,entryPoint:'vs_shared_position_coordinates',buffers:[{arrayStride:24,attributes:[{shaderLocation:0,offset:0,format:'float32x3'},{shaderLocation:1,offset:12,format:'float32x3'}]},{arrayStride:80,stepMode:'instance',attributes:[{shaderLocation:6,offset:0,format:'float32x4'},{shaderLocation:7,offset:16,format:'float32x4'},{shaderLocation:8,offset:32,format:'float32x4'},{shaderLocation:9,offset:48,format:'float32x4'},{shaderLocation:10,offset:64,format:'float32x3'},{shaderLocation:11,offset:76,format:'uint32'}]}]},fragment:{module:this.shader,entryPoint:'fs_main',targets:[{format:this.format}]},primitive:{topology:'triangle-list',cullMode:'none'},depthStencil:{format:'depth32float',depthWriteEnabled:true,depthCompare:'greater'}});
+  if(!this.meshPipeline)this.meshPipeline=await this.device.createRenderPipelineAsync({label:'Ignis static mesh preview',layout:this.layout,vertex:{module:this.shader,entryPoint:'vs_shared_position_coordinates',buffers:[{arrayStride:24,attributes:[{shaderLocation:0,offset:0,format:'float32x3'},{shaderLocation:1,offset:12,format:'float32x3'}]},{arrayStride:80,stepMode:'instance',attributes:[{shaderLocation:6,offset:0,format:'float32x4'},{shaderLocation:7,offset:16,format:'float32x4'},{shaderLocation:8,offset:32,format:'float32x4'},{shaderLocation:9,offset:48,format:'float32x4'},{shaderLocation:10,offset:64,format:'float32x3'},{shaderLocation:11,offset:76,format:'uint32'}]}]},fragment:{module:this.shader,entryPoint:'fs_main',targets:[{format:this.format}]},primitive:{topology:'triangle-list',cullMode:'none'},multisample:{count:4},depthStencil:{format:'depth32float',depthWriteEnabled:true,depthCompare:'greater'}});
   if(signal?.aborted||this.disposed)throw new DOMException('Aborted','AbortError');
   const resources=[],parts=[];let group;
   const buffer=(bytes,usage)=>{const b=this.buffer(bytes,usage);resources.push(b);return b;};
@@ -136,7 +162,45 @@ export class IgnisPreview{
    group=this.groupFor(this.meshPipeline,material,fields);
    for(const part of metadata.parts){if(!Number.isInteger(part.vertices)||part.vertices<=0||!Number.isInteger(part.indices)||part.indices<=0||part.indices%3)throw new Error('Invalid mesh counts');parts.push({vertex:buffer(slice(part.vertex_offset,part.vertices*24),GPUBufferUsage.VERTEX),index:buffer(slice(part.index_offset,part.indices*4),GPUBufferUsage.INDEX),instance:buffer(slice(part.instance_offset,80),GPUBufferUsage.VERTEX),count:part.indices});}
   }catch(error){resources.forEach(r=>r.destroy());throw error;}
-  this.resources.forEach(r=>r.destroy());this.resources=resources;this.parts=parts;this.group=group;this.mode='mesh';this.asset=asset.id;this.center=center;this.radius=radius;this.reset();
+  this.resources.forEach(r=>r.destroy());this.resources=resources;this.parts=parts;this.group=group;this.exact=false;this.mode='mesh';this.asset=asset.id;this.center=center;this.radius=radius;this.reset();
+ }
+ async selectExactMesh(asset,signal){
+  if(asset.native_preview.shader_sha256!==this.shaderHash)throw new Error('Native asset and renderer shader differ');
+  const resources=[],parts=[];let low=[Infinity,Infinity,Infinity],high=[-Infinity,-Infinity,-Infinity];
+  const instanceLayout={arrayStride:80,stepMode:'instance',attributes:[{shaderLocation:6,offset:0,format:'float32x4'},{shaderLocation:7,offset:16,format:'float32x4'},{shaderLocation:8,offset:32,format:'float32x4'},{shaderLocation:9,offset:48,format:'float32x4'},{shaderLocation:10,offset:64,format:'float32x3'},{shaderLocation:11,offset:76,format:'uint32'}]};
+  const vertexLayout={arrayStride:48,attributes:[{shaderLocation:0,offset:0,format:'float32x3'},{shaderLocation:1,offset:12,format:'float32x3'},{shaderLocation:3,offset:24,format:'float32x3'},{shaderLocation:5,offset:36,format:'float32x3'}]};
+  if(!Array.isArray(asset.preview.parts)||!asset.preview.parts.length||asset.preview.parts.length>128)throw new Error('Invalid native part list');
+  try{
+   for(const entry of asset.preview.parts){
+    this.canvas.dispatchEvent(new CustomEvent('preview-progress',{detail:{id:asset.id,index:parts.length+1,total:asset.preview.parts.length}}));
+    if(signal?.aborted||this.disposed)throw new DOMException('Aborted','AbortError');
+    const compressed=await verified(new URL(entry.path,this.runtimeBase),entry.packet_sha256,signal,entry.packet_bytes,256*1024*1024);
+    if(!Number.isSafeInteger(entry.decoded_bytes)||entry.decoded_bytes<16||entry.decoded_bytes>768*1024*1024)throw new Error('Native part exceeds memory budget');
+    const packet=new Uint8Array(entry.decoded_bytes);let size=0;
+    const reader=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+    try{while(true){if(signal?.aborted)throw new DOMException('Aborted','AbortError');const {done,value}=await reader.read();if(done)break;if(size+value.length>packet.length)throw new Error('Native part size mismatch');packet.set(value,size);size+=value.length;}}catch(error){await reader.cancel();throw error;}
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',packet)),b=>b.toString(16).padStart(2,'0')).join('');
+    if(size!==packet.length||digest!==entry.decoded_sha256)throw new Error('Native part integrity failure');
+    const header=new DataView(packet.buffer),jsonBytes=header.getUint32(8,true),dataBytes=header.getUint32(12,true);
+    if(header.getUint32(0,true)!==0x504d4749||header.getUint32(4,true)!==2||jsonBytes%4||jsonBytes>65536||16+jsonBytes+dataBytes!==size)throw new Error('Unsupported native part');
+    const meta=JSON.parse(new TextDecoder().decode(packet.subarray(16,16+jsonBytes))),data=packet.subarray(16+jsonBytes);
+    if(![48,144].includes(meta.vertex_stride)||meta.material_stride!==1392||meta.material_bytes!==1392||meta.program_offset!==1392||meta.program_bytes<16||meta.program_bytes%16||meta.parts?.length!==1)throw new Error('Invalid native layout');
+    const buffer=(offset,length,usage)=>{if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(length)||offset<0||length<=0||offset%4||offset+length>data.length||length>this.device.limits.maxBufferSize||(usage===GPUBufferUsage.STORAGE&&length>this.device.limits.maxStorageBufferBindingSize))throw new Error('Native buffer exceeds device capacity');const b=this.buffer(data.subarray(offset,offset+length),usage);resources.push(b);return b;};
+    const prepared=meta.prepared_anatomy===true,key=`${meta.vertex_stride}:${!!meta.fixed_recipe}:${!!meta.uniform_material}`;
+    const layout=prepared?{arrayStride:144,attributes:[...vertexLayout.attributes,{shaderLocation:12,offset:48,format:'float32x4'},{shaderLocation:13,offset:64,format:'float32x4'},{shaderLocation:14,offset:80,format:'float32x4'},{shaderLocation:15,offset:96,format:'float32x4'},{shaderLocation:2,offset:112,format:'float32x4'},{shaderLocation:4,offset:128,format:'float32x4'}]}:vertexLayout;
+    if(prepared!==(meta.vertex_stride===144))throw new Error('Invalid native chart layout');
+    if(!this.exactPipelines.has(key))this.exactPipelines.set(key,await this.device.createRenderPipelineAsync({label:'Native catalog surface',layout:this.layout,vertex:{module:this.shader,entryPoint:prepared?'vs_shared_anatomy':'vs_shared_compact',buffers:[layout,instanceLayout]},fragment:{module:this.shader,entryPoint:'fs_main',constants:{fixed_recipe:!!meta.fixed_recipe,uniform_material:!!meta.uniform_material,anatomical_material:false,prepared_anatomy:prepared},targets:[{format:this.format}]},primitive:{topology:'triangle-list',cullMode:'none'},multisample:{count:4},depthStencil:{format:'depth32float',depthWriteEnabled:true,depthCompare:'greater'}}));
+    if(!this.shadowPipelines.has(key))this.shadowPipelines.set(key,await this.device.createRenderPipelineAsync({label:'Native catalog shadow',layout:this.shadowLayout,vertex:{module:this.shader,entryPoint:'vs_shared_shadow_compact',buffers:[layout,instanceLayout]},fragment:{module:this.shader,entryPoint:'fs_shadow',constants:{fixed_recipe:!!meta.fixed_recipe,anatomical_material:false},targets:[]},primitive:{topology:'triangle-list',cullMode:'none'},depthStencil:{format:'depth32float',depthWriteEnabled:true,depthCompare:'less'}}));
+    const pipeline=this.exactPipelines.get(key),shadowPipeline=this.shadowPipelines.get(key);
+    const material=buffer(0,1392,GPUBufferUsage.STORAGE),fields=buffer(meta.program_offset,meta.program_bytes,GPUBufferUsage.STORAGE),group=this.groupFor(pipeline,material,fields);
+    const part=meta.parts[0];if(!Number.isSafeInteger(part.vertices)||part.vertices<=0||!Number.isSafeInteger(part.indices)||part.indices<=0||part.indices%3)throw new Error('Invalid native counts');
+    for(let i=0;i<3;i++){const a=meta.bounds?.min?.[i],b=meta.bounds?.max?.[i];if(!Number.isFinite(a)||!Number.isFinite(b)||a>b)throw new Error('Invalid native bounds');low[i]=Math.min(low[i],a);high[i]=Math.max(high[i],b);}
+    parts.push({vertex:buffer(part.vertex_offset,part.vertices*meta.vertex_stride,GPUBufferUsage.VERTEX),index:buffer(part.index_offset,part.indices*4,GPUBufferUsage.INDEX),instance:buffer(part.instance_offset,80,GPUBufferUsage.VERTEX),count:part.indices,group,pipeline,shadowPipeline,shadowGroup:this.device.createBindGroup({layout:shadowPipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.uniform}},{binding:3,resource:{buffer:material}},{binding:8,resource:{buffer:fields}}]})});
+    await this.device.queue.onSubmittedWorkDone();
+   }
+   if(signal?.aborted||this.disposed)throw new DOMException('Aborted','AbortError');
+  }catch(error){resources.forEach(r=>r.destroy());throw error;}
+  this.resources.forEach(r=>r.destroy());this.resources=resources;this.parts=parts;this.group=parts[0].group;this.mode='mesh';this.exact=true;this.shadowKey=null;this.asset=asset.id;this.center=low.map((v,i)=>(v+high[i])/2);this.radius=Math.hypot(...low.map((v,i)=>(high[i]-v)/2));this.reset();
  }
  async select(asset,signal){
   if(asset.kind==='mesh')return this.selectMesh(asset,signal);
@@ -147,7 +211,7 @@ export class IgnisPreview{
   const material=this.buffer(new Uint8Array(packet,16,table),GPUBufferUsage.STORAGE);
   const fields=this.buffer(new Uint8Array(packet,16+table,program),GPUBufferUsage.STORAGE);
   const resources=[material,fields];let group;
-  try{group=this.device.createBindGroup({layout:this.pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.uniform}},{binding:1,resource:this.shadow.createView()},{binding:2,resource:this.device.createSampler({compare:'less-equal'})},{binding:3,resource:{buffer:material}},{binding:4,resource:this.cube.createView({dimension:'cube'})},{binding:5,resource:this.cube.createView({dimension:'cube'})},{binding:6,resource:this.lut.createView()},{binding:7,resource:this.device.createSampler({magFilter:'linear',minFilter:'linear'})},{binding:8,resource:{buffer:fields}}]});}catch(e){resources.forEach(r=>r.destroy());throw e;}
+  try{group=this.device.createBindGroup({layout:this.pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.uniform}},{binding:1,resource:this.shadow.createView()},{binding:2,resource:this.device.createSampler({compare:'less-equal'})},{binding:3,resource:{buffer:material}},{binding:4,resource:this.cube.createView({dimension:'cube'})},{binding:5,resource:(this.diffuse||this.cube).createView({dimension:'cube'})},{binding:6,resource:this.lut.createView()},{binding:7,resource:this.device.createSampler({magFilter:'linear',minFilter:'linear',mipmapFilter:'linear'})},{binding:8,resource:{buffer:fields}}]});}catch(e){resources.forEach(r=>r.destroy());throw e;}
   this.resources.forEach(r=>r.destroy());this.resources=resources;this.group=group;this.asset=asset.id;this.plane=asset.preview.plane;this.parts=[];const changed=this.mode!=='material';this.mode='material';this.center=[0,0,0];this.radius=1;if(changed)this.reset();
   this.setShape(this.shape);this.invalidate();
  }
@@ -160,7 +224,7 @@ export class IgnisPreview{
   const pixelX=Math.floor(u*this.canvas.width),pixelY=Math.floor(v*this.canvas.height);
   // Read one visible depth on demand; no retained CPU mesh or per-frame readback.
   if(!this.focusPipeline)this.focusPipeline=this.device.createComputePipeline({layout:'auto',compute:{module:this.device.createShaderModule({code:`
-   @group(0) @binding(0) var depth: texture_depth_2d;
+   @group(0) @binding(0) var depth: texture_depth_multisampled_2d;
    @group(0) @binding(1) var<uniform> pixel: vec2u;
    @group(0) @binding(2) var<storage,read_write> result: array<f32>;
    @compute @workgroup_size(1) fn main(){result[0]=textureLoad(depth,vec2i(pixel),0);}
@@ -192,13 +256,13 @@ export class IgnisPreview{
  invalidate(){if(!this.frame&&!this.disposed&&this.visible&&!document.hidden)this.frame=requestAnimationFrame(()=>{this.frame=0;try{this.draw();}catch(error){this.destroy();this.onError(error);}});}
  draw(){
   if(!this.group||this.disposed)return;
-  const rect=this.canvas.getBoundingClientRect();const dpr=Math.min(devicePixelRatio||1,1.5);let w=Math.max(1,Math.round(rect.width*dpr)),h=Math.max(1,Math.round(rect.height*dpr));const factor=Math.min(1,Math.sqrt(cap/(w*h)),this.device.limits.maxTextureDimension2D/Math.max(w,h));w=Math.max(1,Math.floor(w*factor));h=Math.max(1,Math.floor(h*factor));
-  if(this.canvas.width!==w||this.canvas.height!==h||!this.depth){this.canvas.width=w;this.canvas.height=h;this.depth?.destroy();this.depth=this.device.createTexture({size:[w,h],format:'depth32float',usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.TEXTURE_BINDING});}
+  const rect=this.canvas.getBoundingClientRect();const dpr=Math.min(devicePixelRatio||1,2);let w=Math.max(1,Math.round(rect.width*dpr)),h=Math.max(1,Math.round(rect.height*dpr));const factor=Math.min(1,Math.sqrt(cap/(w*h)),this.device.limits.maxTextureDimension2D/Math.max(w,h));w=Math.max(1,Math.floor(w*factor));h=Math.max(1,Math.floor(h*factor));
+  if(this.canvas.width!==w||this.canvas.height!==h||!this.depth){this.canvas.width=w;this.canvas.height=h;this.depth?.destroy();this.colorMsaa?.destroy();this.colorMsaa=this.device.createTexture({size:[w,h],format:this.format,sampleCount:4,usage:GPUTextureUsage.RENDER_ATTACHMENT});this.depth=this.device.createTexture({size:[w,h],format:'depth32float',sampleCount:4,usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.TEXTURE_BINDING});}
   const view=camera(this.yaw,this.pitch,this.distance,w/h,this.target,this.radius);this.lastCamera=view;const {matrix,eye}=view;const globals=new Float32Array(116);globals.set(matrix);globals.set([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],16);
-  const angle=this.light*Math.PI/180;globals.set([-Math.sin(angle),-.65,-Math.cos(angle),.22],32);globals.set([...eye,0],40);globals.set([0,0,1,1],44);globals.set([1,1,1,1],112);this.device.queue.writeBuffer(this.uniform,0,globals);
-  const encoder=this.device.createCommandEncoder();const pass=encoder.beginRenderPass({colorAttachments:[{view:this.context.getCurrentTexture().createView({format:this.format}),clearValue:{r:.022,g:.029,b:.025,a:1},loadOp:'clear',storeOp:'store'}],depthStencilAttachment:{view:this.depth.createView(),depthClearValue:0,depthLoadOp:'clear',depthStoreOp:'store'}});
-  pass.setPipeline(this.mode==='mesh'?this.meshPipeline:this.pipeline);pass.setBindGroup(0,this.group);if(this.mode==='mesh'){for(const part of this.parts){pass.setVertexBuffer(0,part.vertex);pass.setVertexBuffer(1,part.instance);pass.setIndexBuffer(part.index,'uint32');pass.drawIndexed(part.count);}}else{pass.setVertexBuffer(0,this.vertex);pass.setIndexBuffer(this.index,'uint32');pass.drawIndexed(this.count);}pass.end();this.device.queue.submit([encoder.finish()]);this.draws=(this.draws||0)+1;this.drawnAsset=this.asset;
+  const angle=this.light*Math.PI/180;const light=[-Math.sin(angle),-.65,-Math.cos(angle)];globals.set([...light,.3],32);const shadowed=this.mode==='mesh'&&this.exact;if(shadowed){globals.set(shadowCamera(light,this.center,this.radius),16);globals.set([1,.0005,1/2048,1],36);}globals.set([...eye,0],40);globals.set([this.environmentIntensity||0,6,1,1],44);globals.set([1,1,1,1],112);this.device.queue.writeBuffer(this.uniform,0,globals);
+  const encoder=this.device.createCommandEncoder();if(shadowed&&this.shadowKey!==`${this.asset}:${this.light}`){const shadow=encoder.beginRenderPass({colorAttachments:[],depthStencilAttachment:{view:this.shadow.createView(),depthClearValue:1,depthLoadOp:'clear',depthStoreOp:'store'}});for(const part of this.parts){shadow.setPipeline(part.shadowPipeline);shadow.setBindGroup(0,part.shadowGroup);shadow.setVertexBuffer(0,part.vertex);shadow.setVertexBuffer(1,part.instance);shadow.setIndexBuffer(part.index,'uint32');shadow.drawIndexed(part.count);}shadow.end();this.shadowKey=`${this.asset}:${this.light}`;}const pass=encoder.beginRenderPass({colorAttachments:[{view:this.colorMsaa.createView(),resolveTarget:this.context.getCurrentTexture().createView({format:this.format}),clearValue:{r:.022,g:.029,b:.025,a:1},loadOp:'clear',storeOp:'store'}],depthStencilAttachment:{view:this.depth.createView(),depthClearValue:0,depthLoadOp:'clear',depthStoreOp:'store'}});
+  pass.setPipeline(this.mode==='mesh'?(this.exact?this.parts[0].pipeline:this.meshPipeline):this.pipeline);pass.setBindGroup(0,this.group);if(this.mode==='mesh'){for(const part of this.parts){if(part.group){pass.setPipeline(part.pipeline);pass.setBindGroup(0,part.group);}pass.setVertexBuffer(0,part.vertex);pass.setVertexBuffer(1,part.instance);pass.setIndexBuffer(part.index,'uint32');pass.drawIndexed(part.count);}}else{pass.setVertexBuffer(0,this.vertex);pass.setIndexBuffer(this.index,'uint32');pass.drawIndexed(this.count);}pass.end();this.device.queue.submit([encoder.finish()]);this.draws=(this.draws||0)+1;this.drawnAsset=this.asset;
  }
  diagnostics(){return {asset:this.asset,drawnAsset:this.drawnAsset,draws:this.draws||0,pendingFrame:!!this.frame,width:this.canvas.width,height:this.canvas.height,shape:this.mode==='mesh'?'mesh':this.shape,parts:this.parts.length,radius:this.radius,disposed:this.disposed};}
- destroy(){if(this.disposed)return;this.disposed=true;cancelAnimationFrame(this.frame);this.frame=0;this.abort.abort();this.resize?.disconnect();this.observer?.disconnect();for(const r of [...this.resources,this.vertex,this.index,this.depth,this.uniform,this.shadow,this.cube,this.lut])r?.destroy();this.context?.unconfigure();this.device.destroy();}
+ destroy(){if(this.disposed)return;this.disposed=true;cancelAnimationFrame(this.frame);this.frame=0;this.abort.abort();this.resize?.disconnect();this.observer?.disconnect();for(const r of [...this.resources,this.vertex,this.index,this.depth,this.colorMsaa,this.uniform,this.shadow,this.cube,this.diffuse,this.lut])r?.destroy();this.context?.unconfigure();this.device.destroy();}
 }

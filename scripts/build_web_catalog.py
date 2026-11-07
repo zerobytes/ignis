@@ -14,6 +14,21 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def native_parts(asset,destination,runtime,cache):
+    parts=[]
+    for part in asset['native_preview']['parts']:
+        file=next(f for f in asset['files'] if f.get('url','').endswith('/'+part['file']))
+        if file['sha256']!=part['packet_sha256'] or file['bytes']!=part['packet_bytes']:raise RuntimeError('Native part manifest mismatch')
+        relative='catalog/data/meshes/'+part['file']
+        runtime[relative]={k:file[k] for k in ['url','bytes','sha256']}
+        parts.append(dict(part,path='data/meshes/'+part['file']))
+        if cache:
+            local=cache/part['file']
+            if local.stat().st_size!=file['bytes'] or sha(local.read_bytes())!=file['sha256']:raise RuntimeError('Native cache integrity failure')
+            (destination/'meshes').mkdir(exist_ok=True)
+            shutil.copyfile(local,destination/'meshes'/part['file'])
+    asset['preview']=dict(parts=parts,packet_bytes=sum(p['packet_bytes'] for p in parts))
+
 def refresh_meshes(catalog, data, revision, cache):
     """Preserve a deployed material/shader snapshot while adding mesh releases."""
     destination=ROOT/'website/dist/catalog/data'
@@ -22,14 +37,22 @@ def refresh_meshes(catalog, data, revision, cache):
     fresh_materials={a['id'] for a in data['assets'] if a['kind']=='material'}
     if fresh_materials!={a['id'] for a in previous['assets'] if a['kind']=='material'}:
         raise RuntimeError('Material set changed; use a full catalog build')
+    if any(a['kind']=='mesh' and a['native_preview']['shader_sha256']!=previous['shader_sha256'] for a in data['assets']):raise RuntimeError('Mesh shader differs; use a full catalog build with matching native exporters')
     records=[];runtime={}
     for asset in data['assets']:
         if asset['kind']=='material':
             prior=old[asset['id']].copy();prior.pop('preview',None)
             if prior!=asset:raise RuntimeError('Material metadata changed; use a full catalog build')
             records.append(old[asset['id']]);continue
-        if asset['kind']!='mesh' or asset['native_preview']['format']!='IGMP1+gzip':
+        if asset['kind']!='mesh' or asset['native_preview']['format'] not in {'IGMP1+gzip','IGMP2+gzip-parts'}:
             raise RuntimeError('Unsupported mesh-only catalog record')
+        if asset['native_preview']['format']=='IGMP2+gzip-parts':
+            native_parts(asset,destination,runtime,cache)
+            thumb=next(f for f in asset['files'] if f['media_type']=='image/jpeg')
+            payload=(catalog/thumb['path']).read_bytes()
+            if sha(payload)!=thumb['sha256']:raise RuntimeError('Thumbnail integrity failure')
+            (destination/'thumbs'/f"{asset['id']}.jpg").write_bytes(payload)
+            asset['preview']['thumbnail_sha256']=thumb['sha256'];records.append(asset);continue
         packet=next(f for f in asset['files'] if f['media_type']=='application/vnd.ignis.mesh-preview+gzip')
         thumb=next(f for f in asset['files'] if f['media_type']=='image/jpeg')
         payload=(catalog/thumb['path']).read_bytes()
@@ -66,6 +89,8 @@ def main():
     records = data['assets']
     if not 1 <= len(records) <= 500:
         raise RuntimeError('Unsupported catalog size')
+    if any(a['kind']=='mesh' and (a['native_preview']['format']!='IGMP2+gzip-parts' or a['native_preview']['quality']!='full-native' or a['native_preview']['material_appearance']!='native-materials') for a in records):
+        raise RuntimeError('Catalog previews must preserve native geometry/materials; run build_exact_catalog_previews.py for every mesh first')
     if args.meshes_only:
         refresh_meshes(catalog,data,revision,args.mesh_cache)
         return
@@ -81,6 +106,13 @@ def main():
             if asset['license'] != 'CC-BY-4.0':
                 raise RuntimeError('Explicit CC BY asset license required')
             if asset['kind'] == 'mesh':
+                if asset['native_preview']['format']=='IGMP2+gzip-parts':
+                    native_parts(asset,output,runtime,args.mesh_cache)
+                    thumbnail=next(f for f in asset['files'] if f['media_type']=='image/jpeg')
+                    image=catalog/thumbnail['path']
+                    if sha(image.read_bytes())!=thumbnail['sha256']:raise RuntimeError('Native thumbnail integrity failure')
+                    shutil.copyfile(image,output/'thumbs'/f'{asset["id"]}.jpg')
+                    asset['preview']['thumbnail_sha256']=thumbnail['sha256'];continue
                 if asset['native_preview']['format'] != 'IGMP1+gzip':
                     raise RuntimeError('Unsupported mesh preview')
                 preview = next(f for f in asset['files'] if f['media_type'] == 'application/vnd.ignis.mesh-preview+gzip')
@@ -129,9 +161,17 @@ def main():
         input_file = stage / 'input.json'
         input_file.write_text(json.dumps(inputs))
         subprocess.run([str(args.exporter.resolve()), str(input_file), str(output)], check=True)
-        shader = (ROOT / 'src/scene.wgsl').read_text() + '\n' + (ROOT / 'src/particles.wgsl').read_text()
-        if (output / 'ignis.wgsl').read_text() != shader:
-            raise RuntimeError('Exporter was compiled with a different shader; rebuild it')
+        shader = (output / 'ignis.wgsl').read_text()
+        if any(a['kind']=='mesh' and a['native_preview']['shader_sha256']!=sha(shader.encode()) for a in records):raise RuntimeError('Mixed native shader builds in catalog')
+        environment={}
+        for name,size,layers in [(f'environment-specular-{i}.bin',64>>i,6) for i in range(7)]+[('environment-diffuse.bin',8,6),('environment-lut.bin',64,1)]:
+            source=(args.mesh_cache/name) if args.mesh_cache and (args.mesh_cache/name).exists() else ROOT/'website/dist/catalog/data'/name
+            payload=source.read_bytes()
+            if len(payload)!=size*size*4*layers:raise RuntimeError('Native environment image size differs')
+            (output/name).write_bytes(payload)
+            environment[name]=dict(path='data/'+name,sha256=sha(payload))
+        data['environment']=dict(specular=[environment[f'environment-specular-{i}.bin'] for i in range(7)],diffuse=environment['environment-diffuse.bin'],lut=environment['environment-lut.bin'])
+
         for asset in records:
             if asset['kind'] != 'material':
                 continue
@@ -139,7 +179,7 @@ def main():
             asset['preview'].update(packet_sha256=sha(packet), packet_bytes=len(packet))
         (output / 'packets.json').unlink()
         native_files = ['src/meshes/preview.rs', 'src/materials.rs', 'src/materials/preview.rs', 'src/materials/recipe.rs', 'src/materials/marble.rs', 'src/materials/rock.rs', 'src/scene.wgsl', 'src/particles.wgsl']
-        data.update(source_revision=revision, source_repository='https://github.com/zerobytes/ignis-catalog', shader_sha256=sha(shader.encode()), renderer_source={'repository': 'https://github.com/zerobytes/ignis', 'local_snapshot': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'source_state': 'working-tree', 'source_sha256': {p: sha((ROOT / p).read_bytes()) for p in native_files}, 'scope': 'native-material-and-static-mesh-shader-webgpu-host'})
+        data.update(runtime_base='https://ignis.web.app/',source_revision=revision, source_repository='https://github.com/zerobytes/ignis-catalog', shader_sha256=sha(shader.encode()), renderer_source={'repository': 'https://github.com/zerobytes/ignis', 'local_snapshot': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'source_state':'exporter-build','exporter_sha256':sha(args.exporter.read_bytes()),'shader_sha256':sha(shader.encode()), 'scope': 'native-material-and-static-mesh-shader-webgpu-host'})
         (output / 'runtime-files.json').write_text(json.dumps({'version': 1, 'files': runtime}, indent=2) + '\n')
         (output / 'catalog.json').write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
         shutil.copyfile(catalog / 'LICENSES/CC-BY-4.0.txt', output / 'LICENSE.txt')

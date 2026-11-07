@@ -20,6 +20,15 @@
             "value": "nosniff"
           }
         ]
+      },
+      {
+        "source": "/catalog/data/meshes/**",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          }
+        ]
       }
     ]
   }

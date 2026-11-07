@@ -24,8 +24,28 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Check runtime asset integrity
         run: python3 -m unittest discover -s website -p test_runtime_assets.py
-      - name: Assemble verified mesh previews
-        run: python3 website/runtime_assets.py
+      - name: Validate shared runtime payload manifest
+        run: python3 website/runtime_assets.py --manifest-only
+      - name: Wait for canonical runtime release
+        run: |
+          python3 - <<'PYTHON'
+          import json, time, urllib.request
+          from pathlib import Path
+          expected=json.loads(Path('website/dist/version.json').read_text())['version']
+          deadline=time.monotonic()+360
+          while time.monotonic()<deadline:
+              try:
+                  request=urllib.request.Request('https://ignis.web.app/version.json?release='+expected,headers={'Cache-Control':'no-cache'})
+                  with urllib.request.urlopen(request,timeout=20) as response:
+                      if json.load(response).get('version')==expected:
+                          print('Canonical release and native payloads are ready')
+                          break
+              except (OSError,ValueError):
+                  pass
+              time.sleep(5)
+          else:
+              raise SystemExit('Publish the matching canonical release before deploying its mirror')
+          PYTHON
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:

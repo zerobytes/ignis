@@ -116,7 +116,7 @@ def firebase_publish(files):
 def verify(files, version):
     def check(item):
         base, path, expected = item
-        data = run(['curl', '--fail', '--silent', '--show-error', '--max-time', '30', base + path + '?release=' + version])
+        data = run(['curl', '--fail', '--silent', '--show-error', '--max-time', '180' if '.native-part-' in path else '30', base + path + '?release=' + version])
         if hashlib.sha256(data).digest() != hashlib.sha256(expected).digest():
             raise RuntimeError(f'Served content differs: {base}{path}')
     for base in BASES:
@@ -125,13 +125,14 @@ def verify(files, version):
             try:
                 check((base, 'version.json', files['version.json']))
                 with ThreadPoolExecutor(max_workers=6) as pool:
-                    list(pool.map(check, [(base, p, b) for p, b in files.items()]))
+                    list(pool.map(check, [(base, p, b) for p, b in files.items() if base==BASES[0] or p not in declarations(ROOT/'dist')]))
                 break
             except (RuntimeError, subprocess.CalledProcessError):
                 if time.monotonic() >= deadline:
                     raise
                 time.sleep(5)
-        print(f'Verified {len(files)} served hashes: {base}', flush=True)
+        count=sum(1 for p in files if base==BASES[0] or p not in declarations(ROOT/'dist'))
+        print(f'Verified {count} served hashes: {base} (runtime payloads shared from {BASES[0]})', flush=True)
 
 
 def main():
@@ -145,10 +146,10 @@ def main():
         if path.endswith('.js'):
             subprocess.run(['node', '--check', str(ROOT / 'dist' / path)], check=True)
     head = github_publish(files, version)
-    wait_pages(head)
     firebase_publish(files)
+    wait_pages(head)
     verify(files, version)
-    print('Both public destinations serve the same release.', flush=True)
+    print('Both public portals serve the same release and shared native payloads.', flush=True)
 
 
 if __name__ == '__main__':
