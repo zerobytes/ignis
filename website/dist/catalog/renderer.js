@@ -88,7 +88,7 @@ export class IgnisPreview{
  groupFor(pipeline,material,fields){return this.device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.uniform}},{binding:1,resource:this.shadow.createView()},{binding:2,resource:this.device.createSampler({compare:'less-equal'})},{binding:3,resource:{buffer:material}},{binding:4,resource:this.cube.createView({dimension:'cube'})},{binding:5,resource:this.cube.createView({dimension:'cube'})},{binding:6,resource:this.lut.createView()},{binding:7,resource:this.device.createSampler({magFilter:'linear',minFilter:'linear'})},{binding:8,resource:{buffer:fields}}]});}
  async selectMesh(asset,signal){
   const preview=asset.preview;
-  const compressed=await verified(new URL(preview.path,import.meta.url),preview.packet_sha256,signal,preview.packet_bytes,64*1024*1024);
+  const compressed=await verified(new URL(preview.path,import.meta.url),preview.packet_sha256,signal,preview.packet_bytes,96*1024*1024);
   if(!('DecompressionStream' in window))throw new Error('GZIP_UNAVAILABLE');
   if(!Number.isInteger(preview.decoded_bytes)||preview.decoded_bytes<16||preview.decoded_bytes>192*1024*1024)throw new Error('Mesh size outside budget');
   const packet=new Uint8Array(preview.decoded_bytes);let size=0;
