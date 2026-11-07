@@ -10,3 +10,5 @@ __pycache__/
 /.ui-craft/
 /docs/publication-internal.md
 /docs/references/image-to-3d/
+
+website/.hosting-stage/
